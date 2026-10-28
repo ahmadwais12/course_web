@@ -1,0 +1,19 @@
+---
+description: Require SEO whenever creating or editing Next.js pages in Advanced-EMIS
+globs: app/**/page.tsx,app/**/layout.tsx,app/**/route.ts
+alwaysApply: false
+---
+
+# Next.js page SEO (Advanced-EMIS)
+
+Read and follow repo-root **`../AGENTS.md`** (SEO workflow).
+
+For every new/edited `page.tsx` / public `layout.tsx`:
+
+1. Inspect existing `lib/seo*` and root metadata first.
+2. Export unique `metadata` or `generateMetadata` (title, description, canonical, openGraph, twitter, robots).
+3. Private app routes → `robots: { index: false, follow: false }`.
+4. Update `sitemap` / `robots.txt` when adding a public indexable URL.
+5. Prefer server-rendered content for indexable copy; real 404s for bad dynamic params.
+
+Do not ship UI-only pages without metadata.

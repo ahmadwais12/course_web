@@ -1,0 +1,651 @@
+/* KMS call-center Overall Dashboard visual language (EMIS) */
+.emis-inquiry-dashboard {
+  --bg: #111720;
+  --panel: #1b2633;
+  --border: #283544;
+  --muted: #9aa8ba;
+  --text: #edf1f7;
+  position: relative;
+  z-index: 0;
+  min-height: calc(100vh - 7rem);
+  padding: 4px 2px 20px;
+  background: transparent;
+  color: var(--text);
+  font: 13px/1.4 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.emis-inquiry-dashboard.theme-dark {
+  --bg: #111720;
+  --panel: #1b2633;
+  --border: #283544;
+  --muted: #9aa8ba;
+  --text: #edf1f7;
+}
+
+.emis-inquiry-dashboard.theme-light {
+  --bg: #f3f6fa;
+  --panel: #fff;
+  --border: #dce4ed;
+  --muted: #68778a;
+  --text: #1d2938;
+  color: var(--text);
+}
+
+.emis-inquiry-dashboard .dash-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.emis-inquiry-dashboard .dash-heading h1 {
+  font-size: 27px;
+  line-height: 1.15;
+  margin: 0 0 5px;
+  font-weight: 750;
+  letter-spacing: 0.2px;
+  color: var(--text);
+}
+
+.emis-inquiry-dashboard .dash-heading p,
+.emis-inquiry-dashboard .card-heading p,
+.emis-inquiry-dashboard .panel > p,
+.emis-inquiry-dashboard .attention-heading p {
+  color: var(--muted);
+  margin: 0;
+  font-size: 12px;
+}
+
+.emis-inquiry-dashboard .data-source-pill {
+  background: #183b32;
+  color: #79d6b0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  border-radius: 20px;
+  padding: 7px 24px;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+.emis-inquiry-dashboard.theme-light .data-source-pill {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.emis-inquiry-dashboard .offline-pill {
+  background: #49302e;
+  color: #ffaaa4;
+}
+
+.emis-inquiry-dashboard.theme-light .offline-pill {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.emis-inquiry-dashboard .page-message {
+  margin: 12px 0;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--muted);
+}
+
+.emis-inquiry-dashboard .error-message {
+  color: #ffaaa4;
+  border-color: #694441;
+}
+
+.emis-inquiry-dashboard.theme-light .error-message {
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+.emis-inquiry-dashboard .filters {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto auto auto;
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 17px;
+}
+
+.emis-inquiry-dashboard .filters label {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.emis-inquiry-dashboard .filters select,
+.emis-inquiry-dashboard .filters input {
+  display: block;
+  width: 100%;
+  height: 40px;
+  margin-top: 4px;
+  padding: 0 12px;
+  background: #1a2430;
+  color: var(--text);
+  border: 1px solid #2b3746;
+  border-radius: 7px;
+  font: inherit;
+}
+
+.emis-inquiry-dashboard.theme-light .filters select,
+.emis-inquiry-dashboard.theme-light .filters input {
+  background: #fff;
+  border-color: #cbd5e1;
+}
+
+.emis-inquiry-dashboard .button {
+  height: 40px;
+  border: 0;
+  border-radius: 7px;
+  padding: 0 16px;
+  white-space: nowrap;
+  font-weight: 650;
+  cursor: pointer;
+  font: inherit;
+}
+
+.emis-inquiry-dashboard .button.secondary {
+  background: #29384a;
+  color: #d8e2ef;
+}
+
+.emis-inquiry-dashboard.theme-light .button.secondary {
+  background: #e7edf4;
+  color: #253448;
+}
+
+.emis-inquiry-dashboard .button.primary {
+  background: #88b6ff;
+  color: #142033;
+}
+
+.emis-inquiry-dashboard .panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 11px;
+}
+
+.emis-inquiry-dashboard .stats {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 9px;
+  margin-bottom: 16px;
+}
+
+.emis-inquiry-dashboard .stat {
+  height: 88px;
+  padding: 10px 13px;
+  display: flex;
+  flex-direction: column;
+}
+
+.emis-inquiry-dashboard .stat small,
+.emis-inquiry-dashboard .stat span {
+  color: var(--muted);
+}
+
+.emis-inquiry-dashboard .stat small {
+  font-size: 11px;
+}
+
+.emis-inquiry-dashboard .stat strong {
+  font-size: 26px;
+  line-height: 1.1;
+  margin: 5px 0 0;
+  color: var(--text);
+}
+
+.emis-inquiry-dashboard .stat span {
+  font-size: 9px;
+  margin-top: auto;
+}
+
+.emis-inquiry-dashboard .blue { color: #89b6ff !important; }
+.emis-inquiry-dashboard .gold { color: #f0c967 !important; }
+.emis-inquiry-dashboard .purple { color: #c8a5fa !important; }
+.emis-inquiry-dashboard .green { color: #66d4b0 !important; }
+.emis-inquiry-dashboard .gray { color: #9ca9bb !important; }
+
+.emis-inquiry-dashboard .mid-grid {
+  display: grid;
+  grid-template-columns: 1.72fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.emis-inquiry-dashboard .trend-card,
+.emis-inquiry-dashboard .deal-card,
+.emis-inquiry-dashboard .channel-card,
+.emis-inquiry-dashboard .vehicle-card {
+  padding: 14px 18px;
+}
+
+.emis-inquiry-dashboard .trend-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 259px;
+}
+
+.emis-inquiry-dashboard .card-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.emis-inquiry-dashboard .panel h2 {
+  font-size: 19px;
+  line-height: 1.2;
+  margin: 0 0 3px;
+  font-weight: 720;
+  color: var(--text);
+}
+
+.emis-inquiry-dashboard .trend-total {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+}
+
+.emis-inquiry-dashboard .trend-total span {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.emis-inquiry-dashboard .trend-total strong {
+  font-size: 21px;
+  line-height: 1.1;
+  color: #9bc0ff;
+}
+
+.emis-inquiry-dashboard.theme-light .trend-total strong {
+  color: #3975cb;
+}
+
+.emis-inquiry-dashboard .trend-chart-wrap {
+  flex: 1;
+  min-height: 160px;
+  margin-top: 4px;
+}
+
+.emis-inquiry-dashboard .trend-chart {
+  display: block;
+  width: 100%;
+  height: 180px;
+  overflow: visible;
+}
+
+.emis-inquiry-dashboard .trend-grid line {
+  stroke: #344253;
+  stroke-width: 1;
+  stroke-dasharray: 3 6;
+}
+
+.emis-inquiry-dashboard.theme-light .trend-grid line {
+  stroke: #d6dee8;
+}
+
+.emis-inquiry-dashboard .trend-grid text,
+.emis-inquiry-dashboard .trend-axis-labels text {
+  fill: #91a0b2;
+  font-size: 11px;
+}
+
+.emis-inquiry-dashboard.theme-light .trend-grid text,
+.emis-inquiry-dashboard.theme-light .trend-axis-labels text {
+  fill: #69788b;
+}
+
+.emis-inquiry-dashboard .trend-line {
+  fill: none;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.emis-inquiry-dashboard .trend-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.emis-inquiry-dashboard .trend-legend span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.emis-inquiry-dashboard .trend-legend i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.emis-inquiry-dashboard .deal-card > p {
+  margin: 0 0 18px;
+}
+
+.emis-inquiry-dashboard .deal-bar {
+  height: 22px;
+  display: flex;
+  margin: 0 2px 11px;
+  overflow: hidden;
+  border-radius: 4px;
+}
+
+.emis-inquiry-dashboard .deal-bar i {
+  background: #88b6ff;
+  display: block;
+  height: 100%;
+}
+
+.emis-inquiry-dashboard .deal-bar b {
+  background: #c8a5fa;
+  display: block;
+  height: 100%;
+  font-weight: inherit;
+}
+
+.emis-inquiry-dashboard .deal-numbers {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 13px;
+}
+
+.emis-inquiry-dashboard .deal-numbers > div {
+  width: 50%;
+  display: grid;
+  grid-template-columns: auto auto;
+  justify-content: start;
+  column-gap: 16px;
+}
+
+.emis-inquiry-dashboard .deal-numbers strong {
+  font-size: 14px;
+}
+
+.emis-inquiry-dashboard .deal-numbers strong small {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 450;
+}
+
+.emis-inquiry-dashboard .deal-numbers b {
+  font-size: 28px;
+  grid-column: 1;
+  font-weight: 700;
+}
+
+.emis-inquiry-dashboard .deal-numbers span {
+  align-self: end;
+  color: var(--muted);
+  padding-bottom: 4px;
+}
+
+.emis-inquiry-dashboard .deal-footer {
+  display: flex;
+  justify-content: space-between;
+  margin: 11px 0 4px;
+  font-size: 13px;
+}
+
+.emis-inquiry-dashboard .deal-footer b {
+  color: #66d4b0;
+}
+
+.emis-inquiry-dashboard .lower-grid {
+  grid-template-columns: 1.72fr 1fr;
+}
+
+.emis-inquiry-dashboard .channel-row {
+  display: grid;
+  grid-template-columns: 140px minmax(80px, 1fr) 30px 50px;
+  gap: 10px;
+  align-items: center;
+  min-height: 26px;
+  margin-bottom: 6px;
+}
+
+.emis-inquiry-dashboard .channel-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text);
+}
+
+.emis-inquiry-dashboard .stack {
+  height: 18px;
+  display: flex;
+  overflow: hidden;
+  border-radius: 3px;
+}
+
+.emis-inquiry-dashboard .seg {
+  height: 100%;
+  display: block;
+}
+
+.emis-inquiry-dashboard .gold-bg { background: #f0ce72; }
+.emis-inquiry-dashboard .purple-bg { background: #c6a2ed; }
+.emis-inquiry-dashboard .blue-bg { background: #82b0f5; }
+.emis-inquiry-dashboard .gray-bg { background: #91a0b0; }
+.emis-inquiry-dashboard .green-bg { background: #6bcbaa; }
+
+.emis-inquiry-dashboard .channel-row > b,
+.emis-inquiry-dashboard .success-rate {
+  text-align: right;
+  color: var(--text);
+}
+
+.emis-inquiry-dashboard .success-rate {
+  color: var(--muted);
+}
+
+.emis-inquiry-dashboard .legend {
+  display: flex;
+  gap: 14px;
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 10px;
+  flex-wrap: wrap;
+}
+
+.emis-inquiry-dashboard .legend span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.emis-inquiry-dashboard .legend i {
+  height: 8px;
+  width: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.emis-inquiry-dashboard .vehicle-row {
+  display: grid;
+  grid-template-columns: 165px 1fr 34px;
+  gap: 10px;
+  align-items: center;
+  min-height: 28px;
+  font-size: 12px;
+  margin-bottom: 6px;
+  color: var(--text);
+}
+
+.emis-inquiry-dashboard .vehicle-row > div {
+  height: 13px;
+  border-radius: 5px;
+  background: #2c3b4d;
+  overflow: hidden;
+}
+
+.emis-inquiry-dashboard.theme-light .vehicle-row > div {
+  background: #e3e9f0;
+}
+
+.emis-inquiry-dashboard .vehicle-row i {
+  display: block;
+  height: 100%;
+  border-radius: 5px;
+  background: #82b0f5;
+}
+
+.emis-inquiry-dashboard .vehicle-row b {
+  text-align: right;
+}
+
+.emis-inquiry-dashboard .table-card,
+.emis-inquiry-dashboard .attention-card {
+  padding: 14px 18px;
+  margin-bottom: 16px;
+}
+
+.emis-inquiry-dashboard table {
+  border-collapse: collapse;
+  width: 100%;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.emis-inquiry-dashboard th {
+  font-weight: 450;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.emis-inquiry-dashboard th,
+.emis-inquiry-dashboard td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+
+.emis-inquiry-dashboard td {
+  font-size: 12px;
+}
+
+.emis-inquiry-dashboard .align-right {
+  text-align: right;
+}
+
+.emis-inquiry-dashboard .attention-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.emis-inquiry-dashboard .attention-heading button,
+.emis-inquiry-dashboard .link-btn {
+  border: 0;
+  background: none;
+  color: #8cb8ff;
+  cursor: pointer;
+  font: inherit;
+}
+
+.emis-inquiry-dashboard .status-chip {
+  display: inline-block;
+  border-radius: 16px;
+  padding: 3px 10px;
+  background: #29394b;
+  color: #8fb8ff;
+  text-transform: capitalize;
+}
+
+.emis-inquiry-dashboard.theme-light .status-chip {
+  background: #e8eef5;
+  color: #365f96;
+}
+
+.emis-inquiry-dashboard .purple-chip {
+  background: #302c44;
+  color: #c7a7f5;
+}
+
+.emis-inquiry-dashboard.theme-light .purple-chip {
+  background: #f0eafd;
+  color: #7045ad;
+}
+
+.emis-inquiry-dashboard .gold-chip {
+  background: #37352e;
+  color: #f0ce72;
+}
+
+.emis-inquiry-dashboard.theme-light .gold-chip {
+  background: #fff5d9;
+  color: #87620b;
+}
+
+.emis-inquiry-dashboard .empty-state {
+  text-align: center;
+  color: var(--muted);
+  padding: 22px;
+}
+
+.emis-inquiry-dashboard .dash-footer {
+  display: flex;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 11px;
+  padding: 5px 0 0;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.emis-inquiry-dashboard .overflow {
+  overflow-x: auto;
+}
+
+.emis-inquiry-dashboard .deal-row-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+@media (max-width: 1150px) {
+  .emis-inquiry-dashboard .filters {
+    grid-template-columns: repeat(2, minmax(140px, 1fr));
+  }
+  .emis-inquiry-dashboard .stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .emis-inquiry-dashboard .dash-heading h1 {
+    font-size: 23px;
+  }
+  .emis-inquiry-dashboard .filters {
+    grid-template-columns: 1fr 1fr;
+  }
+  .emis-inquiry-dashboard .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .emis-inquiry-dashboard .mid-grid,
+  .emis-inquiry-dashboard .lower-grid {
+    grid-template-columns: 1fr;
+  }
+}

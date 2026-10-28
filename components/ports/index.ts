@@ -1,0 +1,21 @@
+/** Reusable small UI “ports” — import from `@/components/ports` */
+export { default as StatCard } from './StatCard';
+export { default as PageHeader } from './PageHeader';
+export { default as StatusChip, statusToneFromValue } from './StatusChip';
+export { default as EmptyState } from './EmptyState';
+export { default as ErrorBanner } from './ErrorBanner';
+export { default as SectionPanel } from './SectionPanel';
+export { default as FilterBar, FilterField } from './FilterBar';
+export { default as FilterSection } from './FilterSection';
+export { default as PortButton } from './PortButton';
+export { default as InputField, TextAreaField } from './InputField';
+export { default as SearchBar } from './SearchBar';
+export { default as Dropdown } from './Dropdown';
+export type { SelectOption } from './Dropdown';
+export { default as Pagination, PER_PAGE_OPTIONS } from './Pagination';
+export { default as Skeleton, TableSkeleton, CardSkeleton } from './Skeleton';
+export { default as DataTable } from './DataTable';
+export type { DataColumn } from './DataTable';
+export { default as LazySection } from './LazySection';
+export { default as ListPageShell } from './ListPageShell';
+export type { ListFilter } from './ListPageShell';
