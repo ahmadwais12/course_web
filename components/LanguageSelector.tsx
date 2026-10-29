@@ -74,9 +74,9 @@ export default function LanguageSelector({
               }}
               className={cn(
                 "w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium transition-colors",
-                currentLang === lang.code 
-                  ? "bg-accent text-accent-foreground" 
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                currentLang === lang.code
+                  ? 'bg-accent text-accent-foreground'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
               )}
             >
               <div className="flex flex-col items-start">

@@ -188,8 +188,8 @@ export default function LandingPageClient() {
             className="flex items-center gap-3"
             aria-label={`${APP_NAME} home`}
           >
-            <BrandLogo size={scrolled ? 32 : 40} showName={false} />
-            <span className="text-xl font-black tracking-tight text-foreground">{APP_NAME}</span>
+            <BrandLogo size={scrolled ? 40 : 52} showName={false} />
+            <span className="emis-text-brand text-xl font-black tracking-tight">{APP_NAME}</span>
           </button>
 
           <div className="hidden md:flex items-center gap-8">
@@ -211,7 +211,7 @@ export default function LandingPageClient() {
             </button>
             <Link
               href="/login"
-              className="px-6 py-2.5 bg-foreground text-background rounded-xl text-sm font-bold hover:opacity-90 transition-all"
+              className="emis-btn-primary rounded-xl px-6 py-2.5 text-sm font-bold shadow-sm transition-all"
             >
               Login
             </Link>
@@ -265,7 +265,7 @@ export default function LandingPageClient() {
                 <Link
                   href="/login"
                   onClick={() => setMenuOpen(false)}
-                  className="block text-center px-6 py-3 bg-foreground text-background rounded-xl text-sm font-bold hover:opacity-90 transition-all"
+                  className="emis-btn-primary block rounded-xl px-6 py-3 text-center text-sm font-bold shadow-sm transition-all"
                 >
                   Login
                 </Link>
@@ -288,12 +288,12 @@ export default function LandingPageClient() {
             transition={{ duration: 0.6 }}
             className="bg-card/40 backdrop-blur-md p-8 rounded-[2.5rem] border border-border shadow-xl"
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-full text-xs font-black uppercase tracking-widest mb-6">
+            <div className="emis-btn-primary mb-6 inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-black uppercase tracking-widest">
               <CheckCircle2 size={14} />
               Next-Gen Education Management
             </div>
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black text-foreground leading-[1.1] tracking-tight mb-8">
-              Empower Your <span className="text-blue-700">Institute</span> with Intelligence.
+              Empower Your <span className="emis-text-brand">Institute</span> with Intelligence.
             </h1>
             <p className="text-xl text-foreground/80 leading-relaxed mb-10 max-w-xl font-medium">
               A comprehensive Education Management Information System designed to streamline
@@ -302,7 +302,7 @@ export default function LandingPageClient() {
             <div className="flex flex-wrap gap-4">
               <Link
                 href="/login"
-                className="px-8 py-4 bg-primary text-primary-foreground rounded-2xl font-bold hover:opacity-90 transition-all shadow-2xl flex items-center gap-2 group"
+                className="emis-btn-primary group flex items-center gap-2 rounded-2xl px-8 py-4 font-bold shadow-2xl transition-all"
               >
                 Sign in to {APP_NAME}
                 <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
@@ -416,14 +416,14 @@ export default function LandingPageClient() {
 
       <section id="auth-section" className="py-24 px-6">
         <Reveal className="max-w-3xl mx-auto text-center bg-card border border-border rounded-[2.5rem] p-10 sm:p-14 shadow-sm">
-          <BrandLogo size={96} showName={false} />
-          <h2 className="mt-4 text-3xl font-black tracking-tight text-foreground">{APP_NAME}</h2>
+          <BrandLogo size={88} showName={false} />
+          <h2 className="emis-text-brand mt-4 text-3xl font-black tracking-tight">{APP_NAME}</h2>
           <p className="mt-4 text-lg text-muted-foreground font-medium">
             Sign in with your {APP_NAME} account to open the management panels.
           </p>
           <Link
             href="/login"
-            className="inline-flex items-center justify-center gap-2 mt-8 px-8 py-4 bg-primary text-primary-foreground rounded-2xl font-black hover:opacity-90 transition-all"
+            className="emis-btn-primary mt-8 inline-flex items-center justify-center gap-2 rounded-2xl px-8 py-4 font-black shadow-md transition-all"
           >
             Go to Login
             <ArrowRight size={20} />
@@ -434,7 +434,7 @@ export default function LandingPageClient() {
       <footer className="py-12 border-t border-border bg-card">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-8">
           <div className="flex items-center gap-3">
-            <BrandLogo size={32} showName={false} />
+            <BrandLogo size={40} showName={false} />
             <span className="font-black text-foreground">{APP_NAME}</span>
           </div>
           <div className="flex items-center gap-6">

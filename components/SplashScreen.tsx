@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { APP_NAME } from '@/lib/branding';
+import BrandLogo from '@/components/BrandLogo';
 
 const SESSION_KEY = 'emis-splash-seen';
 
@@ -50,30 +51,14 @@ export default function SplashScreen() {
         fading ? 'pointer-events-none opacity-0' : 'opacity-100'
       }`}
     >
-      <div className="relative">
-        <div className="absolute -inset-6 rounded-full bg-primary/20 blur-2xl" />
-        <div className="relative flex h-40 w-40 items-center justify-center rounded-full border border-border bg-card shadow-2xl">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/logo/dreamflow-icon-black.png"
-            alt=""
-            width={96}
-            height={96}
-            className="h-24 w-24 object-contain dark:hidden"
-          />
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/logo/dreamflow-icon-filled-256.png"
-            alt=""
-            width={96}
-            height={96}
-            className="hidden h-24 w-24 object-contain dark:block"
-          />
-        </div>
+      <div className="relative flex items-center justify-center px-6">
+        <BrandLogo size={84} showName={false} />
       </div>
 
       <div className="flex flex-col items-center gap-1">
-        <h1 className="text-3xl font-black tracking-tight">{APP_NAME}</h1>
+        <h1 className="bg-gradient-to-r from-sky-500 via-blue-600 to-indigo-600 bg-clip-text text-3xl font-black tracking-tight text-transparent">
+          {APP_NAME}
+        </h1>
         <p className="text-sm font-medium text-muted-foreground">
           Education Management System
         </p>

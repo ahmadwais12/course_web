@@ -26,17 +26,18 @@ export default function InputField({
       {label && (
         <label htmlFor={inputId} className="block text-sm font-medium text-foreground">
           {label}
-          {props.required && <span className="text-destructive ml-0.5">*</span>}
+          {props.required && <span className="ms-0.5 text-destructive">*</span>}
         </label>
       )}
       <input
         id={inputId}
         className={cn(
-          'w-full h-10 px-3 rounded-[7px] text-sm bg-muted border border-border text-foreground',
-          'placeholder:text-muted-foreground outline-none transition-colors',
-          'focus:border-primary focus:ring-1 focus:ring-primary',
-          'disabled:opacity-60 disabled:cursor-not-allowed',
-          error && 'border-destructive focus:border-destructive focus:ring-destructive',
+          'h-10 w-full rounded-xl border border-border bg-card px-3.5 text-sm text-foreground shadow-sm',
+          'placeholder:text-muted-foreground outline-none transition-all duration-200',
+          'hover:border-primary/35 dark:hover:border-primary/40',
+          'focus:border-primary focus:ring-4 focus:ring-primary/20',
+          'disabled:cursor-not-allowed disabled:opacity-60',
+          error && 'border-destructive focus:border-destructive focus:ring-destructive/20',
           className
         )}
         {...props}
@@ -67,8 +68,10 @@ export function TextAreaField({ label, error, className, id, ...props }: TextAre
       <textarea
         id={inputId}
         className={cn(
-          'w-full min-h-[96px] px-3 py-2 rounded-[7px] text-sm bg-muted border border-border text-foreground',
-          'placeholder:text-muted-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary',
+          'min-h-[96px] w-full rounded-xl border border-border bg-card px-3.5 py-2.5 text-sm text-foreground shadow-sm',
+          'placeholder:text-muted-foreground outline-none transition-all duration-200',
+          'hover:border-primary/35 dark:hover:border-primary/40',
+          'focus:border-primary focus:ring-4 focus:ring-primary/20',
           error && 'border-destructive',
           className
         )}

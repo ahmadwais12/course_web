@@ -110,7 +110,7 @@ export default function PermissionsPage() {
             <button
               type="button"
               onClick={openAdd}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl font-bold hover:opacity-90"
+              className="emis-btn-primary inline-flex items-center gap-2 rounded-xl px-4 py-2 font-bold"
             >
               <Plus size={16} />
               Add Permission
@@ -190,7 +190,7 @@ export default function PermissionsPage() {
                   onChange={(e) => setName(e.target.value)}
                   required
                   placeholder="e.g. Students, Add Vehicles, Team"
-                  className="w-full px-4 py-3 rounded-xl bg-muted border border-border text-foreground outline-none focus:ring-2 focus:ring-ring/20"
+                  className="w-full px-4 py-3 rounded-xl bg-card border border-border text-foreground outline-none focus:ring-2 focus:ring-ring/20"
                 />
                 <p className="text-xs text-muted-foreground mt-1">Use Title Case names like KMS (page access or actions).</p>
               </div>
@@ -206,7 +206,7 @@ export default function PermissionsPage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className={cn('px-4 py-2 rounded-xl bg-primary text-primary-foreground font-bold disabled:opacity-50')}
+                  className={cn('emis-btn-primary rounded-xl px-4 py-2 font-bold disabled:opacity-50')}
                 >
                   {submitting ? 'Saving...' : editing ? 'Update' : 'Create'}
                 </button>

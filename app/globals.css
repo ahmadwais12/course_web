@@ -2,45 +2,51 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Light: white canvas · Dark: black canvas */
+/* Light: soft slate canvas · Dark: deep navy canvas */
 :root {
-  --background: #ffffff;
-  --foreground: #0a0a0a;
+  --background: #f5f7fb;
+  --foreground: #0f172a;
   --card: #ffffff;
-  --card-foreground: #0a0a0a;
+  --card-foreground: #0f172a;
   --popover: #ffffff;
-  --popover-foreground: #0a0a0a;
-  --muted: #f5f5f5;
-  --muted-foreground: #737373;
-  --border: #e5e5e5;
-  --input: #e5e5e5;
+  --popover-foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --border: #e4e9f2;
+  --input: #e4e9f2;
   --ring: #3b82f6;
   --primary: #2563eb;
   --primary-foreground: #ffffff;
   --destructive: #dc2626;
   --destructive-foreground: #ffffff;
-  --accent: #eff6ff;
+  --accent: #eef4ff;
   --accent-foreground: #1d4ed8;
+  --brand-from: #38bdf8;
+  --brand-via: #2563eb;
+  --brand-to: #4f46e5;
 }
 
 .dark {
-  --background: #000000;
-  --foreground: #ffffff;
-  --card: #000000;
-  --card-foreground: #ffffff;
-  --popover: #0a0a0a;
-  --popover-foreground: #ffffff;
-  --muted: #171717;
-  --muted-foreground: #a3a3a3;
-  --border: #262626;
-  --input: #262626;
+  --background: #070b12;
+  --foreground: #e8eef7;
+  --card: #0c1220;
+  --card-foreground: #e8eef7;
+  --popover: #0c1220;
+  --popover-foreground: #e8eef7;
+  --muted: #151d2b;
+  --muted-foreground: #94a3b8;
+  --border: #1e293b;
+  --input: #1e293b;
   --ring: #60a5fa;
   --primary: #3b82f6;
   --primary-foreground: #ffffff;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  --accent: #111827;
-  --accent-foreground: #93c5fd;
+  --accent: #12203a;
+  --accent-foreground: #9cc2ff;
+  --brand-from: #7dd3fc;
+  --brand-via: #3b82f6;
+  --brand-to: #818cf8;
 }
 
 @layer base {
@@ -50,23 +56,54 @@
 
   html {
     @apply bg-background text-foreground;
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+    transition: background-color 0.28s ease, color 0.28s ease;
   }
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--font-geist-sans), 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    transition: background-color 0.28s ease, color 0.28s ease;
+  }
+
+  ::selection {
+    background: #bfdbfe;
+    color: #0f172a;
+  }
+
+  .dark ::selection {
+    background: #1e3a8a;
+    color: #eff6ff;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
   }
 
   /* Forms: readable in both themes */
   input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']),
   textarea,
   select {
-    @apply bg-muted text-foreground border-border placeholder:text-muted-foreground;
-    color-scheme: inherit;
+    @apply bg-card text-foreground border-border placeholder:text-muted-foreground;
+    color-scheme: light;
+  }
+
+  .dark input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']),
+  .dark textarea,
+  .dark select {
+    color-scheme: dark;
   }
 
   option {
     @apply bg-popover text-popover-foreground;
+  }
+
+  input[type='search']::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+    appearance: none;
   }
 
   /* Dialog / menu surfaces */
@@ -75,6 +112,30 @@
   .emis-dialog,
   .emis-popover {
     @apply bg-popover text-popover-foreground border border-border shadow-xl;
+  }
+
+  /* Thin, theme-aware scrollbars */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--muted-foreground);
   }
 }
 
@@ -90,6 +151,59 @@
   .text-balance {
     text-wrap: balance;
   }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .emis-btn-primary {
+    background-image: linear-gradient(135deg, var(--brand-from), var(--brand-via) 48%, var(--brand-to));
+    color: #fff;
+  }
+
+  .emis-btn-primary:hover {
+    filter: brightness(1.07);
+  }
+
+  .emis-text-brand {
+    background-image: linear-gradient(135deg, var(--brand-from), var(--brand-via) 48%, var(--brand-to));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+
+  .emis-focus-ring {
+    @apply outline-none transition-all duration-200;
+  }
+
+  .emis-focus-ring:focus,
+  .emis-focus-ring:focus-visible {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 22%, transparent);
+  }
+}
+
+/* App shell: soft ambient gradient behind the floating sidebar + navbar */
+.emis-shell {
+  background-color: var(--background);
+  background-image:
+    radial-gradient(1100px 460px at 100% -12%, rgba(37, 99, 235, 0.18), transparent 62%),
+    radial-gradient(900px 420px at -8% 4%, rgba(56, 189, 248, 0.14), transparent 58%),
+    radial-gradient(700px 380px at 40% 0%, rgba(79, 70, 229, 0.1), transparent 60%);
+  background-attachment: fixed;
+}
+
+.dark .emis-shell {
+  background-image:
+    radial-gradient(1100px 460px at 100% -12%, rgba(37, 99, 235, 0.22), transparent 62%),
+    radial-gradient(900px 420px at -8% 4%, rgba(56, 189, 248, 0.12), transparent 58%),
+    radial-gradient(700px 380px at 40% 0%, rgba(79, 70, 229, 0.14), transparent 60%);
 }
 
 /* Splash screen loading bar */
@@ -102,6 +216,86 @@
   }
 }
 
+@keyframes emis-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes emis-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes emis-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes emis-scale-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes emis-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-fade-up {
+  animation: emis-fade-up 0.28s ease-out both;
+}
+
+.animate-fade-in {
+  animation: emis-fade-in 0.35s ease both;
+}
+
+.animate-scale-in {
+  animation: emis-scale-in 0.32s ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .animate-fade-up,
+  .animate-fade-in,
+  .animate-scale-in,
+  .emis-shimmer::after {
+    animation: none !important;
+  }
+}
+
+.emis-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.emis-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background-image: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  animation: emis-shimmer 1.6s infinite;
+}
+
+.dark .emis-shimmer::after {
+  background-image: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
+}
+
 /* KMS-style searchable select / multiselect (PrimeVue Select & MultiSelect parity) */
 .emis-select,
 .emis-multiselect {
@@ -110,22 +304,22 @@
 
 .dark .emis-select,
 .dark .emis-multiselect {
-  background-color: #171717;
-  border-color: #404040;
+  background-color: var(--card);
+  border-color: var(--border);
 }
 
 .dark .emis-select:hover,
 .dark .emis-multiselect:hover {
-  border-color: #3b82f6;
+  border-color: #60a5fa;
 }
 
 .dark .emis-select-overlay,
 .dark .emis-multiselect-overlay {
-  background-color: #0a0a0a;
-  border-color: #404040;
+  background-color: #0c1220;
+  border-color: #334155;
 }
 
 .dark .emis-select-option:hover,
 .dark .emis-multiselect-item:hover {
-  background-color: #262626;
+  background-color: #1e293b;
 }

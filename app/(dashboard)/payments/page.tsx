@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from '@/components/ui/Toast';
 import { ListPageShell, StatusChip, statusToneFromValue } from '@/components/ports';
 import { useListQuery } from '@/hooks/useListQuery';
+import { daysAgo } from '@/components/dashboards/DateFilterBar';
 
 type Payment = {
   id: string;
@@ -20,6 +21,8 @@ export default function PaymentsPage() {
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState('');
   const [method, setMethod] = useState('');
+  const [from, setFrom] = useState(daysAgo(29));
+  const [to, setTo] = useState(daysAgo(0));
 
   useEffect(() => {
     let cancelled = false;
@@ -45,15 +48,22 @@ export default function PaymentsPage() {
   }, []);
 
   const filterFn = useCallback(
-    (item: Payment) =>
-      (!status || item.status === status) && (!method || item.payment_method === method),
-    [status, method]
+    (item: Payment) => {
+      const date = String(item.payment_date || '').slice(0, 10);
+      return (
+        (!status || item.status === status) &&
+        (!method || item.payment_method === method) &&
+        (!from || !date || date >= from) &&
+        (!to || !date || date <= to)
+      );
+    },
+    [status, method, from, to]
   );
 
   const list = useListQuery({
     items: items as (Payment & Record<string, unknown>)[],
     searchKeys: ['payment_number', 'payment_method', 'payment_type', 'status'],
-    filterKey: `${status}|${method}`,
+    filterKey: `${status}|${method}|${from}|${to}`,
     filterFn: filterFn as (item: Payment & Record<string, unknown>) => boolean,
   });
 
@@ -74,10 +84,18 @@ export default function PaymentsPage() {
         search={list.search}
         onSearchChange={list.setSearch}
         searchPlaceholder="Search payment number, method…"
+        dateFrom={from}
+        dateTo={to}
+        onDateRangeChange={({ from: nextFrom, to: nextTo }) => {
+          setFrom(nextFrom);
+          setTo(nextTo);
+        }}
         onResetFilters={() => {
           list.reset();
           setStatus('');
           setMethod('');
+          setFrom(daysAgo(29));
+          setTo(daysAgo(0));
         }}
         filters={[
           {

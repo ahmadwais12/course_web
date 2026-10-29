@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import Timetable from '@/components/Timetable';
 import { cn } from '@/lib/utils';
+import DashboardSkeleton from '@/components/dashboards/DashboardSkeleton';
 
 export default function TeacherDashboard() {
   const [data, setData] = useState<any>(null);
@@ -19,9 +20,13 @@ export default function TeacherDashboard() {
 
   useEffect(() => {
     fetch('/api/dashboard/teacher')
-      .then(res => res.json())
-      .then(data => {
-        setData(data);
+      .then((res) => res.json())
+      .then((payload) => {
+        setData(payload);
+        setLoading(false);
+      })
+      .catch(() => {
+        setData(null);
         setLoading(false);
       });
   }, []);
@@ -31,10 +36,10 @@ export default function TeacherDashboard() {
     { day: 'Sunday', time: '10:00 - 12:00', course: 'TOEFL Prep', room: 'Room 204' },
   ];
 
-  if (loading) return <div className="p-8 text-center font-bold text-muted-foreground">Loading Teacher Dashboard...</div>;
+  if (loading) return <DashboardSkeleton />;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-fade-up">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {[
           { label: 'My Students', value: data?.studentsCount || '0', icon: Users, gradient: 'bg-gradient-to-r from-blue-100 via-blue-300 to-blue-500' },

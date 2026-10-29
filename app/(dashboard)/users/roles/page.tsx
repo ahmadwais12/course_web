@@ -150,7 +150,7 @@ export default function RolesPage() {
             <button
               type="button"
               onClick={openAdd}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90"
+              className="emis-btn-primary inline-flex items-center gap-2 rounded-lg px-4 py-2 font-medium"
             >
               <Plus size={16} />
               Add Role
@@ -285,7 +285,7 @@ export default function RolesPage() {
                     }}
                     required
                     placeholder="Enter role name (e.g., Branch Manager)"
-                    className="w-full px-3 py-2.5 rounded-lg bg-muted border border-border outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm"
+                    className="w-full px-3 py-2.5 rounded-lg bg-card border border-border outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm"
                   />
                 </div>
 
@@ -305,7 +305,7 @@ export default function RolesPage() {
                     }
                     required
                     placeholder="e.g. branch_manager, cashier"
-                    className="w-full px-3 py-2.5 rounded-lg bg-muted border border-border outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm font-mono"
+                    className="w-full px-3 py-2.5 rounded-lg bg-card border border-border outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm font-mono"
                   />
                   <p className="mt-1 text-xs text-muted-foreground">
                     Stored on <code className="bg-muted px-1 rounded">users.role</code> ? must match the schema CHECK values.
@@ -354,7 +354,7 @@ export default function RolesPage() {
                 type="submit"
                 form="role-form"
                 disabled={submitDisabled}
-                className="px-4 py-2 rounded-lg bg-primary text-primary-foreground font-medium disabled:opacity-50 min-w-[140px]"
+                className="emis-btn-primary min-w-[140px] rounded-lg px-4 py-2 font-medium disabled:opacity-50"
               >
                 {submitting ? (editing ? 'Updating...' : 'Creating...') : editing ? 'Update Role' : 'Create Role'}
               </button>

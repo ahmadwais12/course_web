@@ -11,6 +11,7 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import DashboardSkeleton from '@/components/dashboards/DashboardSkeleton';
 
 export default function StudentDashboard() {
   const [data, setData] = useState<any>(null);
@@ -18,17 +19,21 @@ export default function StudentDashboard() {
 
   useEffect(() => {
     fetch('/api/dashboard/student')
-      .then(res => res.json())
-      .then(data => {
-        setData(data);
+      .then((res) => res.json())
+      .then((payload) => {
+        setData(payload);
+        setLoading(false);
+      })
+      .catch(() => {
+        setData(null);
         setLoading(false);
       });
   }, []);
 
-  if (loading) return <div className="p-8 text-center font-bold text-muted-foreground">Loading Student Dashboard...</div>;
+  if (loading) return <DashboardSkeleton />;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-fade-up">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {[
           { label: 'Enrolled Courses', value: data?.stats?.courses || '0', icon: BookOpen, gradient: 'bg-gradient-to-r from-blue-100 via-blue-300 to-blue-500' },
@@ -109,7 +114,7 @@ export default function StudentDashboard() {
               {data?.payments?.length > 0 ? data.payments.map((payment: any, i: number) => (
                 <div key={i} className={cn(
                   "p-4 rounded-2xl border",
-                  payment.status === 'Paid' ? "bg-green-50 border-green-100" : "bg-destructive/10 border-destructive/20"
+                  payment.status === 'Paid' ? "bg-emerald-500/10 border-emerald-500/20" : "bg-destructive/10 border-destructive/20"
                 )}>
                   <div className="flex items-center justify-between mb-2">
                     <span className={cn("text-xs font-black uppercase", payment.status === 'Paid' ? "text-green-600" : "text-destructive")}>

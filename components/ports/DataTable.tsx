@@ -57,15 +57,15 @@ export default function DataTable<T>({
       ) : (
         <>
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse whitespace-nowrap">
+            <table className="w-full border-collapse whitespace-nowrap text-start">
               <thead>
-                <tr>
+                <tr className="bg-muted">
                   {columns.map((col) => (
                     <th
                       key={col.key}
                       className={cn(
-                        'px-3 py-2 text-[11px] font-medium text-muted-foreground border-b border-border',
-                        col.align === 'right' && 'text-right',
+                        'border-b border-border px-4 py-2.5 text-start text-[11px] font-semibold uppercase tracking-wide text-muted-foreground',
+                        col.align === 'right' && 'text-end',
                         col.align === 'center' && 'text-center',
                         col.className
                       )}
@@ -77,13 +77,16 @@ export default function DataTable<T>({
               </thead>
               <tbody>
                 {rows.map((row, index) => (
-                  <tr key={rowKey(row, index)} className="hover:bg-muted/40">
+                  <tr
+                    key={rowKey(row, index)}
+                    className="border-b border-border transition-colors last:border-0 hover:bg-muted"
+                  >
                     {columns.map((col) => (
                       <td
                         key={col.key}
                         className={cn(
-                          'px-3 py-2.5 text-sm text-foreground border-b border-border',
-                          col.align === 'right' && 'text-right',
+                          'px-4 py-3 text-start text-sm text-foreground',
+                          col.align === 'right' && 'text-end',
                           col.align === 'center' && 'text-center',
                           col.className
                         )}

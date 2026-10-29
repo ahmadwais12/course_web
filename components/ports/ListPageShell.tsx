@@ -7,6 +7,7 @@ import SectionPanel from './SectionPanel';
 import DataTable, { type DataColumn } from './DataTable';
 import PortButton from './PortButton';
 import Dropdown, { type SelectOption } from './Dropdown';
+import DateFilterBar from '@/components/dashboards/DateFilterBar';
 
 export type ListFilter = {
   key: string;
@@ -38,6 +39,9 @@ type ListPageShellProps<T> = {
   onPageChange: (page: number) => void;
   onPerPageChange: (perPage: number) => void;
   children?: React.ReactNode;
+  dateFrom?: string;
+  dateTo?: string;
+  onDateRangeChange?: (next: { from: string; to: string }) => void;
 };
 
 /**
@@ -65,9 +69,12 @@ export default function ListPageShell<T>({
   onPageChange,
   onPerPageChange,
   children,
+  dateFrom,
+  dateTo,
+  onDateRangeChange,
 }: ListPageShellProps<T>) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 animate-fade-up">
       <PageHeader
         title={title}
         description={description}
@@ -84,12 +91,20 @@ export default function ListPageShell<T>({
 
       {children}
 
+      {onDateRangeChange && dateFrom && dateTo && (
+        <div className="rounded-2xl border border-border bg-card p-3 shadow-card sm:p-4">
+          <DateFilterBar from={dateFrom} to={dateTo} onChange={onDateRangeChange} />
+        </div>
+      )}
+
       <FilterSection
         search={search}
         onSearchChange={onSearchChange}
         searchPlaceholder={searchPlaceholder}
         onReset={onResetFilters}
-        activeCount={filters.filter((f) => Boolean(f.value)).length}
+        activeCount={
+          filters.filter((f) => Boolean(f.value)).length + (dateFrom || dateTo ? 1 : 0)
+        }
       >
         {filters.map((f) => (
           <Dropdown

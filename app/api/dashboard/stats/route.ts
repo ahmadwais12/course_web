@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { AFGHANISTAN_CITIES, resolveCity, type CityKey } from '@/lib/cities';
 
 function daysAgo(n: number) {
   const d = new Date();
@@ -30,16 +31,30 @@ export async function GET(request: Request) {
     const to = searchParams.get('to') || daysAgo(0);
     const statusFilter = searchParams.get('status') || '';
     const methodFilter = searchParams.get('method') || '';
+    const cityFilter = searchParams.get('city') || '';
+
+    const studentSelectWithCity =
+      'id, created_at, full_name, email, phone, status, city, province';
+    const studentSelectBase = 'id, created_at, full_name, email, phone, status';
+
+    let studentsRes = await supabase
+      .from('students')
+      .select(studentSelectWithCity, { count: 'exact' })
+      .limit(5000);
+    if (studentsRes.error && /column|does not exist|schema cache/i.test(studentsRes.error.message)) {
+      studentsRes = await supabase
+        .from('students')
+        .select(studentSelectBase, { count: 'exact' })
+        .limit(5000);
+    }
 
     const [
-      studentsRes,
       coursesRes,
       staffRes,
       paymentsRes,
       enrollmentsRes,
       recentStudentsRes,
     ] = await Promise.all([
-      supabase.from('students').select('id, created_at, full_name, email, phone, status', { count: 'exact' }).limit(5000),
       supabase.from('courses').select('id, name, code, status', { count: 'exact' }).limit(500),
       supabase.from('teachers').select('id', { count: 'exact', head: true }),
       supabase
@@ -61,13 +76,98 @@ export async function GET(request: Request) {
         .limit(20),
     ]);
 
-    let payments = paymentsRes.data ?? [];
+    type StudentRow = {
+      id: string;
+      created_at?: string;
+      full_name?: string | null;
+      email?: string | null;
+      phone?: string | null;
+      status?: string | null;
+      city?: string | null;
+      province?: string | null;
+    };
+    type PaymentRow = {
+      id: string;
+      amount?: number | null;
+      status?: string | null;
+      payment_method?: string | null;
+      payment_date?: string | null;
+      created_at?: string;
+      student_id?: string | null;
+      payment_number?: string | null;
+    };
+    type EnrollmentRow = {
+      id: string;
+      status?: string | null;
+      enrollment_date?: string | null;
+      created_at?: string;
+      student_id?: string | null;
+    };
+
+    const allStudents = (studentsRes.data ?? []) as StudentRow[];
+    const studentCity = new Map<string, CityKey>();
+    for (const student of allStudents) {
+      studentCity.set(student.id, resolveCity(student.id, student.city || student.province));
+    }
+
+    let students = allStudents;
+    if (cityFilter) students = students.filter((s) => studentCity.get(s.id) === cityFilter);
+
+    let payments = (paymentsRes.data ?? []) as PaymentRow[];
     if (statusFilter) payments = payments.filter((p) => p.status === statusFilter);
     if (methodFilter) payments = payments.filter((p) => p.payment_method === methodFilter);
+    if (cityFilter) {
+      payments = payments.filter((p) => !p.student_id || studentCity.get(p.student_id) === cityFilter);
+    }
 
-    const enrollments = enrollmentsRes.data ?? [];
-    const students = studentsRes.data ?? [];
+    let enrollments = (enrollmentsRes.data ?? []) as EnrollmentRow[];
+    if (cityFilter) {
+      enrollments = enrollments.filter(
+        (e) => !e.student_id || studentCity.get(e.student_id) === cityFilter
+      );
+    }
     const courses = coursesRes.data ?? [];
+
+    const locationMap = new Map<
+      CityKey,
+      { name: CityKey; students: number; enrollments: number; payments: number; revenue: number; pending: number; completed: number }
+    >();
+    for (const city of AFGHANISTAN_CITIES) {
+      locationMap.set(city.name, {
+        name: city.name,
+        students: 0,
+        enrollments: 0,
+        payments: 0,
+        revenue: 0,
+        pending: 0,
+        completed: 0,
+      });
+    }
+    for (const student of allStudents) {
+      const city = studentCity.get(student.id);
+      if (!city) continue;
+      const row = locationMap.get(city);
+      if (row) row.students += 1;
+    }
+    for (const enrollment of (enrollmentsRes.data ?? []) as EnrollmentRow[]) {
+      const city = enrollment.student_id ? studentCity.get(enrollment.student_id) : undefined;
+      if (!city) continue;
+      const row = locationMap.get(city);
+      if (row) row.enrollments += 1;
+    }
+    for (const payment of (paymentsRes.data ?? []) as PaymentRow[]) {
+      const city = payment.student_id ? studentCity.get(payment.student_id) : undefined;
+      if (!city) continue;
+      const row = locationMap.get(city);
+      if (!row) continue;
+      row.payments += 1;
+      if (payment.status === 'completed') {
+        row.completed += 1;
+        row.revenue += Number(payment.amount ?? 0);
+      }
+      if (payment.status === 'pending' || payment.status === 'failed') row.pending += 1;
+    }
+    const locations = [...locationMap.values()].sort((a, b) => b.students - a.students);
 
     const paymentStatuses = {
       completed: 0,
@@ -233,8 +333,9 @@ export async function GET(request: Request) {
         link: '/payments',
       }));
 
-    const inactiveStudents = (recentStudentsRes.data ?? [])
+    const inactiveStudents = ((recentStudentsRes.data ?? []) as StudentRow[])
       .filter((s) => s.status && s.status !== 'active')
+      .filter((s) => !cityFilter || studentCity.get(s.id) === cityFilter)
       .slice(0, 20)
       .map((s) => ({
         id: s.id,
@@ -247,7 +348,7 @@ export async function GET(request: Request) {
         last: String(s.created_at || '').slice(0, 10),
         days: Math.max(
           0,
-          Math.floor((Date.now() - new Date(s.created_at).getTime()) / (1000 * 60 * 60 * 24))
+          Math.floor((Date.now() - new Date(s.created_at || Date.now()).getTime()) / (1000 * 60 * 60 * 24))
         ),
         link: '/students',
       }));
@@ -259,8 +360,13 @@ export async function GET(request: Request) {
       ? Math.round((completedCount / payments.length) * 1000) / 10
       : 0;
 
+    const newStudents = students.filter((s) => {
+      const date = String(s.created_at || '').slice(0, 10);
+      return date >= from && date <= to;
+    }).length;
+
     return NextResponse.json({
-      students: studentsRes.count ?? students.length,
+      students: cityFilter ? students.length : studentsRes.count ?? students.length,
       courses: coursesRes.count ?? courses.length,
       staff: staffRes.count ?? 0,
       revenue,
@@ -289,13 +395,17 @@ export async function GET(request: Request) {
       channels,
       deals,
       vehicles,
-      locations: [],
+      locations,
+      city: cityFilter || null,
+      new_students: newStudents,
+      enrollments_total: enrollments.length,
       interactions: payments.length + enrollments.length,
       success_rate: successRate,
       period: { from, to, latest_date: to },
       filter_options: {
-        methods: [...new Set(payments.map((p) => p.payment_method).filter(Boolean))],
+        methods: [...new Set(((paymentsRes.data ?? []) as PaymentRow[]).map((p) => p.payment_method).filter(Boolean) as string[])],
         statuses: ['completed', 'pending', 'failed', 'refunded', 'voided'],
+        cities: AFGHANISTAN_CITIES.map((c) => c.name),
       },
       errors: {
         students: studentsRes.error?.message ?? null,

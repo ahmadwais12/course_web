@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Filter, RotateCcw, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import PortButton from './PortButton';
@@ -51,7 +52,7 @@ export default function FilterSection({
     <>
       <section
         className={cn(
-          'rounded-[11px] border border-border bg-card p-3 sm:p-4',
+          'rounded-2xl border border-border bg-card p-3 shadow-card sm:p-4',
           className
         )}
         aria-label="Search and filters"
@@ -76,7 +77,7 @@ export default function FilterSection({
                 <Filter size={16} />
                 Filters
                 {activeCount > 0 && (
-                  <span className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 rounded-full bg-primary text-primary-foreground text-[11px] font-bold">
+                  <span className="emis-btn-primary inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1 text-[11px] font-bold">
                     {activeCount}
                   </span>
                 )}
@@ -87,17 +88,25 @@ export default function FilterSection({
         </div>
       </section>
 
+      <AnimatePresence>
       {open && (
-        <div
+        <motion.div
           className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
           role="dialog"
           aria-modal="true"
           aria-labelledby="filters-dialog-title"
           onClick={() => setOpen(false)}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
         >
-          <div
-            className="emis-dialog bg-popover text-popover-foreground w-full max-w-lg rounded-xl border border-border shadow-xl overflow-hidden"
+          <motion.div
+            className="emis-dialog w-full max-w-lg overflow-hidden rounded-2xl border border-border bg-popover text-popover-foreground shadow-float"
             onClick={(e) => e.stopPropagation()}
+            initial={{ opacity: 0, y: 16, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.98 }}
+            transition={{ duration: 0.22 }}
           >
             <div className="flex items-center justify-between px-5 py-4 border-b border-border">
               <h3 id="filters-dialog-title" className="text-lg font-semibold flex items-center gap-2">
@@ -118,7 +127,7 @@ export default function FilterSection({
               {children}
             </div>
 
-            <div className="flex flex-wrap justify-end gap-2 px-5 py-4 border-t border-border bg-muted/30">
+            <div className="flex flex-wrap justify-end gap-2 border-t border-border bg-muted px-5 py-4">
               {onReset && (
                 <PortButton
                   variant="secondary"
@@ -135,9 +144,10 @@ export default function FilterSection({
                 Apply
               </PortButton>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
+      </AnimatePresence>
     </>
   );
 }

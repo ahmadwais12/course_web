@@ -54,6 +54,16 @@ export const PRIVATE_APP_PAGES = [
     description: 'Manage student exam scores, percentages, and letter grades.',
   },
   {
+    path: '/messaging',
+    title: 'Messaging',
+    description: 'Direct messages and group conversations across DreamFlow.',
+  },
+  {
+    path: '/messaging/new',
+    title: 'New Conversation',
+    description: 'Start a direct message or create a group chat.',
+  },
+  {
     path: '/observers',
     title: 'Website Analytics',
     description: 'First-party website traffic, devices, sources, and realtime visitors.',
@@ -73,6 +83,11 @@ export const PRIVATE_APP_PAGES = [
     path: '/settings',
     title: 'Settings',
     description: 'Configure institute preferences, profile, and application settings.',
+  },
+  {
+    path: '/support',
+    title: 'Support Overview',
+    description: 'Call center, support tickets, inbox messages, and social channels at a glance.',
   },
   {
     path: '/users',

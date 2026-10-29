@@ -1,13 +1,10 @@
 'use client';
 
 import React from 'react';
-import ThemeToggle from '@/components/ThemeToggle';
+import { ThemeModeSwitch } from '@/components/ThemeToggle';
 import { useTheme } from '@/context/ThemeContext';
-import {
-  PageHeader,
-  SectionPanel,
-  PortButton,
-} from '@/components/ports';
+import { PageHeader, SectionPanel } from '@/components/ports';
+import { FadeIn } from '@/components/ui/Motion';
 import {
   User,
   Bell,
@@ -18,7 +15,9 @@ import {
   ChevronRight,
   Moon,
   Sun,
+  Monitor,
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const settingsSections = [
   { id: 'profile', title: 'Profile Settings', desc: 'Manage your personal information and avatar.', icon: User },
@@ -30,58 +29,72 @@ const settingsSections = [
 ];
 
 export default function SettingsPage() {
-  const { theme, setTheme } = useTheme();
+  const { theme, resolvedTheme, setTheme } = useTheme();
 
   return (
-      <div className="max-w-4xl mx-auto space-y-6">
-        <PageHeader
-          title="System Settings"
-          description="Configure your EMIS platform preferences and security."
-        />
+    <div className="mx-auto max-w-4xl space-y-6">
+      <PageHeader
+        title="System Settings"
+        description="Configure your EMIS platform preferences, appearance, and security."
+      />
 
-        <SectionPanel title="Appearance" description="Light / dark theme">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
+      <FadeIn>
+        <SectionPanel title="Appearance" description="Choose light, dark, or follow the system theme.">
+          <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
-              {theme === 'dark' ? <Moon size={18} /> : <Sun size={18} />}
-              Current: <strong className="text-foreground capitalize">{theme}</strong>
+              {theme === 'system' ? <Monitor size={18} /> : resolvedTheme === 'dark' ? <Moon size={18} /> : <Sun size={18} />}
+              Current: <strong className="capitalize text-foreground">{theme}</strong>
+              {theme === 'system' && (
+                <span className="text-xs">({resolvedTheme})</span>
+              )}
             </div>
-            <div className="flex items-center gap-2">
-              <PortButton
-                variant={theme === 'light' ? 'primary' : 'secondary'}
-                onClick={() => setTheme('light')}
+            <ThemeModeSwitch />
+          </div>
+          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {[
+              { id: 'light' as const, title: 'Light', preview: 'bg-[#f5f7fb]', card: 'bg-white' },
+              { id: 'dark' as const, title: 'Dark', preview: 'bg-[#070b12]', card: 'bg-[#0c1220]' },
+              { id: 'system' as const, title: 'System', preview: 'bg-gradient-to-br from-[#f5f7fb] to-[#070b12]', card: 'bg-muted' },
+            ].map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => setTheme(option.id)}
+                className={cn(
+                  'overflow-hidden rounded-2xl border p-2 text-left transition-all duration-200 hover:-translate-y-0.5',
+                  theme === option.id
+                    ? 'border-primary ring-2 ring-primary/25 shadow-sm'
+                    : 'border-border hover:border-primary/40'
+                )}
               >
-                Light
-              </PortButton>
-              <PortButton
-                variant={theme === 'dark' ? 'primary' : 'secondary'}
-                onClick={() => setTheme('dark')}
-              >
-                Dark
-              </PortButton>
-              <ThemeToggle />
-            </div>
+                <div className={cn('mb-2 h-16 rounded-xl border border-border', option.preview)}>
+                  <div className={cn('ml-3 mt-3 h-8 w-16 rounded-lg border border-border/60', option.card)} />
+                </div>
+                <p className="px-1 pb-1 text-sm font-semibold text-foreground">{option.title}</p>
+              </button>
+            ))}
           </div>
         </SectionPanel>
+      </FadeIn>
 
-        <div className="grid gap-3">
-          {settingsSections.map((section) => (
-            <SectionPanel key={section.id} bodyClassName="py-3">
-              <button
-                type="button"
-                className="w-full flex items-center gap-4 text-left"
-              >
-                <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground">
+      <div className="grid gap-3">
+        {settingsSections.map((section, index) => (
+          <FadeIn key={section.id} delay={index * 0.04}>
+            <SectionPanel bodyClassName="py-3">
+              <button type="button" className="flex w-full items-center gap-4 text-left">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-muted-foreground">
                   <section.icon size={20} />
                 </div>
-                <div className="flex-1 min-w-0">
+                <div className="min-w-0 flex-1">
                   <p className="font-semibold text-foreground">{section.title}</p>
                   <p className="text-sm text-muted-foreground">{section.desc}</p>
                 </div>
                 <ChevronRight size={18} className="text-muted-foreground" />
               </button>
             </SectionPanel>
-          ))}
-        </div>
+          </FadeIn>
+        ))}
       </div>
+    </div>
   );
 }

@@ -10,6 +10,18 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ["var(--font-geist-sans)", "Segoe UI", "system-ui", "sans-serif"],
+        mono: ["var(--font-geist-mono)", "ui-monospace", "monospace"],
+      },
+      boxShadow: {
+        soft: "0 1px 2px rgba(15, 23, 42, 0.04), 0 12px 32px -18px rgba(15, 23, 42, 0.22)",
+        card: "0 1px 2px rgba(15, 23, 42, 0.05), 0 8px 24px -16px rgba(15, 23, 42, 0.2)",
+        float: "0 24px 60px -24px rgba(15, 23, 42, 0.4)",
+      },
+      borderRadius: {
+        "4xl": "1.5rem",
+      },
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",

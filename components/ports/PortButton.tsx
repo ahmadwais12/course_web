@@ -6,17 +6,18 @@ import { cn } from '@/lib/utils';
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
 const variants: Record<Variant, string> = {
-  primary: 'bg-[#88b6ff] text-[#142033] hover:opacity-90',
-  secondary: 'bg-muted text-foreground hover:bg-muted/80 border border-border',
-  ghost: 'bg-transparent text-muted-foreground hover:text-foreground hover:bg-muted',
-  danger: 'bg-destructive text-destructive-foreground hover:opacity-90',
+  primary: 'emis-btn-primary shadow-sm hover:shadow-md active:translate-y-px',
+  secondary:
+    'border border-border bg-card text-foreground shadow-sm hover:bg-accent hover:text-accent-foreground hover:border-primary/30 active:translate-y-px',
+  ghost: 'bg-transparent text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+  danger: 'bg-destructive text-destructive-foreground shadow-sm hover:opacity-90 active:translate-y-px',
 };
 
 type PortButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: Variant;
 };
 
-/** Shared action button (KMS filter/action height) */
+/** Shared action button */
 export default function PortButton({
   variant = 'secondary',
   className,
@@ -28,7 +29,9 @@ export default function PortButton({
     <button
       type={type}
       className={cn(
-        'h-10 px-4 rounded-[7px] text-sm font-semibold whitespace-nowrap transition-opacity disabled:opacity-50',
+        'inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-xl px-4 text-sm font-semibold transition-all duration-200',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+        'disabled:pointer-events-none disabled:opacity-50',
         variants[variant],
         className
       )}

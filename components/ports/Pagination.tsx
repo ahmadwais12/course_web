@@ -16,6 +16,9 @@ type PaginationProps = {
   label?: string;
 };
 
+const navButton =
+  'inline-flex h-8 min-w-8 items-center justify-center rounded-lg border border-border bg-card px-2 text-sm text-foreground shadow-sm transition-colors hover:bg-muted disabled:opacity-45';
+
 /** KMS-style “Rows per fetch” + page buttons */
 export default function Pagination({
   page,
@@ -50,22 +53,22 @@ export default function Pagination({
   return (
     <div
       className={cn(
-        'flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-border',
+        'flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3',
         className
       )}
     >
-      <small className="text-[10px] text-muted-foreground">
+      <small className="text-[11px] text-muted-foreground">
         Showing {from}–{to} of {total}
       </small>
 
-      <div className="flex items-center gap-2.5 flex-wrap">
+      <div className="flex flex-wrap items-center gap-2.5">
         <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
           {label}
           <select
             value={perPage}
             disabled={disabled}
             onChange={(e) => onPerPageChange(Number(e.target.value))}
-            className="h-8 px-2 rounded-[7px] bg-muted border border-border text-foreground text-sm cursor-pointer disabled:opacity-50"
+            className="h-8 cursor-pointer rounded-lg border border-border bg-card px-2 text-sm text-foreground shadow-sm disabled:opacity-50"
           >
             {PER_PAGE_OPTIONS.map((size) => (
               <option key={size} value={size}>
@@ -80,13 +83,13 @@ export default function Pagination({
             type="button"
             disabled={disabled || page <= 1}
             onClick={() => onPageChange(page - 1)}
-            className="min-w-8 h-8 px-2 rounded-[7px] bg-muted border border-border text-foreground text-sm disabled:opacity-45"
+            className={navButton}
           >
             ‹ Prev
           </button>
           {pages.map((p, i) =>
             p === '…' ? (
-              <span key={`e-${i}`} className="px-1 text-muted-foreground text-sm">
+              <span key={`e-${i}`} className="px-1 text-sm text-muted-foreground">
                 …
               </span>
             ) : (
@@ -96,10 +99,10 @@ export default function Pagination({
                 disabled={disabled}
                 onClick={() => onPageChange(p)}
                 className={cn(
-                  'min-w-8 h-8 px-2 rounded-[7px] border text-sm',
+                  'inline-flex h-8 min-w-8 items-center justify-center rounded-lg border px-2 text-sm transition-colors',
                   p === page
-                    ? 'bg-[#88b6ff] text-[#142033] border-[#88b6ff] font-bold'
-                    : 'bg-muted border-border text-foreground hover:bg-muted/80'
+                    ? 'emis-btn-primary border-transparent font-bold shadow-sm'
+                    : 'border-border bg-card text-foreground shadow-sm hover:bg-muted'
                 )}
               >
                 {p}
@@ -110,7 +113,7 @@ export default function Pagination({
             type="button"
             disabled={disabled || page >= lastPage}
             onClick={() => onPageChange(page + 1)}
-            className="min-w-8 h-8 px-2 rounded-[7px] bg-muted border border-border text-foreground text-sm disabled:opacity-45"
+            className={navButton}
           >
             Next ›
           </button>

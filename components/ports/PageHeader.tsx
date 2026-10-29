@@ -12,6 +12,12 @@ type PageHeaderProps = {
   className?: string;
 };
 
+const pillTones = {
+  live: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300',
+  offline: 'border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300',
+  neutral: 'border-border bg-muted text-muted-foreground',
+};
+
 /** Standard page title row with optional live pill + actions */
 export default function PageHeader({
   title,
@@ -24,33 +30,36 @@ export default function PageHeader({
   return (
     <header
       className={cn(
-        'flex flex-wrap items-start justify-between gap-3 mb-4',
+        'mb-5 flex flex-wrap items-start justify-between gap-4 animate-fade-up',
         className
       )}
     >
-      <div>
-        <h1 className="text-[27px] font-bold tracking-tight text-foreground leading-tight m-0 mb-1">
-          {title}
+      <div className="min-w-0">
+        <h1 className="m-0 text-[27px] font-bold leading-tight tracking-tight text-foreground sm:text-[30px]">
+          <span className="emis-text-brand">{title}</span>
         </h1>
         {description && (
-          <p className="text-sm text-muted-foreground m-0">{description}</p>
+          <p className="m-0 mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+            {description}
+          </p>
         )}
       </div>
-      <div className="flex items-center gap-2 flex-wrap">
-        {pill && (
-          <span
-            className={cn(
-              'text-[11px] font-bold tracking-wide rounded-full px-6 py-1.5 whitespace-nowrap',
-              pillTone === 'live' && 'bg-emerald-900/40 text-emerald-300 dark:bg-[#183b32] dark:text-[#79d6b0] bg-emerald-100 text-emerald-800',
-              pillTone === 'offline' && 'bg-red-100 text-red-700 dark:bg-[#49302e] dark:text-[#ffaaa4]',
-              pillTone === 'neutral' && 'bg-muted text-muted-foreground'
-            )}
-          >
-            {pill}
-          </span>
-        )}
-        {actions}
-      </div>
+
+      {(pill || actions) && (
+        <div className="flex flex-wrap items-center gap-2">
+          {pill && (
+            <span
+              className={cn(
+                'inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1 text-[11px] font-bold uppercase tracking-wide',
+                pillTones[pillTone]
+              )}
+            >
+              {pill}
+            </span>
+          )}
+          {actions}
+        </div>
+      )}
     </header>
   );
 }

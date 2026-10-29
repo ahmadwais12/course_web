@@ -486,7 +486,7 @@ export default function UserManagementPage() {
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           minLength={8}
-                          className="w-full h-10 px-3 pr-10 rounded-[7px] text-sm bg-muted border border-border outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                          className="w-full h-10 px-3 pr-10 rounded-[7px] text-sm bg-card border border-border outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                         />
                         <button
                           type="button"
@@ -506,7 +506,7 @@ export default function UserManagementPage() {
                           value={passwordConfirm}
                           onChange={(e) => setPasswordConfirm(e.target.value)}
                           minLength={8}
-                          className="w-full h-10 px-3 pr-10 rounded-[7px] text-sm bg-muted border border-border outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                          className="w-full h-10 px-3 pr-10 rounded-[7px] text-sm bg-card border border-border outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                         />
                         <button
                           type="button"
@@ -588,7 +588,7 @@ export default function UserManagementPage() {
                     onChange={(e) => setNewPassword(e.target.value)}
                     minLength={6}
                     placeholder="Enter new password"
-                    className="w-full px-3 py-2.5 pr-10 rounded-lg bg-muted border border-border outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm"
+                    className="w-full px-3 py-2.5 pr-10 rounded-lg bg-card border border-border outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm"
                   />
                   <button
                     type="button"
@@ -623,7 +623,7 @@ export default function UserManagementPage() {
                 <button
                   type="submit"
                   disabled={changingPassword || !newPassword.trim()}
-                  className="px-4 py-2 rounded-lg bg-primary text-primary-foreground font-medium disabled:opacity-50"
+                  className="emis-btn-primary rounded-lg px-4 py-2 font-medium disabled:opacity-50"
                 >
                   {changingPassword ? 'Updating...' : 'Update Password'}
                 </button>
@@ -677,7 +677,7 @@ export default function UserManagementPage() {
               <button
                 type="button"
                 onClick={() => setShowView(false)}
-                className="px-4 py-2 rounded-lg bg-primary text-primary-foreground"
+                className="emis-btn-primary rounded-lg px-4 py-2"
               >
                 Close
               </button>

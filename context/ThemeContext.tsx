@@ -2,47 +2,70 @@
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 
-export type ThemeMode = 'light' | 'dark';
+export type ThemeMode = 'light' | 'dark' | 'system';
+export type ResolvedTheme = 'light' | 'dark';
 
 type ThemeContextType = {
   theme: ThemeMode;
+  resolvedTheme: ResolvedTheme;
   setTheme: (theme: ThemeMode) => void;
   toggleTheme: () => void;
 };
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-function applyThemeClass(theme: ThemeMode) {
+function systemTheme(): ResolvedTheme {
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+function resolveTheme(theme: ThemeMode): ResolvedTheme {
+  return theme === 'system' ? systemTheme() : theme;
+}
+
+function applyThemeClass(theme: ResolvedTheme) {
   const root = document.documentElement;
   root.classList.toggle('dark', theme === 'dark');
   root.style.colorScheme = theme;
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<ThemeMode>('light');
+  const [theme, setThemeState] = useState<ThemeMode>('system');
+  const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>('light');
 
   useEffect(() => {
     const saved = localStorage.getItem('emis-theme') as ThemeMode | null;
-    const preferred =
-      saved === 'light' || saved === 'dark'
-        ? saved
-        : window.matchMedia('(prefers-color-scheme: dark)').matches
-          ? 'dark'
-          : 'light';
+    const preferred: ThemeMode =
+      saved === 'light' || saved === 'dark' || saved === 'system' ? saved : 'system';
     setThemeState(preferred);
-    applyThemeClass(preferred);
+    const resolved = resolveTheme(preferred);
+    setResolvedTheme(resolved);
+    applyThemeClass(resolved);
   }, []);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const onChange = () => {
+      if (theme !== 'system') return;
+      const resolved = systemTheme();
+      setResolvedTheme(resolved);
+      applyThemeClass(resolved);
+    };
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, [theme]);
 
   const setTheme = (next: ThemeMode) => {
     setThemeState(next);
     localStorage.setItem('emis-theme', next);
-    applyThemeClass(next);
+    const resolved = resolveTheme(next);
+    setResolvedTheme(resolved);
+    applyThemeClass(resolved);
   };
 
-  const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
+  const toggleTheme = () => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, resolvedTheme, setTheme, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );

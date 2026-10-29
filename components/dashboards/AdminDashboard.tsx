@@ -3,6 +3,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useTheme } from '@/context/ThemeContext';
+import CityMap, { type CityStats } from '@/components/dashboards/CityMap';
+import { daysAgo, detectPreset, presetRange, type DatePreset } from '@/components/dashboards/DateFilterBar';
 import '@/app/dashboard-kms.css';
 
 type TrendPoint = {
@@ -55,10 +57,11 @@ type DashboardData = {
   channels?: ChannelRow[];
   deals?: DealRow[];
   vehicles?: { name: string; total: number }[];
+  locations?: CityStats[];
   interactions?: number;
   success_rate?: number;
   period?: { from: string; to: string };
-  filter_options?: { methods: string[]; statuses: string[] };
+  filter_options?: { methods: string[]; statuses: string[]; cities?: string[] };
   error?: string;
 };
 
@@ -71,16 +74,17 @@ const METRIC_STATUSES = [
 ] as const;
 
 const TREND_SERIES = [
-  { name: 'enrollments', label: 'Enrollments', hex: '#82b0f5' },
-  { name: 'payments', label: 'Payments', hex: '#6bcbaa' },
-  { name: 'students', label: 'New students', hex: '#f0ce72' },
+  { name: 'enrollments', label: 'Enrollments', hex: '#2563eb' },
+  { name: 'payments', label: 'Payments', hex: '#38bdf8' },
+  { name: 'students', label: 'New students', hex: '#4f46e5' },
 ] as const;
 
-function daysAgo(n: number) {
-  const d = new Date();
-  d.setDate(d.getDate() - n);
-  return d.toISOString().slice(0, 10);
-}
+const DATE_PRESETS: { id: DatePreset; label: string }[] = [
+  { id: 'today', label: 'Today' },
+  { id: '7d', label: '7 days' },
+  { id: '30d', label: '30 days' },
+  { id: '90d', label: '90 days' },
+];
 
 function statusChipClass(status: string) {
   if (status === 'pending') return 'status-chip gold-chip';
@@ -89,12 +93,13 @@ function statusChipClass(status: string) {
 }
 
 export default function AdminDashboard({ stats }: { stats: DashboardData | null }) {
-  const { theme } = useTheme();
+  const { resolvedTheme } = useTheme();
   const [filters, setFilters] = useState({
     from: daysAgo(29),
     to: daysAgo(0),
     method: '',
     status: '',
+    city: '',
   });
   const [data, setData] = useState<DashboardData | null>(stats);
   const [loading, setLoading] = useState(!stats);
@@ -110,6 +115,7 @@ export default function AdminDashboard({ stats }: { stats: DashboardData | null 
         to: filters.to,
         ...(filters.method ? { method: filters.method } : {}),
         ...(filters.status ? { status: filters.status } : {}),
+        ...(filters.city ? { city: filters.city } : {}),
       });
       const res = await fetch(`/api/dashboard/stats?${params}`);
       const json = await res.json();
@@ -138,6 +144,8 @@ export default function AdminDashboard({ stats }: { stats: DashboardData | null 
   const deals = dash.deals || [];
   const vehicles = dash.vehicles || [];
   const attention = dash.attention || [];
+  const locations = dash.locations || [];
+  const activePreset = detectPreset(filters.from, filters.to);
 
   const enrollmentsDeal = deals.find((d) => d.name === 'Enrollments');
   const paymentsDeal = deals.find((d) => d.name === 'Payments');
@@ -178,12 +186,19 @@ export default function AdminDashboard({ stats }: { stats: DashboardData | null 
     timeStyle: 'short',
   });
 
+  const cityOptions = dash.filter_options?.cities?.length
+    ? dash.filter_options.cities
+    : locations.map((row) => row.name);
+
   return (
-    <main className={`emis-inquiry-dashboard ${theme === 'dark' ? 'theme-dark' : 'theme-light'}`}>
+    <main className={`emis-inquiry-dashboard ${resolvedTheme === 'dark' ? 'theme-dark' : 'theme-light'}`}>
       <header className="dash-heading">
         <div>
           <h1>Overall Dashboard</h1>
-          <p>Institute activity, enrollments, payments and follow-up</p>
+          <p>
+            Institute activity, enrollments, payments and follow-up
+            {filters.city ? ` · ${filters.city}` : ''}
+          </p>
         </div>
         <span className={`data-source-pill ${loadError ? 'offline-pill' : ''}`}>
           {loadError ? 'API UNAVAILABLE' : loading ? 'LOADING API DATA' : 'LIVE API DATA'}
@@ -201,6 +216,19 @@ export default function AdminDashboard({ stats }: { stats: DashboardData | null 
             </div>
           )}
 
+          <div className="dash-presets" role="group" aria-label="Date range">
+            {DATE_PRESETS.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className={`dash-preset${activePreset === item.id ? ' is-active' : ''}`}
+                onClick={() => setFilters((f) => ({ ...f, ...presetRange(item.id) }))}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+
           <section className="filters" aria-label="Dashboard filters">
             <label>
               From
@@ -217,6 +245,20 @@ export default function AdminDashboard({ stats }: { stats: DashboardData | null 
                 value={filters.to}
                 onChange={(e) => setFilters((f) => ({ ...f, to: e.target.value }))}
               />
+            </label>
+            <label>
+              City
+              <select
+                value={filters.city}
+                onChange={(e) => setFilters((f) => ({ ...f, city: e.target.value }))}
+              >
+                <option value="">All cities</option>
+                {cityOptions.map((city) => (
+                  <option key={city} value={city}>
+                    {city}
+                  </option>
+                ))}
+              </select>
             </label>
             <label>
               Payment method
@@ -249,7 +291,9 @@ export default function AdminDashboard({ stats }: { stats: DashboardData | null 
             <button
               type="button"
               className="button secondary"
-              onClick={() => setFilters((f) => ({ ...f, from: daysAgo(29), to: daysAgo(0), method: '', status: '' }))}
+              onClick={() =>
+                setFilters({ from: daysAgo(29), to: daysAgo(0), method: '', status: '', city: '' })
+              }
             >
               All dates
             </button>
@@ -265,7 +309,7 @@ export default function AdminDashboard({ stats }: { stats: DashboardData | null 
             <article className="panel stat">
               <small>Total students</small>
               <strong>{dash.students ?? 0}</strong>
-              <span>Selected period</span>
+              <span>{filters.city || 'Selected period'}</span>
             </article>
             <article className="panel stat">
               <small>Courses</small>
@@ -394,6 +438,12 @@ export default function AdminDashboard({ stats }: { stats: DashboardData | null 
             </article>
           </section>
 
+          <CityMap
+            locations={locations}
+            selected={filters.city}
+            onSelect={(city) => setFilters((f) => ({ ...f, city }))}
+          />
+
           <section className="mid-grid lower-grid">
             <article className="panel channel-card">
               <h2>Status by payment method</h2>
@@ -403,7 +453,7 @@ export default function AdminDashboard({ stats }: { stats: DashboardData | null 
                   <div key={c.name} className="channel-row">
                     <span className="channel-name">{c.name}</span>
                     <div className="stack">
-                      {c.values.map((v, i) => (
+                      {(Array.isArray(c.values) ? c.values : []).map((v, i) => (
                         <i
                           key={i}
                           className={`seg ${['green-bg', 'gold-bg', 'purple-bg', 'gray-bg', 'blue-bg'][i]}`}
@@ -496,7 +546,7 @@ export default function AdminDashboard({ stats }: { stats: DashboardData | null 
                         <td>
                           <b>{r.total}</b>
                         </td>
-                        {r.values.map((v, i) => (
+                        {(Array.isArray(r.values) ? r.values : []).map((v, i) => (
                           <td key={`${r.name}-${i}`}>{v}</td>
                         ))}
                         <td className="align-right">{r.rate}%</td>
@@ -508,7 +558,7 @@ export default function AdminDashboard({ stats }: { stats: DashboardData | null 
                             <td>
                               <b>{category.total}</b>
                             </td>
-                            {category.values.map((v, i) => (
+                            {(Array.isArray(category.values) ? category.values : []).map((v, i) => (
                               <td key={`${r.name}-${category.key}-${i}`}>{v}</td>
                             ))}
                             <td className="align-right">{category.rate}%</td>
@@ -574,7 +624,7 @@ export default function AdminDashboard({ stats }: { stats: DashboardData | null 
           </section>
 
           <footer className="dash-footer">
-            <span>Figures reflect saved EMIS institute records.</span>
+            <span>Figures reflect saved EMIS institute records{filters.city ? ` for ${filters.city}` : ''}.</span>
             <span>Snapshot: {snapshot} Kabul time</span>
           </footer>
         </>

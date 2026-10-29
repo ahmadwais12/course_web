@@ -75,7 +75,7 @@ export default function SearchableSelect({
         onClick={() => setOpen((v) => !v)}
         className={cn(
           'emis-select flex w-full items-center gap-2 rounded-lg border px-3 py-2.5 text-sm text-left transition-colors',
-          'bg-muted text-foreground border-border',
+          'bg-card text-foreground border-border',
           'hover:border-primary/60',
           open && 'border-primary ring-1 ring-primary',
           invalid && 'border-destructive ring-1 ring-destructive',
@@ -120,7 +120,7 @@ export default function SearchableSelect({
         <div className="emis-select-overlay absolute z-50 mt-1 w-full rounded-lg border border-border bg-popover text-popover-foreground shadow-lg overflow-hidden">
           {filter && (
             <div className="p-2 border-b border-border">
-              <div className="flex items-center gap-2 rounded-md bg-muted border border-border px-2.5 py-1.5">
+              <div className="flex items-center gap-2 rounded-md border border-border bg-card px-2.5 py-1.5">
                 <Search size={14} className="text-muted-foreground shrink-0" />
                 <input
                   ref={inputRef}
@@ -145,7 +145,7 @@ export default function SearchableSelect({
                     className={cn(
                       'emis-select-option flex w-full items-center gap-2 px-3 py-2 text-sm text-left transition-colors',
                       isSelected
-                        ? 'bg-primary text-primary-foreground'
+                        ? 'emis-btn-primary'
                         : 'text-foreground hover:bg-muted'
                     )}
                     onClick={() => {

@@ -6,6 +6,7 @@ import { Activity, Globe, Monitor, Smartphone, Tablet } from 'lucide-react';
 import { StatCard } from '@/components/ports';
 import { toast } from '@/components/ui/Toast';
 import { cn } from '@/lib/utils';
+import DashboardSkeleton from '@/components/dashboards/DashboardSkeleton';
 
 type Overview = {
   definitions?: Record<string, string>;
@@ -205,7 +206,7 @@ export default function ObserversAnalyticsPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-up">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Observers — Website & App Analytics</h1>
@@ -242,7 +243,7 @@ export default function ObserversAnalyticsPage() {
             className={cn(
               'px-3 py-1.5 rounded-lg text-sm border',
               range === r.id
-                ? 'bg-primary text-primary-foreground border-primary'
+                ? 'emis-btn-primary border-transparent'
                 : 'border-border hover:bg-muted'
             )}
           >
@@ -266,7 +267,7 @@ export default function ObserversAnalyticsPage() {
       )}
 
       {loading && !overview ? (
-        <div className="text-sm text-muted-foreground py-16 text-center">Loading analytics…</div>
+        <DashboardSkeleton />
       ) : overview ? (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">

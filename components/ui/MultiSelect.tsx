@@ -83,7 +83,7 @@ export default function MultiSelect({
         onClick={() => setOpen((v) => !v)}
         className={cn(
           'emis-multiselect flex w-full min-h-10 items-center gap-2 rounded-lg border px-3 py-2 text-sm text-left transition-colors',
-          'bg-muted text-foreground border-border',
+          'bg-card text-foreground border-border',
           'hover:border-primary/60',
           open && 'border-primary ring-1 ring-primary',
           invalid && 'border-destructive ring-1 ring-destructive',
@@ -150,7 +150,7 @@ export default function MultiSelect({
         <div className="emis-multiselect-overlay absolute z-50 mt-1 w-full rounded-lg border border-border bg-popover text-popover-foreground shadow-lg overflow-hidden">
           {filter && (
             <div className="p-2 border-b border-border">
-              <div className="flex items-center gap-2 rounded-md bg-muted border border-border px-2.5 py-1.5">
+              <div className="flex items-center gap-2 rounded-md border border-border bg-card px-2.5 py-1.5">
                 <Search size={14} className="text-muted-foreground shrink-0" />
                 <input
                   ref={inputRef}

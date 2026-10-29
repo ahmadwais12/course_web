@@ -1,4 +1,4 @@
-/* KMS call-center Overall Dashboard visual language (EMIS) */
+/* Overall Dashboard visual language */
 .emis-inquiry-dashboard {
   --bg: #111720;
   --panel: #1b2633;
@@ -104,9 +104,34 @@
   border-color: #fecaca;
 }
 
+.emis-inquiry-dashboard .dash-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.emis-inquiry-dashboard .dash-preset {
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--muted);
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.emis-inquiry-dashboard .dash-preset.is-active {
+  background: linear-gradient(135deg, #38bdf8, #2563eb 55%, #4f46e5);
+  color: #fff;
+  border-color: transparent;
+}
+
 .emis-inquiry-dashboard .filters {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr)) auto auto auto;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) auto auto auto;
   gap: 12px;
   align-items: end;
   margin-bottom: 17px;
@@ -124,17 +149,17 @@
   height: 40px;
   margin-top: 4px;
   padding: 0 12px;
-  background: #1a2430;
+  background: var(--panel);
   color: var(--text);
-  border: 1px solid #2b3746;
+  border: 1px solid var(--border);
   border-radius: 7px;
   font: inherit;
+  color-scheme: light;
 }
 
-.emis-inquiry-dashboard.theme-light .filters select,
-.emis-inquiry-dashboard.theme-light .filters input {
-  background: #fff;
-  border-color: #cbd5e1;
+.emis-inquiry-dashboard.theme-dark .filters select,
+.emis-inquiry-dashboard.theme-dark .filters input {
+  color-scheme: dark;
 }
 
 .emis-inquiry-dashboard .button {
@@ -159,8 +184,8 @@
 }
 
 .emis-inquiry-dashboard .button.primary {
-  background: #88b6ff;
-  color: #142033;
+  background: linear-gradient(135deg, #38bdf8, #2563eb 50%, #4f46e5);
+  color: #fff;
 }
 
 .emis-inquiry-dashboard .panel {
@@ -204,11 +229,16 @@
   margin-top: auto;
 }
 
-.emis-inquiry-dashboard .blue { color: #89b6ff !important; }
-.emis-inquiry-dashboard .gold { color: #f0c967 !important; }
-.emis-inquiry-dashboard .purple { color: #c8a5fa !important; }
+.emis-inquiry-dashboard .blue { color: #7dd3fc !important; }
+.emis-inquiry-dashboard .gold { color: #38bdf8 !important; }
+.emis-inquiry-dashboard .purple { color: #a5b4fc !important; }
 .emis-inquiry-dashboard .green { color: #66d4b0 !important; }
 .emis-inquiry-dashboard .gray { color: #9ca9bb !important; }
+
+.emis-inquiry-dashboard.theme-light .blue { color: #2563eb !important; }
+.emis-inquiry-dashboard.theme-light .gold { color: #0284c7 !important; }
+.emis-inquiry-dashboard.theme-light .purple { color: #4f46e5 !important; }
+.emis-inquiry-dashboard.theme-light .green { color: #0f766e !important; }
 
 .emis-inquiry-dashboard .mid-grid {
   display: grid;
@@ -260,11 +290,11 @@
 .emis-inquiry-dashboard .trend-total strong {
   font-size: 21px;
   line-height: 1.1;
-  color: #9bc0ff;
+  color: #7dd3fc;
 }
 
 .emis-inquiry-dashboard.theme-light .trend-total strong {
-  color: #3975cb;
+  color: #2563eb;
 }
 
 .emis-inquiry-dashboard .trend-chart-wrap {
@@ -344,13 +374,13 @@
 }
 
 .emis-inquiry-dashboard .deal-bar i {
-  background: #88b6ff;
+  background: #2563eb;
   display: block;
   height: 100%;
 }
 
 .emis-inquiry-dashboard .deal-bar b {
-  background: #c8a5fa;
+  background: #38bdf8;
   display: block;
   height: 100%;
   font-weight: inherit;
@@ -436,9 +466,9 @@
   display: block;
 }
 
-.emis-inquiry-dashboard .gold-bg { background: #f0ce72; }
-.emis-inquiry-dashboard .purple-bg { background: #c6a2ed; }
-.emis-inquiry-dashboard .blue-bg { background: #82b0f5; }
+.emis-inquiry-dashboard .gold-bg { background: #38bdf8; }
+.emis-inquiry-dashboard .purple-bg { background: #4f46e5; }
+.emis-inquiry-dashboard .blue-bg { background: #2563eb; }
 .emis-inquiry-dashboard .gray-bg { background: #91a0b0; }
 .emis-inquiry-dashboard .green-bg { background: #6bcbaa; }
 
@@ -500,7 +530,7 @@
   display: block;
   height: 100%;
   border-radius: 5px;
-  background: #82b0f5;
+  background: #2563eb;
 }
 
 .emis-inquiry-dashboard .vehicle-row b {
@@ -554,9 +584,13 @@
 .emis-inquiry-dashboard .link-btn {
   border: 0;
   background: none;
-  color: #8cb8ff;
+  color: #60a5fa;
   cursor: pointer;
   font: inherit;
+}
+
+.emis-inquiry-dashboard.theme-light .link-btn {
+  color: #2563eb;
 }
 
 .emis-inquiry-dashboard .status-chip {
@@ -564,13 +598,13 @@
   border-radius: 16px;
   padding: 3px 10px;
   background: #29394b;
-  color: #8fb8ff;
+  color: #7dd3fc;
   text-transform: capitalize;
 }
 
 .emis-inquiry-dashboard.theme-light .status-chip {
   background: #e8eef5;
-  color: #365f96;
+  color: #2563eb;
 }
 
 .emis-inquiry-dashboard .purple-chip {
@@ -625,12 +659,205 @@
   cursor: pointer;
 }
 
+.emis-inquiry-dashboard .city-map-card {
+  padding: 14px 18px;
+  margin-bottom: 16px;
+}
+
+.emis-inquiry-dashboard .city-map-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px;
+}
+
+.emis-inquiry-dashboard .city-country-picker {
+  min-width: 240px;
+}
+
+.emis-inquiry-dashboard .city-country-picker .emis-select-overlay {
+  z-index: 60;
+}
+
+.emis-inquiry-dashboard .city-map-ocean {
+  fill: color-mix(in srgb, #38bdf8 10%, var(--panel));
+}
+
+.emis-inquiry-dashboard .city-country-path {
+  fill: color-mix(in srgb, #2563eb 18%, var(--panel));
+  stroke: #3b82f6;
+  stroke-width: 0.7;
+  cursor: pointer;
+  transition: fill 0.16s ease, stroke 0.16s ease;
+}
+
+.emis-inquiry-dashboard .city-country-path:hover,
+.emis-inquiry-dashboard .city-country-path.is-active {
+  fill: color-mix(in srgb, #38bdf8 42%, var(--panel));
+  stroke: #38bdf8;
+}
+
+.emis-inquiry-dashboard .city-map-stage.is-country .city-country-path {
+  stroke-width: 1.4;
+  cursor: default;
+}
+
+.emis-inquiry-dashboard .city-map-layout {
+  display: grid;
+  grid-template-columns: 1.4fr 0.9fr;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.emis-inquiry-dashboard .city-map-stage {
+  position: relative;
+  min-height: 280px;
+  border-radius: 16px;
+  background:
+    radial-gradient(520px 240px at 20% 20%, rgba(56, 189, 248, 0.16), transparent 60%),
+    radial-gradient(420px 220px at 80% 80%, rgba(79, 70, 229, 0.12), transparent 62%),
+    linear-gradient(180deg, color-mix(in srgb, var(--panel) 80%, #38bdf8), var(--panel));
+  overflow: hidden;
+}
+
+.emis-inquiry-dashboard .city-map-svg {
+  display: block;
+  width: 100%;
+  height: 320px;
+}
+
+.emis-inquiry-dashboard .city-map-land {
+  stroke: #2563eb;
+  stroke-width: 2.2;
+  stroke-linejoin: round;
+}
+
+.emis-inquiry-dashboard .city-marker {
+  cursor: pointer;
+}
+
+.emis-inquiry-dashboard .city-dot {
+  fill: #2563eb;
+  stroke: #dbeafe;
+  stroke-width: 1.4;
+  transition: fill 0.2s ease;
+}
+
+.emis-inquiry-dashboard .city-dot.is-hovered,
+.emis-inquiry-dashboard .city-dot.is-selected {
+  fill: #38bdf8;
+}
+
+.emis-inquiry-dashboard .city-pulse {
+  fill: rgba(37, 99, 235, 0.22);
+  animation: city-pulse 1.8s ease-out infinite;
+}
+
+.emis-inquiry-dashboard .city-label {
+  fill: var(--muted);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.emis-inquiry-dashboard .city-detail {
+  min-height: 240px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--panel) 86%, #38bdf8);
+}
+
+.emis-inquiry-dashboard .city-detail-head {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+  color: #38bdf8;
+}
+
+.emis-inquiry-dashboard .city-detail-head strong {
+  display: block;
+  color: var(--text);
+  font-size: 18px;
+}
+
+.emis-inquiry-dashboard .city-detail-head p {
+  margin: 2px 0 0;
+}
+
+.emis-inquiry-dashboard .city-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.emis-inquiry-dashboard .city-metrics > div {
+  display: grid;
+  gap: 2px;
+  padding: 10px;
+  border-radius: 10px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.emis-inquiry-dashboard .city-metrics b {
+  color: var(--text);
+  font-size: 16px;
+}
+
+.emis-inquiry-dashboard .city-hint,
+.emis-inquiry-dashboard .city-empty {
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 14px;
+}
+
+.emis-inquiry-dashboard .city-empty {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+  min-height: 200px;
+}
+
+.emis-inquiry-dashboard .city-clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: #29384a;
+  color: #d8e2ef;
+  font: inherit;
+  cursor: pointer;
+}
+
+.emis-inquiry-dashboard.theme-light .city-clear {
+  background: #e7edf4;
+  color: #253448;
+}
+
+@keyframes city-pulse {
+  0% { transform: scale(0.7); opacity: 0.7; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
+
 @media (max-width: 1150px) {
   .emis-inquiry-dashboard .filters {
     grid-template-columns: repeat(2, minmax(140px, 1fr));
   }
   .emis-inquiry-dashboard .stats {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .emis-inquiry-dashboard .city-map-layout {
+    grid-template-columns: 1fr;
   }
 }
 

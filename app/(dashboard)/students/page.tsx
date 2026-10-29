@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ListPageShell, StatusChip, statusToneFromValue } from '@/components/ports';
 import { toast } from '@/components/ui/Toast';
 import { useListQuery } from '@/hooks/useListQuery';
+import { daysAgo } from '@/components/dashboards/DateFilterBar';
 
 type Student = {
   id: string;
@@ -19,6 +20,8 @@ export default function StudentsPage() {
   const [items, setItems] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState('');
+  const [from, setFrom] = useState(daysAgo(364));
+  const [to, setTo] = useState(daysAgo(0));
 
   useEffect(() => {
     let cancelled = false;
@@ -44,14 +47,21 @@ export default function StudentsPage() {
   }, []);
 
   const filterFn = useCallback(
-    (item: Student) => !status || item.status === status,
-    [status]
+    (item: Student) => {
+      const date = String(item.enrollment_date || '').slice(0, 10);
+      return (
+        (!status || item.status === status) &&
+        (!from || !date || date >= from) &&
+        (!to || !date || date <= to)
+      );
+    },
+    [status, from, to]
   );
 
   const list = useListQuery({
     items: items as (Student & Record<string, unknown>)[],
     searchKeys: ['full_name', 'email', 'student_code', 'phone'],
-    filterKey: status,
+    filterKey: `${status}|${from}|${to}`,
     filterFn: filterFn as (item: Student & Record<string, unknown>) => boolean,
   });
 
@@ -67,9 +77,17 @@ export default function StudentsPage() {
         search={list.search}
         onSearchChange={list.setSearch}
         searchPlaceholder="Search by name, email, code…"
+        dateFrom={from}
+        dateTo={to}
+        onDateRangeChange={({ from: nextFrom, to: nextTo }) => {
+          setFrom(nextFrom);
+          setTo(nextTo);
+        }}
         onResetFilters={() => {
           list.reset();
           setStatus('');
+          setFrom(daysAgo(364));
+          setTo(daysAgo(0));
         }}
         filters={[
           {

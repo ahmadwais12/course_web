@@ -31,7 +31,7 @@ export default function SearchBar({
     >
       <Search
         size={16}
-        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+        className="pointer-events-none absolute start-3.5 top-1/2 -translate-y-1/2 text-muted-foreground"
       />
       <input
         type="search"
@@ -39,16 +39,17 @@ export default function SearchBar({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         className={cn(
-          'w-full h-10 pl-9 pr-9 rounded-[7px] text-sm bg-muted border border-border text-foreground',
-          'placeholder:text-muted-foreground outline-none',
-          'focus:border-primary focus:ring-1 focus:ring-primary'
+          'h-10 w-full rounded-xl border border-border bg-card ps-10 pe-9 text-sm text-foreground shadow-sm',
+          'placeholder:text-muted-foreground outline-none transition-all duration-200',
+          'hover:border-primary/35 dark:hover:border-primary/40',
+          'focus:border-primary focus:ring-4 focus:ring-primary/20'
         )}
       />
       {value && (
         <button
           type="button"
           aria-label="Clear search"
-          className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-muted-foreground hover:text-foreground"
+          className="absolute end-2.5 top-1/2 -translate-y-1/2 rounded-lg p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           onClick={() => onChange('')}
         >
           <X size={14} />

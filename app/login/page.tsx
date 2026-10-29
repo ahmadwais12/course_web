@@ -171,8 +171,8 @@ export default function LoginPage() {
 
       <div className="min-h-screen flex items-center justify-center px-4 py-10">
         <div className="w-full max-w-md">
-          <BrandLogo size={140} showName nameClassName="mb-1" />
-          <p className="text-center text-sm font-semibold text-muted-foreground mb-8">
+          <BrandLogo size={72} showName nameClassName="mb-1 text-4xl" />
+          <p className="mb-8 text-center text-sm font-semibold text-foreground/70">
             {mode === 'login' ? `Welcome back to ${APP_NAME}` : `Create your ${APP_NAME} account`}
           </p>
 
@@ -191,8 +191,8 @@ export default function LoginPage() {
               className={cn(
                 'flex-1 py-3 rounded-xl text-sm font-black transition-all',
                 mode === 'login'
-                  ? 'bg-card text-primary shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'emis-btn-primary shadow-md'
+                  : 'text-muted-foreground hover:bg-card/60 hover:text-foreground'
               )}
             >
               Login
@@ -203,8 +203,8 @@ export default function LoginPage() {
               className={cn(
                 'flex-1 py-3 rounded-xl text-sm font-black transition-all',
                 mode === 'signup'
-                  ? 'bg-card text-primary shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'emis-btn-primary shadow-md'
+                  : 'text-muted-foreground hover:bg-card/60 hover:text-foreground'
               )}
             >
               Sign Up
@@ -227,7 +227,7 @@ export default function LoginPage() {
                     placeholder="John Doe"
                     required
                     minLength={3}
-                    className="w-full pl-11 pr-4 py-3.5 bg-muted text-foreground border border-border rounded-2xl placeholder:text-muted-foreground focus:ring-2 focus:ring-ring/20 focus:border-primary outline-none transition-all font-medium"
+                    className="w-full pl-11 pr-4 py-3.5 bg-card text-foreground border border-border rounded-2xl placeholder:text-muted-foreground focus:ring-2 focus:ring-ring/20 focus:border-primary outline-none transition-all font-medium"
                   />
                 </div>
               </div>
@@ -243,7 +243,7 @@ export default function LoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@institute.com"
                   required
-                  className="w-full pl-11 pr-4 py-3.5 bg-muted text-foreground border border-border rounded-2xl placeholder:text-muted-foreground focus:ring-2 focus:ring-ring/20 focus:border-primary outline-none transition-all font-medium"
+                  className="w-full pl-11 pr-4 py-3.5 bg-card text-foreground border border-border rounded-2xl placeholder:text-muted-foreground focus:ring-2 focus:ring-ring/20 focus:border-primary outline-none transition-all font-medium"
                 />
               </div>
             </div>
@@ -256,7 +256,7 @@ export default function LoginPage() {
                   <select
                     value={role}
                     onChange={(e) => setRole(e.target.value as SignupRole)}
-                    className="w-full pl-11 pr-4 py-3.5 bg-muted text-foreground border border-border rounded-2xl focus:ring-2 focus:ring-ring/20 focus:border-primary outline-none transition-all font-bold appearance-none cursor-pointer"
+                    className="w-full pl-11 pr-4 py-3.5 bg-card text-foreground border border-border rounded-2xl focus:ring-2 focus:ring-ring/20 focus:border-primary outline-none transition-all font-bold appearance-none cursor-pointer"
                   >
                     {SIGNUP_ROLES.map((r) => (
                       <option key={r.id} value={r.id}>
@@ -279,7 +279,7 @@ export default function LoginPage() {
                   placeholder="••••••••"
                   required
                   minLength={mode === 'signup' ? 8 : 6}
-                  className="w-full pl-11 pr-12 py-3.5 bg-muted text-foreground border border-border rounded-2xl placeholder:text-muted-foreground focus:ring-2 focus:ring-ring/20 focus:border-primary outline-none transition-all font-medium"
+                  className="w-full pl-11 pr-12 py-3.5 bg-card text-foreground border border-border rounded-2xl placeholder:text-muted-foreground focus:ring-2 focus:ring-ring/20 focus:border-primary outline-none transition-all font-medium"
                 />
                 <button
                   type="button"
@@ -312,7 +312,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 bg-primary text-primary-foreground rounded-2xl font-black hover:opacity-90 transition-all disabled:opacity-50"
+              className="emis-btn-primary w-full rounded-2xl py-3.5 font-black shadow-md transition-all disabled:opacity-50"
             >
               {loading
                 ? 'Please wait...'
@@ -329,7 +329,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => switchMode('signup')}
-                  className="font-bold text-primary hover:underline"
+                  className="emis-text-brand font-bold hover:underline"
                 >
                   Sign Up
                 </button>
@@ -340,7 +340,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => switchMode('login')}
-                  className="font-bold text-primary hover:underline"
+                  className="emis-text-brand font-bold hover:underline"
                 >
                   Sign In
                 </button>

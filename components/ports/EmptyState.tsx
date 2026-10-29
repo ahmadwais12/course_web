@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { Inbox } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type EmptyStateProps = {
@@ -16,8 +17,11 @@ export default function EmptyState({
   children,
 }: EmptyStateProps) {
   return (
-    <div className={cn('text-center text-muted-foreground py-8 px-4', className)}>
-      <p className="text-sm m-0">{message}</p>
+    <div className={cn('flex flex-col items-center justify-center px-4 py-10 text-center', className)}>
+      <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-border bg-muted text-muted-foreground">
+        <Inbox size={20} />
+      </span>
+      <p className="m-0 text-sm text-muted-foreground">{message}</p>
       {children}
     </div>
   );

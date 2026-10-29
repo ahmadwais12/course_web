@@ -15,7 +15,9 @@ import {
 import { cn } from '@/lib/utils';
 
 export default function SuperAdminDashboard() {
-  const [institutes, setInstitutes] = useState([]);
+  const [institutes, setInstitutes] = useState<
+    { id: number; name: string; subdomain: string; owner: string; status: string; plan: string; users: number }[]
+  >([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -29,7 +31,7 @@ export default function SuperAdminDashboard() {
   }, []);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-fade-up">
       {/* Platform Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
@@ -61,10 +63,10 @@ export default function SuperAdminDashboard() {
               <input 
                 type="text" 
                 placeholder="Search institutes..." 
-                className="pl-10 pr-4 py-2.5 bg-muted border border-border rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 outline-none w-64"
+                className="w-64 rounded-xl border border-border bg-card py-2.5 pl-10 pr-4 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
             </div>
-            <button className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-100">
+            <button className="emis-btn-primary flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold shadow-md transition-all">
               <Plus size={18} />
               Add Institute
             </button>
@@ -106,8 +108,8 @@ export default function SuperAdminDashboard() {
                   <td className="px-8 py-5">
                     <span className={cn(
                       "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider",
-                      inst.plan === 'enterprise' ? "bg-purple-100 text-purple-700" : 
-                      inst.plan === 'pro' ? "bg-blue-100 text-blue-700" : "bg-muted text-foreground/80"
+                      inst.plan === 'enterprise' ? "bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300" : 
+                      inst.plan === 'pro' ? "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300" : "bg-muted text-foreground/80"
                     )}>
                       {inst.plan}
                     </span>

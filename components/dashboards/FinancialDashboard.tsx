@@ -20,7 +20,7 @@ const transactions = [
 
 export default function FinancialDashboard() {
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-fade-up">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Financial Dashboard</h1>
@@ -35,10 +35,10 @@ export default function FinancialDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-green-50 text-green-600 rounded-xl">
+            <div className="p-3 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl">
               <DollarSign size={24} />
             </div>
-            <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-lg">+14%</span>
+            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-lg">+14%</span>
           </div>
           <p className="text-sm text-muted-foreground font-medium">Total Revenue</p>
           <h3 className="text-2xl font-bold text-foreground mt-1">$42,850</h3>
@@ -64,7 +64,7 @@ export default function FinancialDashboard() {
         </div>
         <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-yellow-50 text-yellow-600 rounded-xl">
+            <div className="p-3 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-xl">
               <CreditCard size={24} />
             </div>
           </div>
@@ -83,7 +83,7 @@ export default function FinancialDashboard() {
               <div key={tx.id} className="p-6 flex items-center justify-between hover:bg-muted transition-colors">
                 <div className="flex items-center gap-4">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    tx.type === 'Income' ? 'bg-green-50 text-green-600' : 'bg-destructive/10 text-destructive'
+                    tx.type === 'Income' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-destructive/10 text-destructive'
                   }`}>
                     {tx.type === 'Income' ? <ArrowUpRight size={20} /> : <ArrowDownRight size={20} />}
                   </div>
@@ -105,7 +105,7 @@ export default function FinancialDashboard() {
         <div className="bg-card rounded-2xl border border-border shadow-sm p-6">
           <h2 className="font-bold text-foreground mb-6">Financial Actions</h2>
           <div className="space-y-3">
-            <button className="w-full py-3 px-4 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors">
+            <button className="emis-btn-primary w-full rounded-xl px-4 py-3 font-medium transition-all">
               Process Payroll
             </button>
             <button className="w-full py-3 px-4 bg-card border border-border text-foreground/80 rounded-xl font-medium hover:bg-muted transition-colors">

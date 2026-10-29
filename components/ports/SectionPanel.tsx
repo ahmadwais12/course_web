@@ -24,18 +24,20 @@ export default function SectionPanel({
   return (
     <section
       className={cn(
-        'rounded-[11px] border border-border bg-card overflow-hidden',
+        'overflow-hidden rounded-2xl border border-border bg-card shadow-card transition-all duration-200 hover:shadow-soft',
         className
       )}
     >
       {(title || headerRight) && (
-        <div className="px-4 sm:px-5 py-3.5 border-b border-border flex flex-wrap items-start justify-between gap-3">
-          <div>
+        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border px-4 py-3.5 sm:px-5">
+          <div className="min-w-0">
             {title && (
-              <h2 className="text-lg font-semibold text-foreground m-0 leading-snug">{title}</h2>
+              <h2 className="m-0 text-[17px] font-semibold leading-snug tracking-tight text-foreground">
+                {title}
+              </h2>
             )}
             {description && (
-              <p className="text-xs text-muted-foreground m-0 mt-0.5">{description}</p>
+              <p className="m-0 mt-0.5 text-xs text-muted-foreground">{description}</p>
             )}
           </div>
           {headerRight}

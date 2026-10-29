@@ -10,6 +10,7 @@ type DropdownProps = {
   onChange: (value: string) => void;
   options: SelectOption[];
   placeholder?: string;
+  filterPlaceholder?: string;
   filter?: boolean;
   clearable?: boolean;
   disabled?: boolean;
