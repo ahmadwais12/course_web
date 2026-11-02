@@ -3,7 +3,7 @@ import { privateAppPageMetadata } from '@/lib/seo';
 
 export const metadata: Metadata = privateAppPageMetadata(
   'Messaging',
-  'Direct messages and group conversations across DreamFlow.',
+  'WhatsApp-style inbox with mute, block, polls, disappearing messages, starred chats, and contact info.',
   '/messaging'
 );
 

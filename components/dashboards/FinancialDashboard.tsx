@@ -1,122 +1,89 @@
 'use client';
 
-import React from 'react';
-import { 
-  DollarSign, 
-  TrendingUp, 
-  TrendingDown, 
-  CreditCard,
-  Briefcase,
-  ArrowUpRight,
-  ArrowDownRight,
-  Download
-} from 'lucide-react';
+import React, { useMemo } from 'react';
+import { useRouter } from 'next/navigation';
+import { DashboardAreaChart, DashboardPieChart } from '@/components/dashboards/DashboardCharts';
+import type { ChartConfig } from '@/components/ui/chart';
+import { DataTable, PageHeader, PortButton, StatusChip, statusToneFromValue, StatCard } from '@/components/ports';
 
-const transactions = [
-  { id: 1, type: 'Income', category: 'Tuition Fee', amount: '+$450', date: 'Today', status: 'Completed' },
-  { id: 2, type: 'Expense', category: 'Teacher Salary', amount: '-$1,200', date: 'Yesterday', status: 'Pending' },
-  { id: 3, type: 'Income', category: 'Book Sale', amount: '+$85', date: '2 days ago', status: 'Completed' },
-];
+const TREND_CONFIG = {
+  payments: { label: 'Payments', color: 'var(--chart-2)' },
+} satisfies ChartConfig;
 
-export default function FinancialDashboard() {
+const STATUS_CONFIG = {
+  completed: { label: 'Completed', color: 'var(--chart-4)' },
+  pending: { label: 'Pending', color: 'var(--chart-5)' },
+  failed: { label: 'Failed', color: '#c6a2ed' },
+  refunded: { label: 'Refunded', color: '#91a0b0' },
+} satisfies ChartConfig;
+
+export default function FinancialDashboard({ stats }: { stats?: any }) {
+  const router = useRouter();
+  const paymentStatuses = stats?.payment_statuses || {};
+  const attention = Array.isArray(stats?.attention) ? stats.attention : [];
+  const trend = useMemo(
+    () =>
+      (stats?.trend || []).map((point: { date: string; values?: Record<string, number> }) => ({
+        label: new Date(`${point.date}T00:00:00`).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+        }),
+        payments: Number(point.values?.payments || 0),
+      })),
+    [stats]
+  );
+  const statusChart = [
+    { name: 'completed', value: Number(paymentStatuses.completed || 0), fill: 'var(--color-completed)' },
+    { name: 'pending', value: Number(paymentStatuses.pending || 0), fill: 'var(--color-pending)' },
+    { name: 'failed', value: Number(paymentStatuses.failed || 0), fill: 'var(--color-failed)' },
+    { name: 'refunded', value: Number(paymentStatuses.refunded || 0), fill: 'var(--color-refunded)' },
+  ].filter((row) => row.value > 0);
+
   return (
-    <div className="space-y-8 animate-fade-up">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Financial Dashboard</h1>
-          <p className="text-muted-foreground">Monitor revenue, expenses, and payroll.</p>
-        </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-card border border-border rounded-xl text-sm font-bold text-foreground/80 hover:bg-muted transition-colors">
-          <Download size={18} />
-          Export Report
-        </button>
+    <div className="space-y-4 animate-fade-up">
+      <PageHeader
+        title="Finance Dashboard"
+        description="Revenue, payment outcomes, and items that need follow-up."
+        pill={stats ? 'LIVE DATA' : 'LOADING…'}
+        pillTone={stats ? 'live' : 'neutral'}
+        actions={
+          <PortButton variant="primary" onClick={() => router.push('/payments')}>
+            Open payments
+          </PortButton>
+        }
+      />
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <StatCard
+          accent="green"
+          label="Revenue"
+          value={`$${Number(stats?.revenue || 0).toLocaleString()}`}
+          hint="Completed"
+        />
+        <StatCard accent="gold" label="Pending" value={paymentStatuses.pending || 0} hint="Awaiting" />
+        <StatCard accent="purple" label="Failed" value={paymentStatuses.failed || 0} hint="Needs retry" />
+        <StatCard accent="blue" label="Success rate" value={`${stats?.success_rate ?? 0}%`} hint="Completed / all" />
       </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl">
-              <DollarSign size={24} />
-            </div>
-            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-lg">+14%</span>
-          </div>
-          <p className="text-sm text-muted-foreground font-medium">Total Revenue</p>
-          <h3 className="text-2xl font-bold text-foreground mt-1">$42,850</h3>
+      <div className="grid gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2 min-w-0">
+          <DashboardAreaChart title="Payment trend" description="Payments in the selected period" data={trend} config={TREND_CONFIG} />
         </div>
-        <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-destructive/10 text-destructive rounded-xl">
-              <TrendingDown size={24} />
-            </div>
-            <span className="text-xs font-bold text-destructive bg-destructive/10 px-2 py-1 rounded-lg">-2%</span>
-          </div>
-          <p className="text-sm text-muted-foreground font-medium">Total Expenses</p>
-          <h3 className="text-2xl font-bold text-foreground mt-1">$12,400</h3>
-        </div>
-        <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-accent text-blue-600 rounded-xl">
-              <Briefcase size={24} />
-            </div>
-          </div>
-          <p className="text-sm text-muted-foreground font-medium">Payroll (Monthly)</p>
-          <h3 className="text-2xl font-bold text-foreground mt-1">$8,200</h3>
-        </div>
-        <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-xl">
-              <CreditCard size={24} />
-            </div>
-          </div>
-          <p className="text-sm text-muted-foreground font-medium">Pending Payments</p>
-          <h3 className="text-2xl font-bold text-foreground mt-1">$3,150</h3>
-        </div>
+        <DashboardPieChart title="Payment status" data={statusChart} config={STATUS_CONFIG} />
       </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-border">
-            <h2 className="font-bold text-foreground">Recent Transactions</h2>
-          </div>
-          <div className="divide-y divide-border">
-            {transactions.map((tx) => (
-              <div key={tx.id} className="p-6 flex items-center justify-between hover:bg-muted transition-colors">
-                <div className="flex items-center gap-4">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    tx.type === 'Income' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-destructive/10 text-destructive'
-                  }`}>
-                    {tx.type === 'Income' ? <ArrowUpRight size={20} /> : <ArrowDownRight size={20} />}
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-foreground">{tx.category}</h3>
-                    <p className="text-sm text-muted-foreground">{tx.date} • {tx.status}</p>
-                  </div>
-                </div>
-                <span className={`font-bold ${
-                  tx.type === 'Income' ? 'text-green-600' : 'text-destructive'
-                }`}>
-                  {tx.amount}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="bg-card rounded-2xl border border-border shadow-sm p-6">
-          <h2 className="font-bold text-foreground mb-6">Financial Actions</h2>
-          <div className="space-y-3">
-            <button className="emis-btn-primary w-full rounded-xl px-4 py-3 font-medium transition-all">
-              Process Payroll
-            </button>
-            <button className="w-full py-3 px-4 bg-card border border-border text-foreground/80 rounded-xl font-medium hover:bg-muted transition-colors">
-              Add Expense
-            </button>
-            <button className="w-full py-3 px-4 bg-card border border-border text-foreground/80 rounded-xl font-medium hover:bg-muted transition-colors">
-              Generate Tax Report
-            </button>
-          </div>
-        </div>
-      </div>
+      <DataTable
+        columns={[
+          { key: 'customer', header: 'Record', render: (r) => r.customer || '—' },
+          { key: 'deal', header: 'Type', render: (r) => r.deal || '—' },
+          {
+            key: 'status',
+            header: 'Status',
+            render: (r) => <StatusChip label={String(r.status || '')} tone={statusToneFromValue(String(r.status || ''))} />,
+          },
+          { key: 'vehicle', header: 'Amount', render: (r) => r.vehicle || '—' },
+        ]}
+        rows={attention.filter((row: { deal?: string }) => row.deal === 'Payment')}
+        rowKey={(r) => r.id}
+        emptyMessage="No payment follow-up items."
+      />
     </div>
   );
 }

@@ -365,6 +365,27 @@ export async function GET(request: Request) {
       return date >= from && date <= to;
     }).length;
 
+    const countTable = async (table: string, match?: Record<string, string>) => {
+      let query = supabase.from(table).select('id', { count: 'exact', head: true });
+      if (match) {
+        for (const [key, value] of Object.entries(match)) {
+          query = query.eq(key, value);
+        }
+      }
+      const { count, error } = await query;
+      return error ? 0 : count ?? 0;
+    };
+
+    const [businesses, branches, users, tickets, leaves, classes, books] = await Promise.all([
+      countTable('tenants', { organization_type: 'central' }),
+      countTable('tenants', { organization_type: 'branch' }),
+      countTable('users'),
+      countTable('support_tickets'),
+      countTable('employee_leaves'),
+      countTable('classes'),
+      countTable('books'),
+    ]);
+
     return NextResponse.json({
       students: cityFilter ? students.length : studentsRes.count ?? students.length,
       courses: coursesRes.count ?? courses.length,
@@ -399,6 +420,15 @@ export async function GET(request: Request) {
       city: cityFilter || null,
       new_students: newStudents,
       enrollments_total: enrollments.length,
+      system: {
+        businesses,
+        branches,
+        users,
+        tickets,
+        leaves,
+        classes,
+        books,
+      },
       interactions: payments.length + enrollments.length,
       success_rate: successRate,
       period: { from, to, latest_date: to },

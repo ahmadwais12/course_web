@@ -7,13 +7,16 @@ import {
   InputField,
   ListPageShell,
   PortButton,
+  RowActions,
   StatusChip,
   TextAreaField,
   statusToneFromValue,
+  FormDialog,
+  FormDialogFooter,
 } from '@/components/ports';
+import { Check, X } from 'lucide-react';
 import { useListQuery } from '@/hooks/useListQuery';
 import { toast } from '@/components/ui/Toast';
-import { X } from 'lucide-react';
 
 type RequesterType = 'student' | 'employee';
 
@@ -328,28 +331,29 @@ export default function LeaveRequestsPage() {
             header: 'Actions',
             render: (r) =>
               r.can_approve ? (
-                <div className="flex items-center gap-2">
-                  <PortButton
-                    variant="primary"
-                    className="h-8 px-3 text-xs"
-                    disabled={busyId === r.id}
-                    onClick={() => decide(r, 'approve')}
-                  >
-                    Approve
-                  </PortButton>
-                  <PortButton
-                    variant="secondary"
-                    className="h-8 px-3 text-xs"
-                    disabled={busyId === r.id}
-                    onClick={() => {
-                      setRejectTarget(r);
-                      setRejectionReason('');
-                      setRejectError(null);
-                    }}
-                  >
-                    Reject
-                  </PortButton>
-                </div>
+                <RowActions
+                  items={[
+                    {
+                      key: 'approve',
+                      label: 'Approve',
+                      icon: <Check size={16} />,
+                      disabled: busyId === r.id,
+                      onClick: () => decide(r, 'approve'),
+                    },
+                    {
+                      key: 'reject',
+                      label: 'Reject',
+                      icon: <X size={16} />,
+                      danger: true,
+                      disabled: busyId === r.id,
+                      onClick: () => {
+                        setRejectTarget(r);
+                        setRejectionReason('');
+                        setRejectError(null);
+                      },
+                    },
+                  ]}
+                />
               ) : (
                 <span className="text-xs text-muted-foreground">—</span>
               ),
@@ -379,139 +383,112 @@ export default function LeaveRequestsPage() {
         )}
       </ListPageShell>
 
-      {showAdd && me.kind && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="emis-dialog bg-popover text-popover-foreground w-full max-w-lg rounded-xl border border-border shadow-xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-              <h3 className="text-lg font-semibold">New Leave Request</h3>
-              <button type="button" onClick={() => setShowAdd(false)} aria-label="Close">
-                <X size={18} className="text-muted-foreground" />
-              </button>
-            </div>
+      <FormDialog
+        open={Boolean(showAdd && me.kind)}
+        title="New Leave Request"
+        onClose={() => setShowAdd(false)}
+        maxWidth="lg"
+        footer={
+          <FormDialogFooter
+            onCancel={() => setShowAdd(false)}
+            submitLabel="Submit Request"
+            submitting={submitting}
+            formId="leave-form"
+          />
+        }
+      >
+        <form id="leave-form" onSubmit={handleSubmit} className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Submitting as <span className="font-medium text-foreground">{me.name}</span> ·{' '}
+            {me.kind === 'student' ? 'Student' : 'Employee'}
+          </p>
 
-            <form onSubmit={handleSubmit} className="px-5 py-4 space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Submitting as <span className="font-medium text-foreground">{me.name}</span> ·{' '}
-                {me.kind === 'student' ? 'Student' : 'Employee'}
-              </p>
+          {me.kind === 'employee' && (
+            <Dropdown
+              label="Leave type"
+              value={leaveType}
+              onChange={setLeaveType}
+              options={[
+                { value: 'Annual', label: 'Annual' },
+                { value: 'Sick', label: 'Sick' },
+                { value: 'Unpaid', label: 'Unpaid' },
+                { value: 'Emergency', label: 'Emergency' },
+                { value: 'Other', label: 'Other' },
+              ]}
+            />
+          )}
 
-              {me.kind === 'employee' && (
-                <Dropdown
-                  label="Leave type"
-                  value={leaveType}
-                  onChange={setLeaveType}
-                  options={[
-                    { value: 'Annual', label: 'Annual' },
-                    { value: 'Sick', label: 'Sick' },
-                    { value: 'Unpaid', label: 'Unpaid' },
-                    { value: 'Emergency', label: 'Emergency' },
-                    { value: 'Other', label: 'Other' },
-                  ]}
-                  filter={false}
-                />
-              )}
-
-              <div className="grid grid-cols-2 gap-3">
-                <InputField
-                  label="Start date"
-                  required
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                />
-                <InputField
-                  label="End date"
-                  required
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                />
-              </div>
-
-              <TextAreaField
-                label="Reason"
-                required
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                placeholder="Explain the reason for this leave request"
-              />
-
-              <p className="text-xs text-muted-foreground">
-                {me.kind === 'student'
-                  ? 'Your request is routed to your class teacher for approval.'
-                  : 'Your request is routed to your department manager for approval.'}
-              </p>
-
-              {formError && (
-                <div className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">
-                  {formError}
-                </div>
-              )}
-
-              <div className="flex justify-end gap-2 pt-2 border-t border-border">
-                <PortButton variant="ghost" type="button" onClick={() => setShowAdd(false)}>
-                  Cancel
-                </PortButton>
-                <PortButton variant="primary" type="submit" disabled={submitting}>
-                  {submitting ? 'Submitting…' : 'Submit Request'}
-                </PortButton>
-              </div>
-            </form>
+          <div className="grid grid-cols-2 gap-3">
+            <InputField
+              label="Start date"
+              required
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
+            <InputField
+              label="End date"
+              required
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+            />
           </div>
-        </div>
-      )}
 
-      {rejectTarget && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="emis-dialog bg-popover text-popover-foreground w-full max-w-md rounded-xl border border-border shadow-xl">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-              <h3 className="text-lg font-semibold">Reject Leave Request</h3>
-              <button
-                type="button"
-                onClick={() => setRejectTarget(null)}
-                aria-label="Close"
-              >
-                <X size={18} className="text-muted-foreground" />
-              </button>
-            </div>
+          <TextAreaField
+            label="Reason"
+            required
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="Explain the reason for this leave request"
+          />
 
-            <form onSubmit={handleReject} className="px-5 py-4 space-y-4">
-              <p className="text-sm text-muted-foreground">
-                {rejectTarget.requester_name} ·{' '}
-                {rejectTarget.start_date || '—'} to {rejectTarget.end_date || '—'}
-              </p>
-              <TextAreaField
-                label="Rejection reason"
-                required
-                value={rejectionReason}
-                onChange={(e) => setRejectionReason(e.target.value)}
-                placeholder="Why is this request being rejected?"
-              />
-              {rejectError && (
-                <div className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">
-                  {rejectError}
-                </div>
-              )}
-              <div className="flex justify-end gap-2 pt-2 border-t border-border">
-                <PortButton
-                  variant="ghost"
-                  type="button"
-                  onClick={() => setRejectTarget(null)}
-                >
-                  Cancel
-                </PortButton>
-                <PortButton
-                  variant="danger"
-                  type="submit"
-                  disabled={busyId === rejectTarget.id}
-                >
-                  {busyId === rejectTarget.id ? 'Rejecting…' : 'Reject Request'}
-                </PortButton>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+          <p className="text-xs text-muted-foreground">
+            {me.kind === 'student'
+              ? 'Your request is routed to your class teacher for approval.'
+              : 'Your request is routed to your department manager for approval.'}
+          </p>
+
+          {formError && <ErrorBanner message={formError} />}
+        </form>
+      </FormDialog>
+
+      <FormDialog
+        open={Boolean(rejectTarget)}
+        title="Reject Leave Request"
+        onClose={() => setRejectTarget(null)}
+        maxWidth="md"
+        footer={
+          <>
+            <PortButton variant="ghost" type="button" onClick={() => setRejectTarget(null)}>
+              Cancel
+            </PortButton>
+            <PortButton
+              variant="danger"
+              type="submit"
+              form="reject-leave-form"
+              disabled={busyId === rejectTarget?.id}
+            >
+              {busyId === rejectTarget?.id ? 'Rejecting…' : 'Reject Request'}
+            </PortButton>
+          </>
+        }
+      >
+        <form id="reject-leave-form" onSubmit={handleReject} className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            {rejectTarget?.requester_name} · {rejectTarget?.start_date || '—'} to{' '}
+            {rejectTarget?.end_date || '—'}
+          </p>
+          <TextAreaField
+            label="Rejection reason"
+            required
+            value={rejectionReason}
+            onChange={(e) => setRejectionReason(e.target.value)}
+            placeholder="Why is this request being rejected?"
+          />
+          {rejectError && <ErrorBanner message={rejectError} />}
+        </form>
+      </FormDialog>
     </>
   );
 }

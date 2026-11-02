@@ -7,8 +7,13 @@ import {
   InputField,
   Dropdown,
   PortButton,
+  FormDialog,
+  FormDialogFooter,
+  PasswordField,
+  ErrorBanner,
+  RowActions,
 } from '@/components/ports';
-import { Eye, EyeOff, KeyRound, Users, X } from 'lucide-react';
+import { Eye, KeyRound, Users } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type { RoleRow } from '@/lib/rbac';
 import { roleLabel } from '@/lib/rbac';
@@ -59,10 +64,6 @@ export default function UserManagementPage() {
   const [error, setError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
-  const [obscure, setObscure] = useState(true);
-  const [obscureConfirm, setObscureConfirm] = useState(true);
-  const [obscureNew, setObscureNew] = useState(true);
-
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -150,9 +151,6 @@ export default function UserManagementPage() {
     setError(null);
     setPasswordError(null);
     setPasswordSuccess(null);
-    setObscure(true);
-    setObscureConfirm(true);
-    setObscureNew(true);
   };
 
   const openCreate = () => {
@@ -187,7 +185,6 @@ export default function UserManagementPage() {
     setNewPassword('');
     setPasswordError(null);
     setPasswordSuccess(null);
-    setObscureNew(true);
     setShowPasswordModal(true);
   };
 
@@ -384,22 +381,23 @@ export default function UserManagementPage() {
             header: 'Actions',
             align: 'right',
             render: (user) => (
-              <div className="flex justify-end gap-2 flex-wrap">
-                <PortButton variant="secondary" className="h-8 px-2.5 text-xs" onClick={() => openView(user)}>
-                  View
-                </PortButton>
-                <PortButton variant="secondary" className="h-8 px-2.5 text-xs" onClick={() => openEdit(user)}>
-                  Edit
-                </PortButton>
-                <PortButton
-                  variant="secondary"
-                  className="h-8 px-2.5 text-xs inline-flex items-center gap-1"
-                  onClick={() => openChangePassword(user)}
-                >
-                  <KeyRound size={12} />
-                  Change Password
-                </PortButton>
-              </div>
+              <RowActions
+                items={[
+                  {
+                    key: 'view',
+                    label: 'View',
+                    icon: <Eye size={16} />,
+                    onClick: () => openView(user),
+                  },
+                  {
+                    key: 'password',
+                    label: 'Password',
+                    icon: <KeyRound size={16} />,
+                    onClick: () => openChangePassword(user),
+                  },
+                ]}
+                onEdit={() => openEdit(user)}
+              />
             ),
           },
         ]}
@@ -413,237 +411,169 @@ export default function UserManagementPage() {
         emptyMessage="No users found."
       />
 
-      {showModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="emis-dialog bg-popover text-popover-foreground w-full max-w-2xl rounded-xl p-6 border border-border shadow-xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold">{isCreate ? 'Add New User' : 'Edit User'}</h3>
-              <button type="button" onClick={() => setShowModal(false)}>
-                <X size={18} className="text-muted-foreground" />
-              </button>
+      <FormDialog
+        open={showModal}
+        title={isCreate ? 'Add New User' : 'Edit User'}
+        onClose={() => setShowModal(false)}
+        maxWidth="2xl"
+        footer={
+          <FormDialogFooter
+            onCancel={() => setShowModal(false)}
+            submitLabel={isCreate ? 'Create User' : 'Save User'}
+            submitting={submitting}
+            formId="user-form"
+          />
+        }
+      >
+        <form id="user-form" onSubmit={handleSave} className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <InputField
+                label="Full Name"
+                required
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+              />
             </div>
-
-            <form onSubmit={handleSave} className="space-y-4">
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div className="sm:col-span-2">
-                  <InputField
-                    label="Full Name"
-                    required
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                  />
-                </div>
-                <InputField
-                  label="Email"
-                  required
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={!isCreate}
-                />
-                <InputField
-                  label="Phone"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                />
+            <InputField
+              label="Email"
+              required
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={!isCreate}
+            />
+            <InputField label="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+            <Dropdown
+              label="Role *"
+              value={roleId}
+              onChange={setRoleId}
+              options={roleOptions}
+              placeholder="Select a Role"
+              filter
+            />
+            <Dropdown
+              label="Status"
+              value={status}
+              onChange={(v) => setStatus(v as 'active' | 'inactive')}
+              options={statusOptions}
+              placeholder="Select status"
+            />
+            {requiresTenant && (
+              <div className="sm:col-span-2">
                 <Dropdown
-                  label="Role *"
-                  value={roleId}
-                  onChange={setRoleId}
-                  options={roleOptions}
-                  placeholder="Select a Role"
+                  label="Tenant *"
+                  value={tenantId}
+                  onChange={setTenantId}
+                  options={tenantOptions}
+                  placeholder="Select a Tenant"
                   filter
+                  clearable
                 />
-                <Dropdown
-                  label="Status"
-                  value={status}
-                  onChange={(v) => setStatus(v as 'active' | 'inactive')}
-                  options={statusOptions}
-                  placeholder="Select status"
-                  filter={false}
-                />
-                {requiresTenant && (
-                  <div className="sm:col-span-2">
-                    <Dropdown
-                      label="Tenant *"
-                      value={tenantId}
-                      onChange={setTenantId}
-                      options={tenantOptions}
-                      placeholder="Select a Tenant"
-                      filter
-                      clearable
-                    />
-                  </div>
-                )}
-                {isCreate && (
-                  <>
-                    <div className="space-y-1.5">
-                      <label className="block text-sm font-medium">Password *</label>
-                      <div className="relative">
-                        <input
-                          required
-                          type={obscure ? 'password' : 'text'}
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          minLength={8}
-                          className="w-full h-10 px-3 pr-10 rounded-[7px] text-sm bg-card border border-border outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setObscure((v) => !v)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                        >
-                          {obscure ? <EyeOff size={16} /> : <Eye size={16} />}
-                        </button>
-                      </div>
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="block text-sm font-medium">Confirm Password *</label>
-                      <div className="relative">
-                        <input
-                          required
-                          type={obscureConfirm ? 'password' : 'text'}
-                          value={passwordConfirm}
-                          onChange={(e) => setPasswordConfirm(e.target.value)}
-                          minLength={8}
-                          className="w-full h-10 px-3 pr-10 rounded-[7px] text-sm bg-card border border-border outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setObscureConfirm((v) => !v)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                        >
-                          {obscureConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
-                        </button>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {error && (
-                <div className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">
-                  {error}
-                </div>
-              )}
-
-              <div className="flex justify-end gap-2 pt-2 border-t border-border">
-                <PortButton variant="ghost" onClick={() => setShowModal(false)}>
-                  Cancel
-                </PortButton>
-                <PortButton variant="primary" disabled={submitting} type="submit">
-                  {submitting ? 'Saving...' : isCreate ? 'Create User' : 'Save User'}
-                </PortButton>
-              </div>
-            </form>
-
-            {!isCreate && selectedUser && (
-              <div className="mt-8 pt-6 border-t border-border">
-                <div className="flex items-center justify-between gap-3 flex-wrap">
-                  <div>
-                    <h4 className="text-lg font-semibold">Change Password</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Set a new password for this user. They can sign in with it immediately.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => openChangePassword(selectedUser)}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border hover:bg-muted font-medium"
-                  >
-                    <KeyRound size={16} />
-                    Change Password
-                  </button>
-                </div>
               </div>
             )}
+            {isCreate && (
+              <>
+                <PasswordField
+                  label="Password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  minLength={8}
+                />
+                <PasswordField
+                  label="Confirm Password"
+                  required
+                  value={passwordConfirm}
+                  onChange={(e) => setPasswordConfirm(e.target.value)}
+                  minLength={8}
+                />
+              </>
+            )}
           </div>
-        </div>
-      )}
-
-      {showPasswordModal && selectedUser && (
-        <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="emis-dialog bg-popover text-popover-foreground w-full max-w-md rounded-xl p-6 border border-border shadow-xl">
-            <div className="flex items-center justify-between mb-4">
+          {error && <ErrorBanner message={error} />}
+          {!isCreate && selectedUser && (
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
               <div>
-                <h3 className="text-xl font-semibold">Change Password</h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {selectedUser.full_name || selectedUser.email}
+                <h4 className="text-sm font-semibold">Change Password</h4>
+                <p className="text-xs text-muted-foreground">
+                  Set a new password for this user. They can sign in with it immediately.
                 </p>
               </div>
-              <button type="button" onClick={() => setShowPasswordModal(false)}>
-                <X size={18} className="text-muted-foreground" />
-              </button>
+              <PortButton variant="secondary" onClick={() => openChangePassword(selectedUser)}>
+                <KeyRound size={16} />
+                Change Password
+              </PortButton>
             </div>
+          )}
+        </form>
+      </FormDialog>
 
-            <form onSubmit={handleChangePassword} className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">New Password *</label>
-                <div className="relative">
-                  <input
-                    required
-                    autoFocus
-                    type={obscureNew ? 'password' : 'text'}
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    minLength={6}
-                    placeholder="Enter new password"
-                    className="w-full px-3 py-2.5 pr-10 rounded-lg bg-card border border-border outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setObscureNew((v) => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                  >
-                    {obscureNew ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
-                <p className="text-xs text-muted-foreground">Minimum 6 characters. Old password is replaced immediately.</p>
-              </div>
-
-              {passwordError && (
-                <div className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">
-                  {passwordError}
-                </div>
-              )}
-              {passwordSuccess && (
-                <div className="text-sm text-green-700 dark:text-green-400 bg-green-500/10 border border-green-500/20 rounded-lg px-3 py-2">
-                  {passwordSuccess}
-                </div>
-              )}
-
-              <div className="flex justify-end gap-2 pt-2 border-t border-border">
-                <button
-                  type="button"
-                  onClick={() => setShowPasswordModal(false)}
-                  className="px-4 py-2 rounded-lg text-muted-foreground hover:text-foreground"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={changingPassword || !newPassword.trim()}
-                  className="emis-btn-primary rounded-lg px-4 py-2 font-medium disabled:opacity-50"
-                >
-                  {changingPassword ? 'Updating...' : 'Update Password'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {showView && selectedUser && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="emis-dialog bg-popover text-popover-foreground w-full max-w-lg rounded-xl p-6 border border-border shadow-xl">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold">User Information</h3>
-              <button type="button" onClick={() => setShowView(false)}>
-                <X size={18} className="text-muted-foreground" />
-              </button>
+      <FormDialog
+        open={showPasswordModal && Boolean(selectedUser)}
+        title="Change Password"
+        onClose={() => setShowPasswordModal(false)}
+        maxWidth="md"
+        footer={
+          <FormDialogFooter
+            onCancel={() => setShowPasswordModal(false)}
+            submitLabel="Update Password"
+            submitting={changingPassword}
+            disabled={!newPassword.trim()}
+            formId="password-form"
+          />
+        }
+      >
+        <form id="password-form" onSubmit={handleChangePassword} className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            {selectedUser?.full_name || selectedUser?.email}
+          </p>
+          <PasswordField
+            label="New Password"
+            required
+            autoFocus
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            minLength={6}
+            placeholder="Enter new password"
+            hint="Minimum 6 characters. Old password is replaced immediately."
+          />
+          {passwordError && <ErrorBanner message={passwordError} />}
+          {passwordSuccess && (
+            <div className="rounded-lg border border-green-500/20 bg-green-500/10 px-4 py-3 text-sm text-green-700 dark:text-green-400">
+              {passwordSuccess}
             </div>
-            <div className="flex flex-col items-center mb-6">
-              <div className="w-24 h-24 rounded-full bg-accent text-accent-foreground flex items-center justify-center text-3xl font-bold border-4 border-border">
+          )}
+        </form>
+      </FormDialog>
+
+      <FormDialog
+        open={showView && Boolean(selectedUser)}
+        title="User Information"
+        onClose={() => setShowView(false)}
+        maxWidth="lg"
+        footer={
+          <>
+            <PortButton
+              variant="secondary"
+              onClick={() => {
+                if (!selectedUser) return;
+                setShowView(false);
+                openEdit(selectedUser);
+              }}
+            >
+              Edit
+            </PortButton>
+            <PortButton variant="primary" onClick={() => setShowView(false)}>
+              Close
+            </PortButton>
+          </>
+        }
+      >
+        {selectedUser && (
+          <>
+            <div className="mb-6 flex flex-col items-center">
+              <div className="flex h-24 w-24 items-center justify-center rounded-full border-4 border-border bg-accent text-3xl font-bold text-accent-foreground">
                 {(selectedUser.full_name || '?').charAt(0).toUpperCase()}
               </div>
               <p className="mt-3 text-xl font-bold">{selectedUser.full_name}</p>
@@ -656,35 +586,18 @@ export default function UserManagementPage() {
               </div>
               <div>
                 <dt className="text-muted-foreground">Role</dt>
-                <dd className="font-medium">{roleLabel(selectedUser.role_name || selectedUser.role || '—')}</dd>
+                <dd className="font-medium">
+                  {roleLabel(selectedUser.role_name || selectedUser.role || '—')}
+                </dd>
               </div>
               <div>
                 <dt className="text-muted-foreground">Status</dt>
                 <dd className="font-medium">{selectedUser.is_active ? 'active' : 'inactive'}</dd>
               </div>
             </dl>
-            <div className="mt-6 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowView(false);
-                  openEdit(selectedUser);
-                }}
-                className="px-4 py-2 rounded-lg border border-border hover:bg-muted"
-              >
-                Edit
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowView(false)}
-                className="emis-btn-primary rounded-lg px-4 py-2"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </FormDialog>
     </>
   );
 }

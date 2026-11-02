@@ -1,19 +1,20 @@
 ---
-description: Require SEO whenever creating or editing Next.js pages in Advanced-EMIS
-globs: app/**/page.tsx,app/**/layout.tsx,app/**/route.ts
-alwaysApply: false
+description: Always check and add SEO for every new or edited Next.js page
+alwaysApply: true
 ---
 
-# Next.js page SEO (Advanced-EMIS)
+# SEO — mandatory for every page
 
-Read and follow repo-root **`../AGENTS.md`** (SEO workflow).
+Follow repo-root **`AGENTS.md`** (SEO section) on every page create/edit.
 
-For every new/edited `page.tsx` / public `layout.tsx`:
+**Before finishing any page work:**
 
-1. Inspect existing `lib/seo*` and root metadata first.
-2. Export unique `metadata` or `generateMetadata` (title, description, canonical, openGraph, twitter, robots).
-3. Private app routes → `robots: { index: false, follow: false }`.
-4. Update `sitemap` / `robots.txt` when adding a public indexable URL.
-5. Prefer server-rendered content for indexable copy; real 404s for bad dynamic params.
+1. Read `lib/seo.ts` + `lib/seo-pages.ts`.
+2. Add/update colocated `layout.tsx` with unique metadata via `@/lib/seo`.
+3. Dashboard / private routes → `privateAppPageMetadata(title, description, path)`.
+4. Register static private paths in `PRIVATE_APP_PAGES` (`lib/seo-pages.ts`).
+5. Dynamic routes → `generateMetadata` in `[param]/layout.tsx`.
+6. Public indexable URLs only → `buildPageMetadata` + entry in `app/sitemap.ts`.
+7. New private URL prefixes → add to `app/robots.ts` disallow prefixes.
 
-Do not ship UI-only pages without metadata.
+Do **not** mark page work done without SEO. Do **not** ship UI-only pages without metadata.

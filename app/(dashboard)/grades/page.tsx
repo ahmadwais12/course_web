@@ -8,11 +8,12 @@ import {
   StatCard,
   InputField,
   Dropdown,
-  PortButton,
+  FormDialog,
+  FormDialogFooter,
+  ErrorBanner,
 } from '@/components/ports';
 import { useListQuery } from '@/hooks/useListQuery';
 import { toast } from '@/components/ui/Toast';
-import { X } from 'lucide-react';
 
 type GradeRow = {
   id: string;
@@ -345,101 +346,89 @@ export default function GradesPage() {
         </div>
       </ListPageShell>
 
-      {showAdd && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="emis-dialog bg-popover text-popover-foreground w-full max-w-lg rounded-xl border border-border shadow-xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-              <h3 className="text-lg font-semibold">Add Grade</h3>
-              <button type="button" onClick={() => setShowAdd(false)} aria-label="Close">
-                <X size={18} className="text-muted-foreground" />
-              </button>
-            </div>
-
-            <form onSubmit={handleAdd} className="px-5 py-4 space-y-4">
-              <Dropdown
-                label="Student *"
-                value={studentId}
-                onChange={setStudentId}
-                options={studentOptions}
-                placeholder="Select student"
-                filter
-              />
-              <InputField
-                label="Subject"
-                required
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                placeholder="e.g. English, Math"
-              />
-              <div className="grid grid-cols-2 gap-3">
-                <InputField
-                  label="Score"
-                  required
-                  type="number"
-                  min={0}
-                  value={score}
-                  onChange={(e) => setScore(e.target.value)}
-                />
-                <InputField
-                  label="Max score"
-                  type="number"
-                  min={1}
-                  value={maxScore}
-                  onChange={(e) => setMaxScore(e.target.value)}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <Dropdown
-                  label="Exam type"
-                  value={formExamType}
-                  onChange={setFormExamType}
-                  options={[
-                    { value: 'quiz', label: 'Quiz' },
-                    { value: 'midterm', label: 'Midterm' },
-                    { value: 'final', label: 'Final' },
-                    { value: 'assignment', label: 'Assignment' },
-                  ]}
-                  filter={false}
-                />
-                <InputField
-                  label="Exam date"
-                  type="date"
-                  value={examDate}
-                  onChange={(e) => setExamDate(e.target.value)}
-                />
-              </div>
-              <InputField
-                label="Remarks"
-                value={remarks}
-                onChange={(e) => setRemarks(e.target.value)}
-                placeholder="Optional"
-              />
-
-              {score && maxScore && !Number.isNaN(Number(score)) && (
-                <p className="text-xs text-muted-foreground">
-                  Preview: {((Number(score) / (Number(maxScore) || 100)) * 100).toFixed(1)}% ?{' '}
-                  {letterFromPercent((Number(score) / (Number(maxScore) || 100)) * 100)}
-                </p>
-              )}
-
-              {formError && (
-                <div className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">
-                  {formError}
-                </div>
-              )}
-
-              <div className="flex justify-end gap-2 pt-2 border-t border-border">
-                <PortButton variant="ghost" type="button" onClick={() => setShowAdd(false)}>
-                  Cancel
-                </PortButton>
-                <PortButton variant="primary" type="submit" disabled={submitting}>
-                  {submitting ? 'Saving…' : 'Add Grade'}
-                </PortButton>
-              </div>
-            </form>
+      <FormDialog
+        open={showAdd}
+        title="Add Grade"
+        onClose={() => setShowAdd(false)}
+        maxWidth="lg"
+        footer={
+          <FormDialogFooter
+            onCancel={() => setShowAdd(false)}
+            submitLabel="Add Grade"
+            submitting={submitting}
+            formId="grade-form"
+          />
+        }
+      >
+        <form id="grade-form" onSubmit={handleAdd} className="space-y-4">
+          <Dropdown
+            label="Student *"
+            value={studentId}
+            onChange={setStudentId}
+            options={studentOptions}
+            placeholder="Select student"
+            filter
+          />
+          <InputField
+            label="Subject"
+            required
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            placeholder="e.g. English, Math"
+          />
+          <div className="grid grid-cols-2 gap-3">
+            <InputField
+              label="Score"
+              required
+              type="number"
+              min={0}
+              value={score}
+              onChange={(e) => setScore(e.target.value)}
+            />
+            <InputField
+              label="Max score"
+              type="number"
+              min={1}
+              value={maxScore}
+              onChange={(e) => setMaxScore(e.target.value)}
+            />
           </div>
-        </div>
-      )}
+          <div className="grid grid-cols-2 gap-3">
+            <Dropdown
+              label="Exam type"
+              value={formExamType}
+              onChange={setFormExamType}
+              options={[
+                { value: 'quiz', label: 'Quiz' },
+                { value: 'midterm', label: 'Midterm' },
+                { value: 'final', label: 'Final' },
+                { value: 'assignment', label: 'Assignment' },
+              ]}
+            />
+            <InputField
+              label="Exam date"
+              type="date"
+              value={examDate}
+              onChange={(e) => setExamDate(e.target.value)}
+            />
+          </div>
+          <InputField
+            label="Remarks"
+            value={remarks}
+            onChange={(e) => setRemarks(e.target.value)}
+            placeholder="Optional"
+          />
+
+          {score && maxScore && !Number.isNaN(Number(score)) && (
+            <p className="text-xs text-muted-foreground">
+              Preview: {((Number(score) / (Number(maxScore) || 100)) * 100).toFixed(1)}% →{' '}
+              {letterFromPercent((Number(score) / (Number(maxScore) || 100)) * 100)}
+            </p>
+          )}
+
+          {formError && <ErrorBanner message={formError} />}
+        </form>
+      </FormDialog>
     </>
   );
 }

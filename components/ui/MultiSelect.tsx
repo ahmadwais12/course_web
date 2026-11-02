@@ -4,6 +4,13 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, ChevronDown, Loader2, Search, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { SelectOption } from './SearchableSelect';
+import {
+  fieldInvalidClass,
+  fieldOverlaySearchClass,
+  fieldTriggerClass,
+  fieldTriggerOpenClass,
+} from '@/components/ports/fieldStyles';
+import FieldOverlay from '@/components/ui/FieldOverlay';
 
 type MultiSelectProps = {
   value: string[];
@@ -38,6 +45,7 @@ export default function MultiSelect({
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const rootRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const selectedOptions = useMemo(
@@ -53,10 +61,10 @@ export default function MultiSelect({
 
   useEffect(() => {
     const onDoc = (e: MouseEvent) => {
-      if (!rootRef.current?.contains(e.target as Node)) {
-        setOpen(false);
-        setQuery('');
-      }
+      const target = e.target as Node;
+      if (rootRef.current?.contains(target) || overlayRef.current?.contains(target)) return;
+      setOpen(false);
+      setQuery('');
     };
     document.addEventListener('mousedown', onDoc);
     return () => document.removeEventListener('mousedown', onDoc);
@@ -82,12 +90,10 @@ export default function MultiSelect({
         disabled={disabled || loading}
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          'emis-multiselect flex w-full min-h-10 items-center gap-2 rounded-lg border px-3 py-2 text-sm text-left transition-colors',
-          'bg-card text-foreground border-border',
-          'hover:border-primary/60',
-          open && 'border-primary ring-1 ring-primary',
-          invalid && 'border-destructive ring-1 ring-destructive',
-          (disabled || loading) && 'opacity-60 cursor-not-allowed'
+          'emis-multiselect',
+          fieldTriggerClass,
+          open && fieldTriggerOpenClass,
+          invalid && fieldInvalidClass
         )}
       >
         <div className="flex-1 flex flex-wrap gap-1.5 min-w-0">
@@ -146,63 +152,61 @@ export default function MultiSelect({
         )}
       </button>
 
-      {open && (
-        <div className="emis-multiselect-overlay absolute z-50 mt-1 w-full rounded-lg border border-border bg-popover text-popover-foreground shadow-lg overflow-hidden">
-          {filter && (
-            <div className="p-2 border-b border-border">
-              <div className="flex items-center gap-2 rounded-md border border-border bg-card px-2.5 py-1.5">
-                <Search size={14} className="text-muted-foreground shrink-0" />
-                <input
-                  ref={inputRef}
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder={filterPlaceholder}
-                  className="w-full bg-transparent text-sm outline-none border-0 p-0 focus:ring-0"
-                />
-              </div>
+      <FieldOverlay open={open} anchorRef={rootRef} overlayRef={overlayRef} className="emis-multiselect-overlay">
+        {filter && (
+          <div className="border-b border-border p-2">
+            <div className={fieldOverlaySearchClass}>
+              <Search size={14} className="shrink-0 text-muted-foreground" />
+              <input
+                ref={inputRef}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={filterPlaceholder}
+                className="w-full border-0 bg-transparent p-0 text-sm outline-none focus:ring-0"
+              />
             </div>
+          </div>
+        )}
+        <ul className="min-h-0 flex-1 overflow-y-auto py-1">
+          {filtered.length === 0 && (
+            <li className="px-3 py-2 text-sm text-muted-foreground">No results</li>
           )}
-          <ul className="max-h-56 overflow-y-auto py-1">
-            {filtered.length === 0 && (
-              <li className="px-3 py-2 text-sm text-muted-foreground">No results</li>
-            )}
-            {filtered.map((opt) => {
-              const checked = value.includes(opt.value);
-              return (
-                <li key={opt.value}>
-                  <button
-                    type="button"
+          {filtered.map((opt) => {
+            const checked = value.includes(opt.value);
+            return (
+              <li key={opt.value}>
+                <button
+                  type="button"
+                  className={cn(
+                    'emis-multiselect-item flex w-full items-center gap-2 px-3 py-2 text-sm text-left transition-colors',
+                    checked
+                      ? 'bg-primary/10 text-foreground'
+                      : 'text-foreground hover:bg-muted'
+                  )}
+                  onClick={() => toggle(opt.value)}
+                >
+                  <span
                     className={cn(
-                      'emis-multiselect-item flex w-full items-center gap-2 px-3 py-2 text-sm text-left transition-colors',
+                      'w-4 h-4 rounded border flex items-center justify-center shrink-0',
                       checked
-                        ? 'bg-primary/10 text-foreground'
-                        : 'text-foreground hover:bg-muted'
+                        ? 'bg-primary border-primary text-primary-foreground'
+                        : 'border-border'
                     )}
-                    onClick={() => toggle(opt.value)}
                   >
-                    <span
-                      className={cn(
-                        'w-4 h-4 rounded border flex items-center justify-center shrink-0',
-                        checked
-                          ? 'bg-primary border-primary text-primary-foreground'
-                          : 'border-border'
-                      )}
-                    >
-                      {checked && <Check size={12} />}
-                    </span>
-                    <span className="flex-1 truncate">{opt.label}</span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-          {value.length > 0 && (
-            <div className="px-3 py-2 border-t border-border text-xs text-green-600 dark:text-green-400">
-              {value.length} permission{value.length !== 1 ? 's' : ''} selected
-            </div>
-          )}
-        </div>
-      )}
+                    {checked && <Check size={12} />}
+                  </span>
+                  <span className="flex-1 truncate">{opt.label}</span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+        {value.length > 0 && (
+          <div className="px-3 py-2 border-t border-border text-xs text-green-600 dark:text-green-400">
+            {value.length} selected
+          </div>
+        )}
+      </FieldOverlay>
     </div>
   );
 }

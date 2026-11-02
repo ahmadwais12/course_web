@@ -23,9 +23,13 @@ CREATE TABLE public.tenants (
   organization_type text DEFAULT 'branch'::text CHECK (organization_type = ANY (ARRAY['central'::text, 'branch'::text])),
   parent_tenant_id uuid,
   description text,
+  bio text,
+  tagline text,
   logo_url text,
   website text,
   address text,
+  city text,
+  country text,
   phone text,
   email text,
   max_users integer DEFAULT 100,
@@ -44,6 +48,49 @@ CREATE TABLE public.tenants (
   nid bigint NOT NULL DEFAULT nextval('tenants_nid_seq'::regclass) UNIQUE,
   CONSTRAINT tenants_pkey PRIMARY KEY (id),
   CONSTRAINT tenants_parent_tenant_id_fkey FOREIGN KEY (parent_tenant_id) REFERENCES public.tenants(id)
+);
+CREATE TABLE public.business_plans (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  slug text NOT NULL UNIQUE,
+  description text,
+  status text DEFAULT 'active'::text,
+  is_active boolean DEFAULT true,
+  price numeric DEFAULT 0,
+  currency text DEFAULT 'AFN'::text,
+  billing_interval text DEFAULT 'monthly'::text,
+  duration_months integer,
+  trial_days integer DEFAULT 0,
+  max_users integer,
+  max_storage_mb integer,
+  max_branches integer,
+  features ARRAY DEFAULT '{}'::text[],
+  sort_order integer DEFAULT 0,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT business_plans_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.business_types (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  slug text NOT NULL UNIQUE,
+  description text,
+  status text DEFAULT 'active'::text,
+  is_active boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT business_types_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.messaging_types (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  slug text NOT NULL UNIQUE,
+  description text,
+  status text DEFAULT 'active'::text,
+  is_active boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT messaging_types_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.users (
   id uuid NOT NULL,
@@ -1611,7 +1658,7 @@ CREATE TABLE public.job_announcements (
 CREATE TABLE public.chat_groups (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   name text,
-  type text NOT NULL DEFAULT 'direct'::text CHECK (type = ANY (ARRAY['direct'::text, 'group'::text, 'class_group'::text])),
+  type text NOT NULL DEFAULT 'direct'::text,
   created_by uuid,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),

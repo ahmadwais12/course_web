@@ -29,18 +29,27 @@ function initials(name: string) {
 
 type UserAvatarProps = {
   name: string;
+  src?: string | null;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
 };
 
-export default function UserAvatar({ name, size = 'md', className }: UserAvatarProps) {
+export default function UserAvatar({ name, src, size = 'md', className }: UserAvatarProps) {
+  const sizeClass =
+    size === 'sm' ? 'h-8 w-8 text-[11px]' : size === 'lg' ? 'h-12 w-12 text-base' : 'h-10 w-10 text-sm';
+  if (src) {
+    return (
+      <span className={cn('relative inline-flex shrink-0 overflow-hidden rounded-full', sizeClass, className)}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={src} alt="" className="h-full w-full object-cover" />
+      </span>
+    );
+  }
   return (
     <span
       className={cn(
         'flex shrink-0 items-center justify-center rounded-full font-bold',
-        size === 'sm' && 'h-8 w-8 text-[11px]',
-        size === 'md' && 'h-10 w-10 text-sm',
-        size === 'lg' && 'h-12 w-12 text-base',
+        sizeClass,
         toneFor(name),
         className
       )}

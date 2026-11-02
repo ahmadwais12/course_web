@@ -1,53 +1,68 @@
 'use client';
 
-import React from 'react';
-import { usePathname } from 'next/navigation';
+import React, { Suspense } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Sidebar from './Sidebar';
-import { Bell, Search } from 'lucide-react';
+import { ArrowLeft, Bell } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import LanguageSelector from './LanguageSelector';
 import { useLanguage } from '@/context/LanguageContext';
 import { cn } from '@/lib/utils';
+import NavUserMenu, { type NavUser } from './NavUserMenu';
+import { useDataRefresh } from '@/context/DataRefreshContext';
+import AppBreadcrumb from './AppBreadcrumb';
+
+function MessagingNavBack() {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  if (pathname !== '/messaging' || !searchParams.get('c')) return null;
+  return (
+    <button
+      type="button"
+      className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+      aria-label="Back to conversations"
+      onClick={() => router.push('/messaging')}
+    >
+      <ArrowLeft size={20} />
+    </button>
+  );
+}
 
 export default function DashboardLayout({
   children,
   role,
+  user,
 }: {
   children: React.ReactNode;
   role?: string;
+  user?: NavUser | null;
 }) {
   const { t, isRTL, lang, setLang } = useLanguage();
   const pathname = usePathname() || '/dashboard';
+  const { tick } = useDataRefresh();
 
   return (
     <div
       className={cn(
-        'emis-shell flex min-h-screen bg-background text-foreground',
+        'emis-shell flex h-screen h-dvh overflow-hidden bg-background text-foreground',
         isRTL ? 'flex-row-reverse' : 'flex-row'
       )}
     >
       <Sidebar role={role} />
 
-      <main className={cn('flex min-h-screen flex-1 flex-col', isRTL ? 'lg:mr-64' : 'lg:ml-64')}>
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-card px-4 ps-14 sm:px-6 lg:ps-6">
-          <div className="flex min-w-0 flex-1 items-center gap-4">
-            <div className="relative hidden w-full max-w-md md:block">
-              <Search
-                className={cn(
-                  'absolute top-1/2 -translate-y-1/2 text-muted-foreground',
-                  isRTL ? 'right-3' : 'left-3'
-                )}
-                size={18}
-              />
-              <input
-                type="text"
-                placeholder={t.search}
-                className={cn(
-                  'w-full rounded-lg border border-border bg-card py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-all focus:border-primary focus:ring-2 focus:ring-ring/30',
-                  isRTL ? 'pe-10 ps-4' : 'ps-10 pe-4'
-                )}
-              />
-            </div>
+      <main
+        className={cn(
+          'flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-3 lg:py-3',
+          isRTL ? 'lg:ml-3 lg:mr-[calc(16rem+1.5rem)] lg:pl-3 lg:pr-0' : 'lg:ml-[calc(16rem+1.5rem)] lg:mr-3 lg:pl-0 lg:pr-3'
+        )}
+      >
+        <header className="z-30 mb-3 flex h-16 shrink-0 items-center justify-between rounded-2xl border border-border bg-card px-4 ps-14 shadow-card sm:px-6 lg:ps-6">
+          <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-4">
+            <Suspense fallback={null}>
+              <MessagingNavBack />
+            </Suspense>
+            <AppBreadcrumb />
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
@@ -71,20 +86,24 @@ export default function DashboardLayout({
                 )}
               />
             </button>
-            <div className="mx-1 hidden h-8 w-px bg-border sm:block" />
-            <div className="hidden items-center gap-2 sm:flex">
-              <span className="emis-btn-primary flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-bold">
-                DF
-              </span>
-              <div className={cn('leading-tight', isRTL ? 'text-left' : 'text-right')}>
-                <p className="m-0 text-sm font-semibold text-foreground">{t.allAccess}</p>
-                <p className="m-0 text-xs capitalize text-muted-foreground">{role || 'User'}</p>
-              </div>
-            </div>
+            <NavUserMenu
+              user={{
+                ...user,
+                role: user?.role || role,
+              }}
+            />
           </div>
         </header>
 
-        <div key={pathname} className="flex-1 bg-background p-4 sm:p-6">
+        <div
+          key={pathname.startsWith('/messaging') ? pathname : `${pathname}:${tick}`}
+          className={cn(
+            'min-h-0 min-w-0 flex-1 overflow-x-hidden overscroll-y-contain rounded-2xl bg-background',
+            pathname.startsWith('/messaging') && pathname !== '/messaging/new'
+              ? 'flex flex-col overflow-hidden p-0'
+              : 'overflow-y-auto p-4 sm:p-6'
+          )}
+        >
           {children}
         </div>
       </main>

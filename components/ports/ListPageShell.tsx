@@ -74,7 +74,7 @@ export default function ListPageShell<T>({
   onDateRangeChange,
 }: ListPageShellProps<T>) {
   return (
-    <div className="space-y-4 animate-fade-up">
+    <div className="min-w-0 space-y-4 animate-fade-up">
       <PageHeader
         title={title}
         description={description}
@@ -91,17 +91,16 @@ export default function ListPageShell<T>({
 
       {children}
 
-      {onDateRangeChange && dateFrom && dateTo && (
-        <div className="rounded-2xl border border-border bg-card p-3 shadow-card sm:p-4">
-          <DateFilterBar from={dateFrom} to={dateTo} onChange={onDateRangeChange} />
-        </div>
-      )}
-
       <FilterSection
         search={search}
         onSearchChange={onSearchChange}
         searchPlaceholder={searchPlaceholder}
         onReset={onResetFilters}
+        extra={
+          onDateRangeChange && dateFrom && dateTo ? (
+            <DateFilterBar from={dateFrom} to={dateTo} onChange={onDateRangeChange} />
+          ) : undefined
+        }
         activeCount={
           filters.filter((f) => Boolean(f.value)).length + (dateFrom || dateTo ? 1 : 0)
         }
@@ -114,17 +113,12 @@ export default function ListPageShell<T>({
             onChange={f.onChange}
             options={f.options}
             placeholder={`All ${f.label.toLowerCase()}`}
-            filter={f.options.length > 6}
             clearable
           />
         ))}
       </FilterSection>
 
-      <SectionPanel
-        title={title}
-        description={`Total: ${total}`}
-        bodyClassName="pt-2"
-      >
+      <SectionPanel description={`Total: ${total}`} bodyClassName="pt-2">
         <DataTable
           columns={columns}
           rows={rows}

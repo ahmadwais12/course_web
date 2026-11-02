@@ -19,8 +19,12 @@ export async function GET() {
 
     const admin = createSupabaseAdminClient();
     const conversations = await loadConversationSummaries(admin, user.id);
+    const { emptyMessagingPrefs, loadMessagingPrefs } = await import('@/lib/messaging-prefs');
+    const { prefs } = await loadMessagingPrefs(admin, user.id).catch(() => ({
+      prefs: emptyMessagingPrefs(),
+    }));
 
-    return NextResponse.json({ currentUserId: user.id, conversations });
+    return NextResponse.json({ currentUserId: user.id, conversations, prefs });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to load conversations';
     return NextResponse.json({ error: message }, { status: 500 });

@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev --turbopack -p 9999",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 9999",
     "lint": "oxlint",
     "type-check": "tsc --noEmit",
     "check-all": "npm run lint && npm run type-check"
@@ -13,6 +13,7 @@
   "dependencies": {
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.49.4",
+    "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "d3-geo": "^3.1.1",
     "framer-motion": "^12.34.0",
@@ -21,6 +22,7 @@
     "posthog-js": "^1.270.1",
     "react": "^19",
     "react-dom": "^19",
+    "recharts": "^2.15.4",
     "tailwind-merge": "^3.4.0",
     "topojson-client": "^3.1.0",
     "world-atlas": "^2.0.2"

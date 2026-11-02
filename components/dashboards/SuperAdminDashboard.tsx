@@ -1,140 +1,121 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { 
-  Building2, 
-  Users, 
-  CreditCard, 
-  Plus, 
-  Search, 
-  MoreVertical, 
-  ShieldCheck,
-  Activity,
-  Globe
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { DashboardBarChart, DashboardPieChart } from '@/components/dashboards/DashboardCharts';
+import type { ChartConfig } from '@/components/ui/chart';
+import {
+  DataTable,
+  ErrorBanner,
+  PageHeader,
+  PortButton,
+  StatusChip,
+  statusToneFromValue,
+  StatCard,
+} from '@/components/ports';
+import { toast } from '@/components/ui/Toast';
+import type { BusinessRow } from '@/lib/business';
+import { businessStatusFromRow } from '@/lib/business';
+import { publicBusinessPath } from '@/lib/business-url';
+
+const PLAN_CONFIG = {
+  count: { label: 'Businesses', color: 'var(--chart-1)' },
+} satisfies ChartConfig;
+
+const STATUS_CONFIG = {
+  pending: { label: 'Pending', color: 'var(--chart-5)' },
+  active: { label: 'Active', color: 'var(--chart-4)' },
+  inactive: { label: 'Inactive', color: '#91a0b0' },
+} satisfies ChartConfig;
 
 export default function SuperAdminDashboard() {
-  const [institutes, setInstitutes] = useState<
-    { id: number; name: string; subdomain: string; owner: string; status: string; plan: string; users: number }[]
-  >([]);
+  const router = useRouter();
+  const [items, setItems] = useState<BusinessRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Mock data for demo
-    setInstitutes([
-      { id: 1, name: 'Global Academy', subdomain: 'global', owner: 'admin@global.com', status: 'active', plan: 'enterprise', users: 1250 },
-      { id: 2, name: 'Tech Institute', subdomain: 'tech', owner: 'admin@tech.com', status: 'active', plan: 'pro', users: 450 },
-      { id: 3, name: 'Future School', subdomain: 'future', owner: 'admin@future.com', status: 'trial', plan: 'basic', users: 50 },
-    ]);
-    setLoading(false);
+    fetch('/api/businesses?type=central')
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to load businesses');
+        setItems(Array.isArray(data) ? data : []);
+      })
+      .catch((err) => {
+        const message = err instanceof Error ? err.message : 'Failed to load businesses';
+        setError(message);
+        toast.error(message);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
+  const statusCounts = useMemo(() => {
+    const counts = { pending: 0, active: 0, inactive: 0 };
+    for (const item of items) {
+      const status = businessStatusFromRow(item);
+      if (status in counts) counts[status as keyof typeof counts] += 1;
+    }
+    return counts;
+  }, [items]);
+
+  const planChart = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const item of items) {
+      const plan = (item.plan || 'standard').toLowerCase();
+      map.set(plan, (map.get(plan) || 0) + 1);
+    }
+    return [...map.entries()].map(([name, count]) => ({ name, count }));
+  }, [items]);
+
+  const statusChart = [
+    { name: 'pending', value: statusCounts.pending, fill: 'var(--color-pending)' },
+    { name: 'active', value: statusCounts.active, fill: 'var(--color-active)' },
+    { name: 'inactive', value: statusCounts.inactive, fill: 'var(--color-inactive)' },
+  ].filter((row) => row.value > 0);
+
   return (
-    <div className="space-y-8 animate-fade-up">
-      {/* Platform Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {[
-          { label: 'Total Institutes', value: '24', icon: Building2, color: 'text-blue-600', bg: 'bg-blue-100' },
-          { label: 'Active Subscriptions', value: '18', icon: CreditCard, color: 'text-emerald-600', bg: 'bg-emerald-100' },
-          { label: 'Total Platform Users', value: '12.5k', icon: Users, color: 'text-purple-600', bg: 'bg-purple-100' },
-          { label: 'Monthly Revenue', value: '$42,500', icon: Activity, color: 'text-orange-600', bg: 'bg-orange-100' },
-        ].map((stat, i) => (
-          <div key={i} className="bg-card p-6 rounded-3xl border border-border shadow-sm">
-            <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center mb-4", stat.bg, stat.color)}>
-              <stat.icon size={24} />
-            </div>
-            <p className="text-sm font-bold text-muted-foreground mb-1">{stat.label}</p>
-            <h3 className="text-2xl font-black text-foreground">{stat.value}</h3>
-          </div>
-        ))}
+    <div className="space-y-4 animate-fade-up">
+      <PageHeader
+        title="Platform Dashboard"
+        description="All businesses, plans, and public sites across DreamFlow."
+        pill={loading ? 'LOADING…' : 'LIVE DATA'}
+        pillTone={loading ? 'neutral' : 'live'}
+        actions={
+          <PortButton variant="primary" onClick={() => router.push('/business/create')}>
+            Create business
+          </PortButton>
+        }
+      />
+      {error && <ErrorBanner message={error} />}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <StatCard label="Businesses" value={items.length} hint="Central tenants" />
+        <StatCard accent="gold" label="Pending" value={statusCounts.pending} hint="Awaiting review" />
+        <StatCard accent="green" label="Active" value={statusCounts.active} hint="Public sites live" />
+        <StatCard accent="purple" label="Inactive" value={statusCounts.inactive} hint="Paused" />
       </div>
-
-      {/* Institute Management */}
-      <div className="bg-card rounded-[2.5rem] border border-border shadow-sm overflow-hidden">
-        <div className="p-8 border-b border-border flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h3 className="text-xl font-black text-foreground">Institute Management</h3>
-            <p className="text-sm text-muted-foreground font-medium">Manage your SaaS clients and their subscriptions</p>
-          </div>
-          <div className="flex gap-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-              <input 
-                type="text" 
-                placeholder="Search institutes..." 
-                className="w-64 rounded-xl border border-border bg-card py-2.5 pl-10 pr-4 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-              />
-            </div>
-            <button className="emis-btn-primary flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold shadow-md transition-all">
-              <Plus size={18} />
-              Add Institute
-            </button>
-          </div>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-muted/50">
-                <th className="px-8 py-4 text-xs font-black text-muted-foreground uppercase tracking-wider">Institute</th>
-                <th className="px-8 py-4 text-xs font-black text-muted-foreground uppercase tracking-wider">Subdomain</th>
-                <th className="px-8 py-4 text-xs font-black text-muted-foreground uppercase tracking-wider">Plan</th>
-                <th className="px-8 py-4 text-xs font-black text-muted-foreground uppercase tracking-wider">Status</th>
-                <th className="px-8 py-4 text-xs font-black text-muted-foreground uppercase tracking-wider">Users</th>
-                <th className="px-8 py-4 text-xs font-black text-muted-foreground uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {institutes.map((inst) => (
-                <tr key={inst.id} className="hover:bg-muted/50 transition-colors">
-                  <td className="px-8 py-5">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center text-blue-600 font-bold">
-                        {inst.name[0]}
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-foreground">{inst.name}</p>
-                        <p className="text-xs text-muted-foreground">{inst.owner}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-8 py-5">
-                    <div className="flex items-center gap-1 text-sm font-medium text-muted-foreground">
-                      <Globe size={14} className="text-muted-foreground" />
-                      {inst.subdomain}.emispro.com
-                    </div>
-                  </td>
-                  <td className="px-8 py-5">
-                    <span className={cn(
-                      "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider",
-                      inst.plan === 'enterprise' ? "bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300" : 
-                      inst.plan === 'pro' ? "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300" : "bg-muted text-foreground/80"
-                    )}>
-                      {inst.plan}
-                    </span>
-                  </td>
-                  <td className="px-8 py-5">
-                    <div className="flex items-center gap-2">
-                      <div className={cn(
-                        "w-2 h-2 rounded-full",
-                        inst.status === 'active' ? "bg-emerald-500" : "bg-orange-500"
-                      )} />
-                      <span className="text-sm font-bold text-foreground/80 capitalize">{inst.status}</span>
-                    </div>
-                  </td>
-                  <td className="px-8 py-5 text-sm font-bold text-muted-foreground">{inst.users}</td>
-                  <td className="px-8 py-5">
-                    <button className="p-2 hover:bg-muted rounded-lg transition-colors text-muted-foreground">
-                      <MoreVertical size={18} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <DashboardPieChart title="Business status" description="Lifecycle mix" data={statusChart} config={STATUS_CONFIG} />
+        <DashboardBarChart title="Plans" description="Businesses by plan" data={planChart} config={PLAN_CONFIG} />
       </div>
+      <DataTable
+        columns={[
+          { key: 'name', header: 'Business', render: (r) => r.name || '—' },
+          { key: 'slug', header: 'Public URL', render: (r) => publicBusinessPath(r.slug) },
+          { key: 'plan', header: 'Plan', render: (r) => (r.plan || 'standard').toUpperCase() },
+          {
+            key: 'status',
+            header: 'Status',
+            render: (r) => {
+              const label = businessStatusFromRow(r);
+              return <StatusChip label={label} tone={statusToneFromValue(label)} />;
+            },
+          },
+          { key: 'branch_count', header: 'Branches', render: (r) => Number(r.branch_count ?? 0) },
+        ]}
+        rows={items}
+        rowKey={(r) => r.id}
+        emptyMessage="No businesses yet."
+      />
     </div>
   );
 }

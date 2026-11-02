@@ -1,8 +1,9 @@
 'use client';
 
 import React from 'react';
-import { CalendarRange } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import InputField from '@/components/ports/InputField';
+import SegmentedControl from '@/components/ports/SegmentedControl';
 
 export type DatePreset = 'today' | '7d' | '30d' | '90d' | 'custom';
 
@@ -30,12 +31,11 @@ export function detectPreset(from: string, to: string): DatePreset {
   return 'custom';
 }
 
-const PRESETS: { id: DatePreset; label: string }[] = [
-  { id: 'today', label: 'Today' },
-  { id: '7d', label: '7 days' },
-  { id: '30d', label: '30 days' },
-  { id: '90d', label: '90 days' },
-  { id: 'custom', label: 'Custom' },
+const PRESETS = [
+  { value: 'today', label: 'Today' },
+  { value: '7d', label: '7 days' },
+  { value: '30d', label: '30 days' },
+  { value: '90d', label: '90 days' },
 ];
 
 type DateFilterBarProps = {
@@ -49,46 +49,26 @@ export default function DateFilterBar({ from, to, onChange, className }: DateFil
   const preset = detectPreset(from, to);
 
   return (
-    <div className={cn('flex flex-wrap items-end gap-2', className)}>
-      <div className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/70 p-1">
-        {PRESETS.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => {
-              if (item.id === 'custom') return;
-              onChange(presetRange(item.id));
-            }}
-            className={cn(
-              'rounded-full px-3 py-1.5 text-xs font-semibold transition-all duration-200',
-              preset === item.id
-                ? 'emis-btn-primary shadow-sm'
-                : 'text-muted-foreground hover:bg-card hover:text-foreground'
-            )}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
-      <label className="flex items-center gap-2 text-[11px] font-medium text-muted-foreground">
-        <CalendarRange size={14} />
-        From
-        <input
-          type="date"
-          value={from}
-          onChange={(e) => onChange({ from: e.target.value, to })}
-          className="h-9 rounded-lg border border-border bg-card px-2 text-xs text-foreground"
-        />
-      </label>
-      <label className="flex items-center gap-2 text-[11px] font-medium text-muted-foreground">
-        To
-        <input
-          type="date"
-          value={to}
-          onChange={(e) => onChange({ from, to: e.target.value })}
-          className="h-9 rounded-lg border border-border bg-card px-2 text-xs text-foreground"
-        />
-      </label>
+    <div className={cn('flex flex-wrap items-end gap-3', className)}>
+      <SegmentedControl
+        value={preset === 'custom' ? '' : preset}
+        onChange={(value) => onChange(presetRange(value as DatePreset))}
+        options={PRESETS}
+      />
+      <InputField
+        label="From"
+        type="date"
+        value={from}
+        onChange={(e) => onChange({ from: e.target.value, to })}
+        containerClassName="w-[160px]"
+      />
+      <InputField
+        label="To"
+        type="date"
+        value={to}
+        onChange={(e) => onChange({ from, to: e.target.value })}
+        containerClassName="w-[160px]"
+      />
     </div>
   );
 }

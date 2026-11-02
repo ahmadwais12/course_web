@@ -3,7 +3,7 @@ import { privateAppPageMetadata } from '@/lib/seo';
 
 export const metadata: Metadata = privateAppPageMetadata(
   'New Conversation',
-  'Start a direct message or create a group chat.',
+  'Search users in a paginated list, start a direct chat, or add members to a group.',
   '/messaging/new'
 );
 

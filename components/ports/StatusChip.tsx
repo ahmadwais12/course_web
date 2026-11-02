@@ -47,6 +47,6 @@ export function statusToneFromValue(status: string): Tone {
     )
   )
     return 'purple';
-  if (['voided', 'close', 'closed'].includes(s)) return 'gray';
+  if (['voided', 'close', 'closed', 'archived'].includes(s)) return 'gray';
   return 'blue';
 }

@@ -6,7 +6,7 @@ export const PRIVATE_APP_PAGES = [
   {
     path: '/dashboard',
     title: 'Dashboard',
-    description: 'Overview of institute KPIs, activity, and quick actions in DreamFlow EMIS.',
+    description: 'General DreamFlow dashboard with system-wide KPIs, charts, and role dashboards.',
   },
   {
     path: '/courses',
@@ -56,12 +56,12 @@ export const PRIVATE_APP_PAGES = [
   {
     path: '/messaging',
     title: 'Messaging',
-    description: 'Direct messages and group conversations across DreamFlow.',
+    description: 'WhatsApp-style inbox with mute, block, polls, disappearing messages, starred chats, and contact info.',
   },
   {
     path: '/messaging/new',
     title: 'New Conversation',
-    description: 'Start a direct message or create a group chat.',
+    description: 'Search users in a paginated list, start a direct chat, or add members to a group.',
   },
   {
     path: '/observers',
@@ -80,14 +80,49 @@ export const PRIVATE_APP_PAGES = [
     description: 'Internal component gallery for DreamFlow list and form UI patterns.',
   },
   {
+    path: '/ports/business-types',
+    title: 'Business Types',
+    description: 'Create and manage business types used when registering businesses.',
+  },
+  {
+    path: '/ports/plans',
+    title: 'Plans',
+    description: 'Manage business plan pricing, duration, features, and storage limits.',
+  },
+  {
+    path: '/ports/messaging-types',
+    title: 'Messaging Types',
+    description: 'Create and manage messaging types used when starting chats.',
+  },
+  {
     path: '/settings',
     title: 'Settings',
     description: 'Configure institute preferences, profile, and application settings.',
   },
   {
+    path: '/profile',
+    title: 'Profile',
+    description: 'View and update your DreamFlow account profile.',
+  },
+  {
     path: '/support',
     title: 'Support Overview',
     description: 'Call center, support tickets, inbox messages, and social channels at a glance.',
+  },
+  {
+    path: '/business',
+    title: 'Business Management',
+    description: 'Create and manage businesses and their branches.',
+  },
+  {
+    path: '/business/create',
+    title: 'Create Business',
+    description: 'Create a business with bio, contact details, city, services, logo, and cover image.',
+  },
+  {
+    path: '/business/branches',
+    title: 'Branches',
+    description: 'View and manage branches linked to businesses.',
   },
   {
     path: '/users',

@@ -14,7 +14,6 @@ import {
   Settings,
   Menu,
   X,
-  LogOut,
   Briefcase,
   CreditCard,
   FileText,
@@ -39,6 +38,9 @@ import {
   Share2,
   MessagesSquare,
   MessageSquarePlus,
+  Building2,
+  GitBranch,
+  Layers,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/context/LanguageContext';
@@ -141,6 +143,27 @@ const messagingLinks = [
 /** Ports = sidebar group name only; pages live under this dropdown */
 const portsLinks = [
   { name: 'grade', href: '/grades', icon: GraduationCap, labelKey: 'grade' },
+  {
+    name: 'business-type',
+    href: '/ports/business-types',
+    icon: Building2,
+    labelKey: 'businessType',
+    exact: true,
+  },
+  {
+    name: 'plan',
+    href: '/ports/plans',
+    icon: Layers,
+    labelKey: 'plan',
+    exact: true,
+  },
+  {
+    name: 'messaging-type',
+    href: '/ports/messaging-types',
+    icon: MessageSquarePlus,
+    labelKey: 'messagingType',
+    exact: true,
+  },
 ];
 
 /** KMS Team section: Users → Permissions → Roles */
@@ -168,7 +191,32 @@ const observerLinks = [
   },
 ];
 
-export default function Sidebar({ role }: { role?: string }) {
+/** Business Management: businesses (central) and their branches */
+const businessLinks = [
+  {
+    name: 'businesses',
+    href: '/business',
+    icon: Building2,
+    labelKey: 'businesses',
+    exact: true,
+  },
+  {
+    name: 'create-business',
+    href: '/business/create',
+    icon: Briefcase,
+    labelKey: 'createBusiness',
+    exact: true,
+  },
+  {
+    name: 'branches',
+    href: '/business/branches',
+    icon: GitBranch,
+    labelKey: 'branches',
+    exact: true,
+  },
+];
+
+export default function Sidebar({ role: _role }: { role?: string }) {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
   const { t, isRTL } = useLanguage();
@@ -198,9 +246,9 @@ export default function Sidebar({ role }: { role?: string }) {
   const messagingActive = pathname.startsWith('/messaging');
   const [messagingOpen, setMessagingOpen] = useState(messagingActive);
 
-  const portsActive = portsLinks.some(
-    (l) => pathname === l.href || pathname.startsWith(`${l.href}/`)
-  );
+  const portsActive =
+    pathname.startsWith('/ports') ||
+    portsLinks.some((l) => pathname === l.href || pathname.startsWith(`${l.href}/`));
   const [portsOpen, setPortsOpen] = useState(portsActive);
 
   const userMgmtActive = pathname.startsWith('/users');
@@ -208,6 +256,9 @@ export default function Sidebar({ role }: { role?: string }) {
 
   const observersActive = pathname.startsWith('/observers');
   const [observersOpen, setObserversOpen] = useState(observersActive);
+
+  const businessActive = pathname.startsWith('/business');
+  const [businessOpen, setBusinessOpen] = useState(businessActive);
 
   return (
     <>
@@ -222,23 +273,21 @@ export default function Sidebar({ role }: { role?: string }) {
 
       <aside
         className={cn(
-          'fixed top-0 z-40 h-full w-64 overflow-hidden border-border bg-card transition-transform duration-300 ease-in-out lg:translate-x-0',
-          isRTL ? 'right-0 border-s' : 'left-0 border-e',
+          'fixed top-3 bottom-3 z-40 w-64 overflow-hidden rounded-2xl border border-border bg-card shadow-card transition-transform duration-300 ease-in-out lg:translate-x-0',
+          isRTL ? 'right-3 border-s' : 'left-3 border-e',
           isOpen
             ? 'translate-x-0'
             : isRTL
-              ? 'translate-x-full'
-              : '-translate-x-full'
+              ? 'translate-x-[calc(100%+0.75rem)]'
+              : '-translate-x-[calc(100%+0.75rem)]'
         )}
       >
         <div className="flex flex-col h-full">
-          <div className="border-b border-border bg-gradient-to-br from-sky-100 via-blue-50 to-indigo-50 p-5 dark:from-blue-950/70 dark:via-[#0f1c33] dark:to-indigo-950/40">
-            <div className="flex flex-col gap-2">
-              <BrandLogo size={44} showName={false} className="items-start" />
+          <div className="border-b border-border p-6">
+            <div className="flex items-center gap-3">
+              <BrandLogo size={40} showName={false} />
               <div>
-                <h1 className="bg-gradient-to-r from-sky-500 via-blue-600 to-indigo-600 bg-clip-text font-bold leading-tight text-transparent">
-                  {APP_NAME}
-                </h1>
+                <h1 className="font-bold leading-tight text-foreground">{APP_NAME}</h1>
                 <p className="text-xs text-muted-foreground">{t.instituteManager}</p>
               </div>
             </div>
@@ -295,6 +344,60 @@ export default function Sidebar({ role }: { role?: string }) {
               {messagingOpen && (
                 <div className="mt-1 ms-2 space-y-1 border-s border-border ps-2">
                   {messagingLinks.map((item) => {
+                    const isActive = item.exact
+                      ? pathname === item.href
+                      : pathname === item.href || pathname.startsWith(`${item.href}/`);
+                    return (
+                      <Link
+                        key={item.name}
+                        href={item.href}
+                        prefetch
+                        scroll={false}
+                        onClick={() => setIsOpen(false)}
+                        className={cn(
+                          'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
+                          isActive
+                            ? 'bg-accent text-accent-foreground shadow-sm ring-1 ring-primary/40'
+                            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                        )}
+                      >
+                        <item.icon
+                          size={18}
+                          className={cn(
+                            isActive ? 'text-accent-foreground' : 'text-muted-foreground'
+                          )}
+                        />
+                        {t[item.labelKey as keyof typeof t]}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Business Management — businesses and branches */}
+            <div className="pt-3 mt-2 border-t border-border space-y-1">
+              <button
+                type="button"
+                onClick={() => setBusinessOpen((v) => !v)}
+                className={cn(
+                  'w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all',
+                  businessActive
+                    ? 'bg-accent text-accent-foreground'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                )}
+              >
+                <Building2 size={20} />
+                <span className="flex-1 text-start">{t.businessManagement}</span>
+                <ChevronDown
+                  size={16}
+                  className={cn('transition-transform', businessOpen && 'rotate-180')}
+                />
+              </button>
+
+              {businessOpen && (
+                <div className="mt-1 ms-2 space-y-1 border-s border-border ps-2">
+                  {businessLinks.map((item) => {
                     const isActive = item.exact
                       ? pathname === item.href
                       : pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -731,24 +834,6 @@ export default function Sidebar({ role }: { role?: string }) {
               </div>
             )}
           </nav>
-
-          <div className="p-4 border-t border-border">
-            <div className="mb-2 flex items-center gap-3 rounded-xl border border-border bg-muted px-3 py-2.5">
-              <div className="emis-btn-primary flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold">
-                DF
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground truncate">{APP_NAME}</p>
-                <p className="text-xs text-muted-foreground capitalize">
-                  {role ? t[role as keyof typeof t] || role : 'User'}
-                </p>
-              </div>
-            </div>
-            <button className="flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-destructive">
-              <LogOut size={18} />
-              {t.logout}
-            </button>
-          </div>
         </div>
       </aside>
     </>

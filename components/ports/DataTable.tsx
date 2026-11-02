@@ -51,20 +51,22 @@ export default function DataTable<T>({
     onPerPageChange;
 
   return (
-    <div className={cn('w-full', className)}>
+    <div className={cn('w-full min-w-0 max-w-full', className)}>
       {loading ? (
-        <TableSkeleton rows={6} cols={columns.length} />
+        <div className="min-w-0 max-w-full overflow-x-auto">
+          <TableSkeleton rows={6} cols={columns.length} />
+        </div>
       ) : (
         <>
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse whitespace-nowrap text-start">
+          <div className="min-w-0 max-w-full overflow-x-auto overscroll-x-contain">
+            <table className="w-max min-w-full border-collapse whitespace-nowrap text-start">
               <thead>
                 <tr className="bg-muted">
                   {columns.map((col) => (
                     <th
                       key={col.key}
                       className={cn(
-                        'border-b border-border px-4 py-2.5 text-start text-[11px] font-semibold uppercase tracking-wide text-muted-foreground',
+                        'whitespace-nowrap border-b border-border px-4 py-2.5 text-start text-[11px] font-semibold uppercase tracking-wide text-muted-foreground',
                         col.align === 'right' && 'text-end',
                         col.align === 'center' && 'text-center',
                         col.className
@@ -85,7 +87,7 @@ export default function DataTable<T>({
                       <td
                         key={col.key}
                         className={cn(
-                          'px-4 py-3 text-start text-sm text-foreground',
+                          'whitespace-nowrap px-4 py-3 text-start text-sm text-foreground',
                           col.align === 'right' && 'text-end',
                           col.align === 'center' && 'text-center',
                           col.className

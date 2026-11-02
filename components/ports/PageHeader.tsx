@@ -30,13 +30,13 @@ export default function PageHeader({
   return (
     <header
       className={cn(
-        'mb-5 flex flex-wrap items-start justify-between gap-4 animate-fade-up',
+        'flex flex-wrap items-start justify-between gap-4 animate-fade-up',
         className
       )}
     >
       <div className="min-w-0">
-        <h1 className="m-0 text-[27px] font-bold leading-tight tracking-tight text-foreground sm:text-[30px]">
-          <span className="emis-text-brand">{title}</span>
+        <h1 className="m-0 mb-1 text-[27px] font-bold leading-tight tracking-tight text-foreground sm:text-[30px]">
+          {title}
         </h1>
         {description && (
           <p className="m-0 mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">

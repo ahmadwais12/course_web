@@ -6,6 +6,15 @@ export default function robots(): MetadataRoute.Robots {
   const privatePaths = [
     '/api/',
     '/login',
+    // Prefix entries cover nested private routes (e.g. /business/[id])
+    '/business/',
+    '/users/',
+    '/support/',
+    '/messaging/',
+    '/observers/',
+    '/hr/',
+    '/ports/',
+    '/profile',
     ...PRIVATE_APP_PAGES.map((p) => p.path),
   ];
 

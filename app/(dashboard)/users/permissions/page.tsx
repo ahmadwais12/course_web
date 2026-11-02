@@ -1,10 +1,18 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { KeyRound, Pencil, Plus, Trash2, X } from 'lucide-react';
+import { KeyRound } from 'lucide-react';
 import { toast } from '@/components/ui/Toast';
 import type { PermissionRow } from '@/lib/rbac';
-import { cn } from '@/lib/utils';
+import { useListQuery } from '@/hooks/useListQuery';
+import {
+  ErrorBanner,
+  FormDialog,
+  FormDialogFooter,
+  InputField,
+  ListPageShell,
+  RowActions,
+} from '@/components/ports';
 
 export default function PermissionsPage() {
   const [items, setItems] = useState<PermissionRow[]>([]);
@@ -22,6 +30,7 @@ export default function PermissionsPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to load');
       setItems(Array.isArray(data) ? data : []);
+      setError(null);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load permissions';
       setError(message);
@@ -35,6 +44,11 @@ export default function PermissionsPage() {
   useEffect(() => {
     fetchAll();
   }, [fetchAll]);
+
+  const list = useListQuery({
+    items: items as (PermissionRow & Record<string, unknown>)[],
+    searchKeys: ['name', 'guard_name'],
+  });
 
   const openAdd = () => {
     setEditing(null);
@@ -95,126 +109,79 @@ export default function PermissionsPage() {
 
   return (
     <>
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Permissions Management</h1>
-          <p className="text-muted-foreground">Manage system permissions and access controls (KMS workflow).</p>
-        </div>
+      <ListPageShell
+        title="Permissions Management"
+        description="Manage system permissions and access controls (KMS workflow)."
+        primaryAction={{ label: 'Add Permission', onClick: openAdd }}
+        search={list.search}
+        onSearchChange={list.setSearch}
+        searchPlaceholder="Search permissions…"
+        onResetFilters={list.reset}
+        loading={loading}
+        columns={[
+          {
+            key: 'name',
+            header: 'Name',
+            render: (item) => (
+              <span className="inline-flex items-center gap-2 font-semibold text-foreground">
+                <KeyRound size={14} className="text-primary" />
+                {item.name}
+              </span>
+            ),
+          },
+          {
+            key: 'guard_name',
+            header: 'Guard',
+          },
+          {
+            key: 'actions',
+            header: 'Actions',
+            align: 'right',
+            render: (item) => (
+              <RowActions onEdit={() => openEdit(item)} onDelete={() => handleDelete(item)} />
+            ),
+          },
+        ]}
+        rows={list.rows as PermissionRow[]}
+        rowKey={(item) => item.id}
+        page={list.page}
+        perPage={list.perPage}
+        total={list.total}
+        onPageChange={list.setPage}
+        onPerPageChange={list.setPerPage}
+        emptyMessage="No permissions yet. Run sql/rbac_kms_style.sql or add one."
+      >
+        {error && !showDialog && <ErrorBanner message={error} />}
+      </ListPageShell>
 
-        <div className="bg-card border border-border rounded-2xl shadow-sm">
-          <div className="px-6 py-4 border-b border-border flex items-center justify-between gap-4 flex-wrap">
-            <div>
-              <h2 className="text-lg font-semibold text-foreground">Permissions</h2>
-              <p className="text-sm text-muted-foreground">Total: {items.length} permissions</p>
-            </div>
-            <button
-              type="button"
-              onClick={openAdd}
-              className="emis-btn-primary inline-flex items-center gap-2 rounded-xl px-4 py-2 font-bold"
-            >
-              <Plus size={16} />
-              Add Permission
-            </button>
-          </div>
-
-          {loading ? (
-            <div className="p-10 text-center text-muted-foreground font-medium">Loading permissions...</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="border-b border-border text-xs uppercase tracking-wider text-muted-foreground">
-                    <th className="px-6 py-3 font-bold">Name</th>
-                    <th className="px-6 py-3 font-bold">Guard</th>
-                    <th className="px-6 py-3 font-bold text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {items.map((item) => (
-                    <tr key={item.id} className="hover:bg-muted/40">
-                      <td className="px-6 py-4 font-semibold text-foreground">
-                        <span className="inline-flex items-center gap-2">
-                          <KeyRound size={14} className="text-primary" />
-                          {item.name}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-muted-foreground">{item.guard_name}</td>
-                      <td className="px-6 py-4">
-                        <div className="flex justify-end gap-2">
-                          <button
-                            type="button"
-                            onClick={() => openEdit(item)}
-                            className="p-2 rounded-lg border border-border hover:bg-muted text-foreground"
-                          >
-                            <Pencil size={14} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(item)}
-                            className="p-2 rounded-lg border border-destructive/30 hover:bg-destructive/10 text-destructive"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                  {items.length === 0 && (
-                    <tr>
-                      <td colSpan={3} className="px-6 py-10 text-center text-muted-foreground">
-                        No permissions yet. Run <code className="text-xs bg-muted px-1 rounded">sql/rbac_kms_style.sql</code> or add one.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {showDialog && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="emis-dialog bg-popover text-popover-foreground w-full max-w-md rounded-2xl p-6 border border-border shadow-xl">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold">{editing ? 'Edit Permission' : 'Add New Permission'}</h3>
-              <button type="button" onClick={closeDialog} className="text-muted-foreground hover:text-foreground">
-                <X size={18} />
-              </button>
-            </div>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-bold mb-2">Permission Name *</label>
-                <input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                  placeholder="e.g. Students, Add Vehicles, Team"
-                  className="w-full px-4 py-3 rounded-xl bg-card border border-border text-foreground outline-none focus:ring-2 focus:ring-ring/20"
-                />
-                <p className="text-xs text-muted-foreground mt-1">Use Title Case names like KMS (page access or actions).</p>
-              </div>
-              {error && (
-                <div className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-xl px-3 py-2">
-                  {error}
-                </div>
-              )}
-              <div className="flex justify-end gap-2">
-                <button type="button" onClick={closeDialog} className="px-4 py-2 rounded-xl border border-border hover:bg-muted">
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className={cn('emis-btn-primary rounded-xl px-4 py-2 font-bold disabled:opacity-50')}
-                >
-                  {submitting ? 'Saving...' : editing ? 'Update' : 'Create'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <FormDialog
+        open={showDialog}
+        title={editing ? 'Edit Permission' : 'Add New Permission'}
+        onClose={closeDialog}
+        maxWidth="md"
+        footer={
+          <FormDialogFooter
+            onCancel={closeDialog}
+            submitLabel={editing ? 'Update' : 'Create'}
+            submitting={submitting}
+            formId="permission-form"
+          />
+        }
+      >
+        <form id="permission-form" onSubmit={handleSubmit} className="space-y-4">
+          <InputField
+            label="Permission Name"
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. Students, Add Vehicles, Team"
+          />
+          <p className="text-xs text-muted-foreground">
+            Use Title Case names like KMS (page access or actions).
+          </p>
+          {error && showDialog && <ErrorBanner message={error} />}
+        </form>
+      </FormDialog>
     </>
   );
 }

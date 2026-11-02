@@ -55,6 +55,8 @@ export async function POST() {
           email: user.email,
           name: fullName,
           role,
+          phone: null,
+          avatarUrl: user.user_metadata?.avatar_url ?? user.user_metadata?.picture ?? null,
         });
       }
       profile = created;
@@ -66,6 +68,12 @@ export async function POST() {
       email: profile.email ?? user.email,
       name: profile.full_name ?? fullName,
       role: normalizeRole(profile.role ?? role),
+      phone: (profile as { phone?: string | null }).phone ?? null,
+      avatarUrl:
+        (profile as { avatar_url?: string | null }).avatar_url ??
+        user.user_metadata?.avatar_url ??
+        user.user_metadata?.picture ??
+        null,
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Sync failed';

@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Eye, EyeOff, Lock, Mail, Shield, User } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import BrandLogo from '@/components/BrandLogo';
 import ThemeToggle from '@/components/ThemeToggle';
 import LanguageSelector from '@/components/LanguageSelector';
@@ -12,6 +12,7 @@ import { APP_NAME } from '@/lib/branding';
 import { useLanguage } from '@/context/LanguageContext';
 import { toast } from '@/components/ui/Toast';
 import { cn } from '@/lib/utils';
+import { Dropdown, ErrorBanner, InputField, PasswordField, PortButton } from '@/components/ports';
 
 type AuthMode = 'login' | 'signup';
 type SignupRole = 'superadmin' | 'admin';
@@ -39,7 +40,6 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<SignupRole>('admin');
-  const [obscure, setObscure] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -216,110 +216,60 @@ export default function LoginPage() {
             className="bg-card border border-border rounded-3xl p-6 sm:p-8 shadow-sm space-y-5"
           >
             {mode === 'signup' && (
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-foreground/80 ml-1">Full Name</label>
-                <div className="relative">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                  <input
-                    type="text"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="John Doe"
-                    required
-                    minLength={3}
-                    className="w-full pl-11 pr-4 py-3.5 bg-card text-foreground border border-border rounded-2xl placeholder:text-muted-foreground focus:ring-2 focus:ring-ring/20 focus:border-primary outline-none transition-all font-medium"
-                  />
-                </div>
-              </div>
+              <InputField
+                label="Full Name"
+                required
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="John Doe"
+                minLength={3}
+              />
             )}
 
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-foreground/80 ml-1">Email</label>
-              <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@institute.com"
-                  required
-                  className="w-full pl-11 pr-4 py-3.5 bg-card text-foreground border border-border rounded-2xl placeholder:text-muted-foreground focus:ring-2 focus:ring-ring/20 focus:border-primary outline-none transition-all font-medium"
-                />
-              </div>
-            </div>
+            <InputField
+              label="Email"
+              required
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="name@institute.com"
+            />
 
             {mode === 'signup' && (
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-foreground/80 ml-1">Role</label>
-                <div className="relative">
-                  <Shield className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                  <select
-                    value={role}
-                    onChange={(e) => setRole(e.target.value as SignupRole)}
-                    className="w-full pl-11 pr-4 py-3.5 bg-card text-foreground border border-border rounded-2xl focus:ring-2 focus:ring-ring/20 focus:border-primary outline-none transition-all font-bold appearance-none cursor-pointer"
-                  >
-                    {SIGNUP_ROLES.map((r) => (
-                      <option key={r.id} value={r.id}>
-                        {r.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+              <Dropdown
+                label="Role"
+                required
+                value={role}
+                onChange={(value) => setRole(value as SignupRole)}
+                options={SIGNUP_ROLES.map((r) => ({ value: r.id, label: r.label }))}
+                placeholder="Select a role"
+              />
             )}
 
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-foreground/80 ml-1">Password</label>
-              <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                <input
-                  type={obscure ? 'password' : 'text'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                  minLength={mode === 'signup' ? 8 : 6}
-                  className="w-full pl-11 pr-12 py-3.5 bg-card text-foreground border border-border rounded-2xl placeholder:text-muted-foreground focus:ring-2 focus:ring-ring/20 focus:border-primary outline-none transition-all font-medium"
-                />
-                <button
-                  type="button"
-                  onClick={() => setObscure((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground hover:text-foreground rounded-lg"
-                  aria-label={obscure ? 'Show password' : 'Hide password'}
-                >
-                  {obscure ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-              {mode === 'signup' && (
-                <p className="text-xs text-muted-foreground ml-1">
-                  Min 8 characters, 1 uppercase letter, and 1 number
-                </p>
-              )}
-            </div>
+            <PasswordField
+              label="Password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              minLength={mode === 'signup' ? 8 : 6}
+              hint={
+                mode === 'signup'
+                  ? 'Min 8 characters, 1 uppercase letter, and 1 number'
+                  : undefined
+              }
+            />
 
-            {error && (
-              <div className="text-sm font-medium text-destructive bg-destructive/10 border border-destructive/20 rounded-xl px-4 py-3">
-                {error}
-              </div>
-            )}
-
+            {error && <ErrorBanner message={error} />}
             {success && (
-              <div className="text-sm font-medium text-primary bg-accent border border-border rounded-xl px-4 py-3">
+              <div className="rounded-lg border border-border bg-accent px-4 py-3 text-sm font-medium text-primary">
                 {success}
               </div>
             )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="emis-btn-primary w-full rounded-2xl py-3.5 font-black shadow-md transition-all disabled:opacity-50"
-            >
-              {loading
-                ? 'Please wait...'
-                : mode === 'signup'
-                  ? 'Create Account'
-                  : 'Sign In'}
-            </button>
+            <PortButton variant="primary" type="submit" disabled={loading} className="w-full">
+              {loading ? 'Please wait...' : mode === 'signup' ? 'Create Account' : 'Sign In'}
+            </PortButton>
           </form>
 
           <p className="text-center text-sm text-muted-foreground mt-6">

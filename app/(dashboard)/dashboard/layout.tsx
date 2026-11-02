@@ -3,7 +3,7 @@ import { privateAppPageMetadata } from '@/lib/seo';
 
 export const metadata: Metadata = privateAppPageMetadata(
   'Dashboard',
-  'Overview of institute KPIs, activity, and quick actions in DreamFlow EMIS.',
+  'General DreamFlow dashboard with system-wide KPIs, charts, and role dashboards for finance, staff, teachers, and students.',
   '/dashboard'
 );
 

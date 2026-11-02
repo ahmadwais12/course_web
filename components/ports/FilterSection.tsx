@@ -1,11 +1,13 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Filter, RotateCcw, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import PortButton from './PortButton';
 import SearchBar from './SearchBar';
+import { dialogOverlayClass } from './FormDialog';
 
 type FilterSectionProps = {
   search?: string;
@@ -15,6 +17,8 @@ type FilterSectionProps = {
   children?: React.ReactNode;
   onReset?: () => void;
   actions?: React.ReactNode;
+  /** Always-visible extra controls under the search row (e.g. date range). */
+  extra?: React.ReactNode;
   className?: string;
   title?: string;
   /** Number of active filters (shows badge on button) */
@@ -31,19 +35,30 @@ export default function FilterSection({
   children,
   onReset,
   actions,
+  extra,
   className,
   title = 'Filters',
   activeCount = 0,
 }: FilterSectionProps) {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setOpen(false);
     };
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
     document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', onKey);
+    };
   }, [open]);
 
   const hasFilters = React.Children.count(children) > 0;
@@ -86,12 +101,15 @@ export default function FilterSection({
             {actions}
           </div>
         </div>
+        {extra ? <div className="mt-3">{extra}</div> : null}
       </section>
 
+      {mounted &&
+        createPortal(
       <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+          className={dialogOverlayClass}
           role="dialog"
           aria-modal="true"
           aria-labelledby="filters-dialog-title"
@@ -147,7 +165,9 @@ export default function FilterSection({
           </motion.div>
         </motion.div>
       )}
-      </AnimatePresence>
+      </AnimatePresence>,
+          document.body
+        )}
     </>
   );
 }

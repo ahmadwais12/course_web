@@ -1,11 +1,19 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
-import { Activity, Globe, Monitor, Smartphone, Tablet } from 'lucide-react';
-import { StatCard } from '@/components/ports';
+import { useRouter } from 'next/navigation';
+import { Globe, Monitor, Smartphone, Tablet } from 'lucide-react';
+import {
+  DataTable,
+  Dropdown,
+  ErrorBanner,
+  PageHeader,
+  PortButton,
+  SectionPanel,
+  SegmentedControl,
+  StatCard,
+} from '@/components/ports';
 import { toast } from '@/components/ui/Toast';
-import { cn } from '@/lib/utils';
 import DashboardSkeleton from '@/components/dashboards/DashboardSkeleton';
 
 type Overview = {
@@ -140,6 +148,7 @@ function TrendChart({
 }
 
 export default function ObserversAnalyticsPage() {
+  const router = useRouter();
   const [range, setRange] = useState('30d');
   const [surface, setSurface] = useState<'web' | 'app' | 'all'>('web');
   const [overview, setOverview] = useState<Overview | null>(null);
@@ -198,73 +207,52 @@ export default function ObserversAnalyticsPage() {
   }, [overview]);
 
   const ranges = [
-    { id: 'today', label: 'Today' },
-    { id: '7d', label: '7 days' },
-    { id: '30d', label: '30 days' },
-    { id: '90d', label: '90 days' },
-    { id: '12m', label: '12 months' },
+    { value: 'today', label: 'Today' },
+    { value: '7d', label: '7 days' },
+    { value: '30d', label: '30 days' },
+    { value: '90d', label: '90 days' },
+    { value: '12m', label: '12 months' },
   ];
 
   return (
-    <div className="space-y-6 animate-fade-up">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Observers — Website & App Analytics</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            First-party traffic for the website and the Flutter mobile app. External PostHog remains separate. Active
-            user = activity in the last {realtime?.windowMinutes ?? 5} minutes.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Link
-            href="/observers/directory"
-            className="px-3 py-2 text-sm rounded-lg border border-border hover:bg-muted"
-          >
-            Account directory
-          </Link>
-          <select
+    <div className="space-y-4 animate-fade-up">
+      <PageHeader
+        title="Observers — Website & App Analytics"
+        description={`First-party traffic for the website and the Flutter mobile app. Active user = activity in the last ${realtime?.windowMinutes ?? 5} minutes.`}
+        pill={loading ? 'LOADING…' : 'LIVE DATA'}
+        pillTone={loading ? 'neutral' : 'live'}
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <PortButton variant="secondary" onClick={() => router.push('/observers/directory')}>
+              Account directory
+            </PortButton>
+            <PortButton variant="ghost" onClick={load} disabled={loading}>
+              Refresh
+            </PortButton>
+          </div>
+        }
+      />
+
+      <SectionPanel title="Filters" description="Choose the surface and date range.">
+        <div className="flex flex-wrap items-end gap-3">
+          <Dropdown
+            label="Surface"
             value={surface}
-            onChange={(e) => setSurface(e.target.value as 'web' | 'app' | 'all')}
-            className="px-3 py-2 text-sm rounded-lg border border-border bg-card"
-          >
-            <option value="web">Website (public)</option>
-            <option value="app">Mobile app (Flutter)</option>
-            <option value="all">All surfaces</option>
-          </select>
+            onChange={(value) => setSurface(value as 'web' | 'app' | 'all')}
+            options={[
+              { value: 'web', label: 'Website (public)' },
+              { value: 'app', label: 'Mobile app (Flutter)' },
+              { value: 'all', label: 'All surfaces' },
+            ]}
+          />
+          <div className="space-y-1.5">
+            <p className="text-sm font-medium text-foreground">Range</p>
+            <SegmentedControl value={range} onChange={setRange} options={ranges} />
+          </div>
         </div>
-      </div>
+      </SectionPanel>
 
-      <div className="flex flex-wrap gap-2">
-        {ranges.map((r) => (
-          <button
-            key={r.id}
-            type="button"
-            onClick={() => setRange(r.id)}
-            className={cn(
-              'px-3 py-1.5 rounded-lg text-sm border',
-              range === r.id
-                ? 'emis-btn-primary border-transparent'
-                : 'border-border hover:bg-muted'
-            )}
-          >
-            {r.label}
-          </button>
-        ))}
-        <button
-          type="button"
-          onClick={load}
-          className="px-3 py-1.5 rounded-lg text-sm border border-border hover:bg-muted"
-        >
-          Refresh
-        </button>
-      </div>
-
-      {error && (
-        <div className="rounded-xl border border-destructive/30 bg-destructive/10 text-destructive px-4 py-3 text-sm">
-          {error}
-          {errorHint && <div className="mt-1 text-xs opacity-90">{errorHint}</div>}
-        </div>
-      )}
+      {error && <ErrorBanner message={errorHint ? `${error} ${errorHint}` : error} />}
 
       {loading && !overview ? (
         <DashboardSkeleton />
@@ -290,7 +278,7 @@ export default function ObserversAnalyticsPage() {
             <StatCard
               label="Period sessions"
               value={overview.period.sessions}
-              hint={ranges.find((r) => r.id === range)?.label}
+              hint={ranges.find((r) => r.value === range)?.label}
             />
             <StatCard label="Period page views" value={overview.period.pageViews} />
             <StatCard
@@ -306,19 +294,16 @@ export default function ObserversAnalyticsPage() {
             />
           </div>
 
-          <section className="rounded-xl border border-border bg-card p-4">
-            <div className="flex flex-wrap items-baseline justify-between gap-2 mb-1">
-              <h2 className="font-semibold flex items-center gap-2">
-                <Globe size={16} /> Website vs mobile app
-              </h2>
+          <SectionPanel
+            title="Website vs mobile app"
+            description="Website = public website visitors. Mobile app = Flutter app traffic reported with surface “app”."
+            headerRight={
               <span className="text-xs text-muted-foreground">
-                {ranges.find((r) => r.id === range)?.label} ·{' '}
+                {ranges.find((r) => r.value === range)?.label} ·{' '}
                 {(overview.surfaces?.web.visitors ?? 0) + (overview.surfaces?.app.visitors ?? 0)} total visitors
               </span>
-            </div>
-            <p className="text-xs text-muted-foreground mb-4">
-              Website = public website visitors. Mobile app = Flutter app traffic reported with surface &quot;app&quot;.
-            </p>
+            }
+          >
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {[
                 { key: 'web' as const, label: 'Website (public)', icon: Globe, data: overview.surfaces?.web },
@@ -350,24 +335,21 @@ export default function ObserversAnalyticsPage() {
                 );
               })}
             </div>
-          </section>
+          </SectionPanel>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <section className="lg:col-span-2 rounded-xl border border-border bg-card p-4">
-              <h2 className="font-semibold mb-2 flex items-center gap-2">
-                <Activity size={16} /> Traffic trend
-              </h2>
-              <p className="text-xs text-muted-foreground mb-3">Solid = visitors · Faded = page views</p>
+            <SectionPanel
+              className="lg:col-span-2"
+              title="Traffic trend"
+              description="Solid = visitors · Faded = page views"
+            >
               <TrendChart data={overview.trend} />
-            </section>
+            </SectionPanel>
 
-            <section className="rounded-xl border border-border bg-card p-4 space-y-4">
-              <div>
-                <h2 className="font-semibold">Devices</h2>
-                <p className="text-xs text-muted-foreground">
-                  Unique visitors · {ranges.find((r) => r.id === range)?.label}
-                </p>
-              </div>
+            <SectionPanel
+              title="Devices"
+              description={`Unique visitors · ${ranges.find((r) => r.value === range)?.label}`}
+            >
               {[
                 { key: 'desktop', label: 'Desktop', icon: Monitor },
                 { key: 'mobile', label: 'Mobile', icon: Smartphone },
@@ -392,102 +374,79 @@ export default function ObserversAnalyticsPage() {
                   </div>
                 );
               })}
-            </section>
+            </SectionPanel>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <section className="rounded-xl border border-border bg-card p-4">
-              <h2 className="font-semibold mb-3">Top pages</h2>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left">
-                  <thead className="text-xs text-muted-foreground border-b border-border">
-                    <tr>
-                      <th className="py-2 pr-2">#</th>
-                      <th className="py-2 pr-2">Path</th>
-                      <th className="py-2 pr-2">Views</th>
-                      <th className="py-2">Uniques</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {overview.topPages.map((p, i) => (
-                      <tr key={p.path}>
-                        <td className="py-2 pr-2 text-muted-foreground">{i + 1}</td>
-                        <td className="py-2 pr-2 font-mono text-xs">{p.path}</td>
-                        <td className="py-2 pr-2">{p.views}</td>
-                        <td className="py-2">{p.uniqueVisitors}</td>
-                      </tr>
-                    ))}
-                    {overview.topPages.length === 0 && (
-                      <tr>
-                        <td colSpan={4} className="py-6 text-center text-muted-foreground">
-                          No page views yet — open the public homepage to generate traffic.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </section>
+            <SectionPanel title="Top pages">
+              <DataTable
+                columns={[
+                  {
+                    key: 'rank',
+                    header: '#',
+                    render: (_row, i) => i + 1,
+                  },
+                  {
+                    key: 'path',
+                    header: 'Path',
+                    render: (p) => <span className="font-mono text-xs">{p.path}</span>,
+                  },
+                  { key: 'views', header: 'Views' },
+                  { key: 'uniqueVisitors', header: 'Uniques' },
+                ]}
+                rows={overview.topPages}
+                rowKey={(p) => p.path}
+                emptyMessage="No page views yet — open the public homepage to generate traffic."
+              />
+            </SectionPanel>
 
-            <section className="rounded-xl border border-border bg-card p-4">
-              <h2 className="font-semibold mb-3">Traffic sources</h2>
+            <SectionPanel title="Traffic sources">
               <BarList
                 items={overview.sources.map((s) => ({ name: s.name, value: s.sessions }))}
                 valueKey="sessions"
               />
-            </section>
+            </SectionPanel>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <section className="rounded-xl border border-border bg-card p-4">
-              <h2 className="font-semibold mb-3">Browsers</h2>
+            <SectionPanel title="Browsers">
               <BarList items={overview.browsers.map((b) => ({ name: b.name, value: b.count }))} />
-            </section>
-            <section className="rounded-xl border border-border bg-card p-4">
-              <h2 className="font-semibold mb-3">Operating systems</h2>
+            </SectionPanel>
+            <SectionPanel title="Operating systems">
               <BarList
                 items={overview.operatingSystems.map((b) => ({ name: b.name, value: b.count }))}
               />
-            </section>
-            <section className="rounded-xl border border-border bg-card p-4">
-              <h2 className="font-semibold mb-3">Countries</h2>
-              <p className="text-xs text-muted-foreground mb-2">{overview.geoNote}</p>
+            </SectionPanel>
+            <SectionPanel title="Countries" description={overview.geoNote}>
               <BarList items={overview.countries.slice(0, 8).map((c) => ({ name: c.name, value: c.count }))} />
-            </section>
+            </SectionPanel>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <section className="rounded-xl border border-border bg-card p-4">
-              <h2 className="font-semibold mb-1">SEO traffic (first-party)</h2>
-              <p className="text-xs text-muted-foreground mb-3">{overview.seo.note}</p>
+            <SectionPanel title="SEO traffic (first-party)" description={overview.seo.note}>
               <div className="grid grid-cols-2 gap-2">
                 <StatCard label="Organic sessions" value={overview.seo.organicSessions} />
                 <StatCard label="Organic share" value={`${overview.seo.organicShare}%`} valueClassName="text-[20px]" />
                 <StatCard label="Organic visitors" value={overview.seo.organicVisitors} />
                 <StatCard label="Organic page views" value={overview.seo.organicPageViews} />
               </div>
-              <h3 className="text-sm font-semibold mt-4 mb-2">Top landing pages</h3>
+              <h3 className="mt-4 mb-2 text-sm font-semibold">Top landing pages</h3>
               <BarList
                 items={overview.landings.slice(0, 8).map((l) => ({ name: l.path, value: l.sessions }))}
                 valueKey="entries"
               />
-            </section>
+            </SectionPanel>
 
-            <section className="rounded-xl border border-border bg-card p-4">
-              <h2 className="font-semibold mb-3">Realtime</h2>
-              <p className="text-sm text-muted-foreground">
-                {realtime?.activeUsers ?? 0} active visitors · {realtime?.activeSessions ?? 0} sessions
-              </p>
-              <p className="text-xs text-muted-foreground mb-3">
-                Website {realtime?.surfaces?.web.activeUsers ?? 0} · Mobile app{' '}
-                {realtime?.surfaces?.app.activeUsers ?? 0}
-              </p>
-              <h3 className="text-xs font-semibold uppercase text-muted-foreground mb-2">Live pages</h3>
+            <SectionPanel
+              title="Realtime"
+              description={`${realtime?.activeUsers ?? 0} active visitors · ${realtime?.activeSessions ?? 0} sessions. Website ${realtime?.surfaces?.web.activeUsers ?? 0} · Mobile app ${realtime?.surfaces?.app.activeUsers ?? 0}`}
+            >
+              <h3 className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Live pages</h3>
               <BarList
                 items={(realtime?.pages || []).map((p) => ({ name: p.path, value: p.count }))}
               />
-              <h3 className="text-xs font-semibold uppercase text-muted-foreground mt-4 mb-2">Recent</h3>
-              <ul className="space-y-2 max-h-56 overflow-y-auto text-sm">
+              <h3 className="mb-2 mt-4 text-xs font-semibold uppercase text-muted-foreground">Recent</h3>
+              <ul className="max-h-56 space-y-2 overflow-y-auto text-sm">
                 {(realtime?.recent || []).map((r, i) => (
                   <li key={`${r.lastActivityAt}-${i}`} className="border-b border-border pb-2">
                     <div className="font-mono text-xs">{r.path}</div>
@@ -497,10 +456,10 @@ export default function ObserversAnalyticsPage() {
                   </li>
                 ))}
                 {!realtime?.recent?.length && (
-                  <li className="text-muted-foreground text-sm">No active sessions in the window.</li>
+                  <li className="text-sm text-muted-foreground">No active sessions in the window.</li>
                 )}
               </ul>
-            </section>
+            </SectionPanel>
           </div>
         </>
       ) : null}

@@ -19,11 +19,19 @@
   --primary-foreground: #ffffff;
   --destructive: #dc2626;
   --destructive-foreground: #ffffff;
-  --accent: #eef4ff;
+  --accent: #eff6ff;
   --accent-foreground: #1d4ed8;
-  --brand-from: #38bdf8;
-  --brand-via: #2563eb;
-  --brand-to: #4f46e5;
+  /* First-commit / KMS brand (logo soft blue) */
+  --brand: #88b6ff;
+  --brand-foreground: #142033;
+  --brand-from: #88b6ff;
+  --brand-via: #88b6ff;
+  --brand-to: #6aa0f5;
+  --chart-1: #88b6ff;
+  --chart-2: #38bdf8;
+  --chart-3: #4f46e5;
+  --chart-4: #6bcbaa;
+  --chart-5: #f0ce72;
 }
 
 .dark {
@@ -42,11 +50,19 @@
   --primary-foreground: #ffffff;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  --accent: #12203a;
-  --accent-foreground: #9cc2ff;
-  --brand-from: #7dd3fc;
-  --brand-via: #3b82f6;
-  --brand-to: #818cf8;
+  --accent: #111827;
+  --accent-foreground: #93c5fd;
+  /* First-commit / KMS brand on dark */
+  --brand: #88b6ff;
+  --brand-foreground: #142033;
+  --brand-from: #88b6ff;
+  --brand-via: #89b6ff;
+  --brand-to: #6aa0f5;
+  --chart-1: #88b6ff;
+  --chart-2: #38bdf8;
+  --chart-3: #818cf8;
+  --chart-4: #34d399;
+  --chart-5: #fbbf24;
 }
 
 @layer base {
@@ -162,20 +178,16 @@
   }
 
   .emis-btn-primary {
-    background-image: linear-gradient(135deg, var(--brand-from), var(--brand-via) 48%, var(--brand-to));
-    color: #fff;
+    background: var(--brand);
+    color: var(--brand-foreground);
   }
 
   .emis-btn-primary:hover {
-    filter: brightness(1.07);
+    opacity: 0.9;
   }
 
   .emis-text-brand {
-    background-image: linear-gradient(135deg, var(--brand-from), var(--brand-via) 48%, var(--brand-to));
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    color: transparent;
+    color: var(--primary);
   }
 
   .emis-focus-ring {
@@ -193,26 +205,172 @@
 .emis-shell {
   background-color: var(--background);
   background-image:
-    radial-gradient(1100px 460px at 100% -12%, rgba(37, 99, 235, 0.18), transparent 62%),
-    radial-gradient(900px 420px at -8% 4%, rgba(56, 189, 248, 0.14), transparent 58%),
-    radial-gradient(700px 380px at 40% 0%, rgba(79, 70, 229, 0.1), transparent 60%);
+    radial-gradient(1100px 460px at 100% -12%, rgba(136, 182, 255, 0.22), transparent 62%),
+    radial-gradient(900px 420px at -8% 4%, rgba(37, 99, 235, 0.1), transparent 58%);
   background-attachment: fixed;
 }
 
 .dark .emis-shell {
   background-image:
-    radial-gradient(1100px 460px at 100% -12%, rgba(37, 99, 235, 0.22), transparent 62%),
-    radial-gradient(900px 420px at -8% 4%, rgba(56, 189, 248, 0.12), transparent 58%),
-    radial-gradient(700px 380px at 40% 0%, rgba(79, 70, 229, 0.14), transparent 60%);
+    radial-gradient(1100px 460px at 100% -12%, rgba(136, 182, 255, 0.16), transparent 62%),
+    radial-gradient(900px 420px at -8% 4%, rgba(37, 99, 235, 0.14), transparent 58%);
 }
 
-/* Splash screen loading bar */
-@keyframes emis-splash-progress {
+/* Splash screen — theme colors only */
+.df-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  color: var(--foreground);
+  background:
+    radial-gradient(1100px 520px at 12% -8%, color-mix(in srgb, var(--brand) 42%, transparent), transparent 58%),
+    radial-gradient(900px 480px at 108% 8%, color-mix(in srgb, var(--primary) 28%, transparent), transparent 60%),
+    radial-gradient(720px 420px at 50% 118%, color-mix(in srgb, var(--accent) 70%, transparent), transparent 58%),
+    linear-gradient(160deg, var(--background) 0%, var(--accent) 52%, var(--background) 100%);
+  transition: opacity 0.7s ease, visibility 0.7s ease;
+}
+
+.df-splash--out {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.df-splash__glow {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(72px);
+  pointer-events: none;
+}
+
+.df-splash__glow--one {
+  width: 26rem;
+  height: 26rem;
+  top: 8%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: color-mix(in srgb, var(--brand) 38%, transparent);
+  animation: df-splash-breathe 3.4s ease-in-out infinite;
+}
+
+.df-splash__glow--two {
+  width: 20rem;
+  height: 20rem;
+  bottom: 6%;
+  right: 8%;
+  background: color-mix(in srgb, var(--primary) 30%, transparent);
+  animation: df-splash-breathe-alt 4.2s ease-in-out infinite;
+}
+
+.df-splash__glow--three {
+  width: 16rem;
+  height: 16rem;
+  bottom: 18%;
+  left: 10%;
+  background: color-mix(in srgb, var(--chart-2) 26%, transparent);
+  animation: df-splash-breathe-alt 3.8s ease-in-out infinite reverse;
+}
+
+.df-splash__stage {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.df-splash__copy {
+  animation: df-splash-rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.df-splash__kicker {
+  margin: 0 0 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--primary);
+}
+
+.df-splash__copy h1 {
+  margin: 0;
+  font-size: clamp(2.1rem, 5vw, 3.2rem);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  background: linear-gradient(90deg, var(--foreground) 8%, var(--primary) 48%, var(--brand) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.df-splash__tag {
+  margin: 0.45rem 0 0;
+  font-size: 0.95rem;
+  color: var(--muted-foreground);
+}
+
+.df-splash__bar {
+  width: 12rem;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary) 16%, var(--muted));
+  animation: df-splash-rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
+}
+
+.df-splash__bar span {
+  display: block;
+  height: 100%;
+  width: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--brand-from), var(--primary), var(--brand-to));
+  transform: translateX(-100%);
+  animation: df-splash-progress 2.1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes df-splash-progress {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes df-splash-rise {
   from {
-    transform: translateX(-100%);
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
   }
   to {
-    transform: translateX(0);
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes df-splash-breathe {
+  0%, 100% { opacity: 0.55; transform: translateX(-50%) scale(1); }
+  50% { opacity: 0.95; transform: translateX(-50%) scale(1.08); }
+}
+
+@keyframes df-splash-breathe-alt {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .df-splash__glow,
+  .df-splash__copy,
+  .df-splash__bar,
+  .df-splash__bar span {
+    animation: none !important;
+  }
+
+  .df-splash__bar span {
+    transform: none;
   }
 }
 
@@ -322,4 +480,14 @@
 .dark .emis-select-option:hover,
 .dark .emis-multiselect-item:hover {
   background-color: #1e293b;
+}
+
+/* Messaging conversation wallpaper — theme-colored, not a solid navy fill */
+.messaging-wallpaper {
+  background-color: color-mix(in srgb, var(--background) 82%, var(--brand) 18%);
+  background-image:
+    radial-gradient(circle at 10px 8px, color-mix(in srgb, var(--brand) 22%, transparent) 1.4px, transparent 1.8px),
+    radial-gradient(circle at 32px 24px, color-mix(in srgb, var(--foreground) 8%, transparent) 1.2px, transparent 1.6px),
+    radial-gradient(circle at 18px 36px, color-mix(in srgb, var(--brand) 14%, transparent) 1px, transparent 1.4px);
+  background-size: 44px 44px;
 }

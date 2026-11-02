@@ -18,8 +18,8 @@ export default function Skeleton({ className }: SkeletonProps) {
 
 export function TableSkeleton({ rows = 5, cols = 4 }: { rows?: number; cols?: number }) {
   return (
-    <div className="space-y-2 p-2" role="status" aria-label="Loading">
-      <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
+    <div className="min-w-max space-y-2 p-2" role="status" aria-label="Loading">
+      <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${cols}, minmax(7rem, 1fr))` }}>
         {Array.from({ length: cols }).map((_, i) => (
           <Skeleton key={`h-${i}`} className="h-3" />
         ))}
@@ -28,7 +28,7 @@ export function TableSkeleton({ rows = 5, cols = 4 }: { rows?: number; cols?: nu
         <div
           key={r}
           className="grid gap-3"
-          style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+          style={{ gridTemplateColumns: `repeat(${cols}, minmax(7rem, 1fr))` }}
         >
           {Array.from({ length: cols }).map((_, c) => (
             <Skeleton key={c} className="h-8" />

@@ -1,0 +1,22 @@
+---
+description: Use shared Ports UI components on every page
+alwaysApply: true
+---
+
+# Shared Ports UI — mandatory for every page
+
+Follow repo-root **`AGENTS.md`** (shared Ports UI section) on every page create/edit.
+
+Import from `@/components/ports`. Do not invent a new table, search, filter, button, input, dialog, or pagination.
+
+**Use:**
+
+- `ListPageShell` + `useListQuery` for list pages
+- `DataTable` instead of raw `<table>`
+- `SearchBar` / `FilterSection` / `Dropdown` (always searchable) for search and filters
+- `InputField` / `TextAreaField` / `PasswordField` / `Dropdown` / `MultiSelectField` / `PortButton` for forms
+- `FormDialog` + `FormDialogFooter` for add/edit modals
+- `RowActions` for edit/delete
+- `StatusChip`, `EmptyState`, `ErrorBanner`, `PageHeader`, `SectionPanel`
+
+Do **not** ship dashboard pages with custom table markup or one-off filter bars.

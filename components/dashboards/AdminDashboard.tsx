@@ -1,11 +1,26 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
-import { useTheme } from '@/context/ThemeContext';
+import { useRouter } from 'next/navigation';
 import CityMap, { type CityStats } from '@/components/dashboards/CityMap';
-import { daysAgo, detectPreset, presetRange, type DatePreset } from '@/components/dashboards/DateFilterBar';
-import '@/app/dashboard-kms.css';
+import {
+  DashboardAreaChart,
+  DashboardBarChart,
+  DashboardPieChart,
+} from '@/components/dashboards/DashboardCharts';
+import DateFilterBar, { daysAgo } from '@/components/dashboards/DateFilterBar';
+import type { ChartConfig } from '@/components/ui/chart';
+import {
+  DataTable,
+  Dropdown,
+  ErrorBanner,
+  PageHeader,
+  PortButton,
+  SectionPanel,
+  StatCard,
+  StatusChip,
+  statusToneFromValue,
+} from '@/components/ports';
 
 type TrendPoint = {
   date: string;
@@ -62,6 +77,15 @@ type DashboardData = {
   success_rate?: number;
   period?: { from: string; to: string };
   filter_options?: { methods: string[]; statuses: string[]; cities?: string[] };
+  system?: {
+    businesses?: number;
+    branches?: number;
+    users?: number;
+    tickets?: number;
+    leaves?: number;
+    classes?: number;
+    books?: number;
+  };
   error?: string;
 };
 
@@ -73,27 +97,31 @@ const METRIC_STATUSES = [
   { name: 'active', label: 'Active enroll', color: 'blue', hex: '#82b0f5' },
 ] as const;
 
-const TREND_SERIES = [
-  { name: 'enrollments', label: 'Enrollments', hex: '#2563eb' },
-  { name: 'payments', label: 'Payments', hex: '#38bdf8' },
-  { name: 'students', label: 'New students', hex: '#4f46e5' },
-] as const;
+const TREND_CONFIG = {
+  enrollments: { label: 'Enrollments', color: 'var(--chart-1)' },
+  payments: { label: 'Payments', color: 'var(--chart-2)' },
+  students: { label: 'New students', color: 'var(--chart-3)' },
+} satisfies ChartConfig;
 
-const DATE_PRESETS: { id: DatePreset; label: string }[] = [
-  { id: 'today', label: 'Today' },
-  { id: '7d', label: '7 days' },
-  { id: '30d', label: '30 days' },
-  { id: '90d', label: '90 days' },
-];
+const MIX_CONFIG = {
+  enrollments: { label: 'Enrollments', color: 'var(--chart-1)' },
+  payments: { label: 'Payments', color: 'var(--chart-3)' },
+} satisfies ChartConfig;
 
-function statusChipClass(status: string) {
-  if (status === 'pending') return 'status-chip gold-chip';
-  if (status === 'failed' || status === 'refunded') return 'status-chip purple-chip';
-  return 'status-chip';
-}
+const METHOD_CONFIG = {
+  completed: { label: 'Completed', color: 'var(--chart-4)' },
+  pending: { label: 'Pending', color: 'var(--chart-5)' },
+  failed: { label: 'Failed', color: '#c6a2ed' },
+  refunded: { label: 'Refunded', color: '#91a0b0' },
+  voided: { label: 'Voided', color: 'var(--chart-2)' },
+} satisfies ChartConfig;
+
+const COURSE_CONFIG = {
+  courses: { label: 'Courses', color: 'var(--chart-1)' },
+} satisfies ChartConfig;
 
 export default function AdminDashboard({ stats }: { stats: DashboardData | null }) {
-  const { resolvedTheme } = useTheme();
+  const router = useRouter();
   const [filters, setFilters] = useState({
     from: daysAgo(29),
     to: daysAgo(0),
@@ -145,40 +173,50 @@ export default function AdminDashboard({ stats }: { stats: DashboardData | null 
   const vehicles = dash.vehicles || [];
   const attention = dash.attention || [];
   const locations = dash.locations || [];
-  const activePreset = detectPreset(filters.from, filters.to);
 
   const enrollmentsDeal = deals.find((d) => d.name === 'Enrollments');
   const paymentsDeal = deals.find((d) => d.name === 'Payments');
   const enrollTotal = enrollmentsDeal?.total || 0;
   const payTotal = paymentsDeal?.total || 0;
-  const dealTotal = enrollTotal + payTotal || 1;
   const successRate = dash.success_rate ?? 0;
   const completedPayments = dash.payment_statuses?.completed || statuses.completed || 0;
 
-  const trendMax = useMemo(
-    () => Math.max(1, ...trend.flatMap((p) => TREND_SERIES.map((s) => Number(p.values?.[s.name] || 0)))),
-    [trend]
-  );
-  const trendTicks = [trendMax, Math.round((trendMax * 2) / 3), Math.round(trendMax / 3), 0];
-  const trendX = (index: number) => (trend.length < 2 ? 525 : 70 + (index * 910) / (trend.length - 1));
-  const trendY = (count: number) => 198 - (Number(count || 0) / trendMax) * 160;
-  const trendPoints = (name: string) =>
-    trend.map((point, index) => `${trendX(index)},${trendY(point.values?.[name] || 0)}`).join(' ');
-  const trendAxisLabels = useMemo(() => {
-    const lastIndex = trend.length - 1;
-    if (lastIndex < 0) return [];
-    return [...new Set([0, Math.round(lastIndex / 4), Math.round(lastIndex / 2), Math.round((lastIndex * 3) / 4), lastIndex])].map(
-      (index) => ({
-        index,
-        x: trendX(index),
-        label: new Date(`${trend[index].date}T00:00:00`).toLocaleDateString('en-US', {
+  const trendChart = useMemo(
+    () =>
+      trend.map((point) => ({
+        label: new Date(`${point.date}T00:00:00`).toLocaleDateString('en-US', {
           month: 'short',
           day: 'numeric',
         }),
-      })
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trend, trendMax]);
+        enrollments: Number(point.values?.enrollments || 0),
+        payments: Number(point.values?.payments || 0),
+        students: Number(point.values?.students || 0),
+      })),
+    [trend]
+  );
+
+  const methodChart = useMemo(
+    () =>
+      channels.map((row) => ({
+        name: row.name,
+        completed: Number(row.values?.[0] || 0),
+        pending: Number(row.values?.[1] || 0),
+        failed: Number(row.values?.[2] || 0),
+        refunded: Number(row.values?.[3] || 0),
+        voided: Number(row.values?.[4] || 0),
+      })),
+    [channels]
+  );
+
+  const courseChart = useMemo(
+    () => vehicles.map((row) => ({ name: row.name, courses: row.total })),
+    [vehicles]
+  );
+
+  const mixChart = [
+    { name: 'enrollments', value: enrollTotal, fill: 'var(--color-enrollments)' },
+    { name: 'payments', value: payTotal, fill: 'var(--color-payments)' },
+  ].filter((row) => row.value > 0);
 
   const snapshot = new Date().toLocaleString('en-US', {
     timeZone: 'Asia/Kabul',
@@ -191,252 +229,116 @@ export default function AdminDashboard({ stats }: { stats: DashboardData | null 
     : locations.map((row) => row.name);
 
   return (
-    <main className={`emis-inquiry-dashboard ${resolvedTheme === 'dark' ? 'theme-dark' : 'theme-light'}`}>
-      <header className="dash-heading">
-        <div>
-          <h1>Overall Dashboard</h1>
-          <p>
-            Institute activity, enrollments, payments and follow-up
-            {filters.city ? ` · ${filters.city}` : ''}
-          </p>
-        </div>
-        <span className={`data-source-pill ${loadError ? 'offline-pill' : ''}`}>
-          {loadError ? 'API UNAVAILABLE' : loading ? 'LOADING API DATA' : 'LIVE API DATA'}
-        </span>
-      </header>
+    <div className="space-y-4 animate-fade-up">
+      <PageHeader
+        title="General Dashboard"
+        description={`All system data — students, staff, finance, support, and businesses${filters.city ? ` · ${filters.city}` : ''}`}
+        pill={loadError ? 'API UNAVAILABLE' : loading ? 'LOADING…' : 'LIVE DATA'}
+        pillTone={loadError ? 'offline' : loading ? 'neutral' : 'live'}
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <PortButton variant="ghost" onClick={() => fetchDashboard()} disabled={loading}>
+              Refresh
+            </PortButton>
+            <PortButton variant="primary" onClick={() => router.push('/students')}>
+              View students
+            </PortButton>
+          </div>
+        }
+      />
 
-      {loading && !data && <div className="page-message">Loading dashboard data...</div>}
-      {loadError && !data && <div className="page-message error-message">{loadError}</div>}
+      {loading && !data && <ErrorBanner message="Loading dashboard data…" />}
+      {loadError && !data && <ErrorBanner message={loadError} />}
 
       {(data || !loading) && (
         <>
           {loadError && data && (
-            <div className="page-message error-message" role="alert">
-              Could not refresh dashboard data. Showing the last successful response. {loadError}
-            </div>
+            <ErrorBanner message={`Could not refresh dashboard data. Showing the last successful response. ${loadError}`} />
           )}
 
-          <div className="dash-presets" role="group" aria-label="Date range">
-            {DATE_PRESETS.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={`dash-preset${activePreset === item.id ? ' is-active' : ''}`}
-                onClick={() => setFilters((f) => ({ ...f, ...presetRange(item.id) }))}
+          <SectionPanel title="Filters" description="Date range, city, and payment slices.">
+            <div className="space-y-4">
+              <DateFilterBar
+                from={filters.from}
+                to={filters.to}
+                onChange={({ from, to }) => setFilters((f) => ({ ...f, from, to }))}
+              />
+              <div className="grid gap-3 sm:grid-cols-3">
+                <Dropdown
+                  label="City"
+                  value={filters.city}
+                  onChange={(city) => setFilters((f) => ({ ...f, city }))}
+                  options={cityOptions.map((city) => ({ value: city, label: city }))}
+                  placeholder="All cities"
+                  filter
+                  clearable
+                />
+                <Dropdown
+                  label="Payment method"
+                  value={filters.method}
+                  onChange={(method) => setFilters((f) => ({ ...f, method }))}
+                  options={(dash.filter_options?.methods || []).map((m) => ({ value: m, label: m }))}
+                  placeholder="All methods"
+                  filter
+                  clearable
+                />
+                <Dropdown
+                  label="Payment status"
+                  value={filters.status}
+                  onChange={(status) => setFilters((f) => ({ ...f, status }))}
+                  options={(dash.filter_options?.statuses || METRIC_STATUSES.map((s) => s.name)).map((s) => ({
+                    value: s,
+                    label: s,
+                  }))}
+                  placeholder="All statuses"
+                  filter
+                  clearable
+                />
+              </div>
+              <PortButton
+                variant="secondary"
+                onClick={() =>
+                  setFilters({ from: daysAgo(29), to: daysAgo(0), method: '', status: '', city: '' })
+                }
               >
-                {item.label}
-              </button>
-            ))}
+                Reset filters
+              </PortButton>
+            </div>
+          </SectionPanel>
+
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
+            <StatCard label="Students" value={dash.students ?? 0} hint={filters.city || 'All campuses'} />
+            <StatCard accent="blue" label="Courses" value={dash.courses ?? 0} hint="Catalog" />
+            <StatCard accent="purple" label="Staff" value={dash.staff ?? 0} hint="Teachers" />
+            <StatCard accent="green" label="Revenue" value={`$${Number(dash.revenue || 0).toLocaleString()}`} hint="Completed" />
+            <StatCard accent="gold" label="Pending pay" value={statuses.pending || 0} hint="Payments" />
+            <StatCard accent="gold" label="Attention" value={dash.attention_total || 0} hint="Follow-up" />
+            <StatCard accent="blue" label="Businesses" value={dash.system?.businesses ?? 0} hint="Central tenants" />
+            <StatCard accent="purple" label="Branches" value={dash.system?.branches ?? 0} hint="Locations" />
+            <StatCard accent="green" label="Users" value={dash.system?.users ?? 0} hint="Accounts" />
+            <StatCard accent="gold" label="Tickets" value={dash.system?.tickets ?? 0} hint="Support" />
+            <StatCard accent="blue" label="Classes" value={dash.system?.classes ?? 0} hint="Timetable" />
+            <StatCard accent="purple" label="Leaves" value={dash.system?.leaves ?? 0} hint="HR leave" />
           </div>
 
-          <section className="filters" aria-label="Dashboard filters">
-            <label>
-              From
-              <input
-                type="date"
-                value={filters.from}
-                onChange={(e) => setFilters((f) => ({ ...f, from: e.target.value }))}
+          <div className="grid gap-4 lg:grid-cols-3">
+            <div className="lg:col-span-2 min-w-0">
+              <DashboardAreaChart
+                title="Activity trend"
+                description={`${dash.period?.from || ''} – ${dash.period?.to || ''} · ${Number(dash.trend_event_total || 0).toLocaleString()} events`}
+                data={trendChart}
+                config={TREND_CONFIG}
               />
-            </label>
-            <label>
-              To
-              <input
-                type="date"
-                value={filters.to}
-                onChange={(e) => setFilters((f) => ({ ...f, to: e.target.value }))}
+            </div>
+            <div className="min-w-0">
+              <DashboardPieChart
+                title="Activity mix"
+                description={`Success ${completedPayments} · ${successRate}%`}
+                data={mixChart}
+                config={MIX_CONFIG}
               />
-            </label>
-            <label>
-              City
-              <select
-                value={filters.city}
-                onChange={(e) => setFilters((f) => ({ ...f, city: e.target.value }))}
-              >
-                <option value="">All cities</option>
-                {cityOptions.map((city) => (
-                  <option key={city} value={city}>
-                    {city}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Payment method
-              <select
-                value={filters.method}
-                onChange={(e) => setFilters((f) => ({ ...f, method: e.target.value }))}
-              >
-                <option value="">All methods</option>
-                {(dash.filter_options?.methods || []).map((m) => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Payment status
-              <select
-                value={filters.status}
-                onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}
-              >
-                <option value="">All statuses</option>
-                {(dash.filter_options?.statuses || METRIC_STATUSES.map((s) => s.name)).map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button
-              type="button"
-              className="button secondary"
-              onClick={() =>
-                setFilters({ from: daysAgo(29), to: daysAgo(0), method: '', status: '', city: '' })
-              }
-            >
-              All dates
-            </button>
-            <button type="button" className="button secondary" onClick={() => fetchDashboard()}>
-              Refresh
-            </button>
-            <Link href="/students" className="button primary" style={{ display: 'inline-flex', alignItems: 'center' }}>
-              View students
-            </Link>
-          </section>
-
-          <section className="stats">
-            <article className="panel stat">
-              <small>Total students</small>
-              <strong>{dash.students ?? 0}</strong>
-              <span>{filters.city || 'Selected period'}</span>
-            </article>
-            <article className="panel stat">
-              <small>Courses</small>
-              <strong className="blue">{dash.courses ?? 0}</strong>
-              <span>Active catalog</span>
-            </article>
-            <article className="panel stat">
-              <small>Staff</small>
-              <strong className="purple">{dash.staff ?? 0}</strong>
-              <span>Team members</span>
-            </article>
-            <article className="panel stat">
-              <small>Revenue</small>
-              <strong className="green">${Number(dash.revenue || 0).toLocaleString()}</strong>
-              <span>Completed payments</span>
-            </article>
-            <article className="panel stat">
-              <small>Completed</small>
-              <strong className="green">{statuses.completed || 0}</strong>
-              <span>Payment status</span>
-            </article>
-            <article className="panel stat">
-              <small>Pending</small>
-              <strong className="gold">{statuses.pending || 0}</strong>
-              <span>Payment status</span>
-            </article>
-            <article className="panel stat">
-              <small>Needs Attention</small>
-              <strong className="gold">{dash.attention_total || 0}</strong>
-              <span>Follow-up required</span>
-            </article>
-          </section>
-
-          <section className="mid-grid">
-            <article className="panel trend-card">
-              <div className="card-heading trend-heading">
-                <div>
-                  <h2>Activity trend</h2>
-                  <p>
-                    {dash.period?.from} – {dash.period?.to} | Enrollments, payments &amp; new students
-                  </p>
-                </div>
-                <div className="trend-total">
-                  <span>Events in period</span>
-                  <strong>{Number(dash.trend_event_total || 0).toLocaleString()}</strong>
-                </div>
-              </div>
-              <div className="trend-chart-wrap">
-                <svg className="trend-chart" viewBox="0 0 1000 240" preserveAspectRatio="none" role="img" aria-label="Activity trend">
-                  <g className="trend-grid">
-                    {trendTicks.map((tick, index) => (
-                      <line key={`g-${index}`} x1="65" y1={30 + index * 56} x2="990" y2={30 + index * 56} />
-                    ))}
-                    {trendTicks.map((tick, index) => (
-                      <text key={`t-${index}`} x="52" y={34 + index * 56} textAnchor="end">
-                        {tick}
-                      </text>
-                    ))}
-                  </g>
-                  {TREND_SERIES.map((series) => (
-                    <polyline
-                      key={series.name}
-                      points={trendPoints(series.name)}
-                      className="trend-line"
-                      style={{ stroke: series.hex }}
-                    />
-                  ))}
-                  <g className="trend-axis-labels">
-                    {trendAxisLabels.map((label) => (
-                      <text
-                        key={label.index}
-                        x={label.x}
-                        y="230"
-                        textAnchor={
-                          label.index === 0 ? 'start' : label.index === trend.length - 1 ? 'end' : 'middle'
-                        }
-                      >
-                        {label.label}
-                      </text>
-                    ))}
-                  </g>
-                </svg>
-              </div>
-              <div className="trend-legend">
-                {TREND_SERIES.map((s) => (
-                  <span key={s.name}>
-                    <i style={{ background: s.hex }} />
-                    {s.label}
-                  </span>
-                ))}
-              </div>
-            </article>
-
-            <article className="panel deal-card">
-              <h2>Activity mix</h2>
-              <p>Enrollments and payments within the selected period</p>
-              <div className="deal-bar">
-                <i style={{ width: `${(enrollTotal / dealTotal) * 100}%` }} title={`Enrollments: ${enrollTotal}`} />
-                <b style={{ width: `${(payTotal / dealTotal) * 100}%` }} title={`Payments: ${payTotal}`} />
-              </div>
-              <div className="deal-numbers">
-                <div>
-                  <strong className="blue">
-                    Enrollments <small>(Students)</small>
-                  </strong>
-                  <b>{enrollTotal}</b>
-                  <span>{((enrollTotal / dealTotal) * 100).toFixed(1)}%</span>
-                </div>
-                <div>
-                  <strong className="purple">
-                    Payments <small>(Finance)</small>
-                  </strong>
-                  <b>{payTotal}</b>
-                  <span>{((payTotal / dealTotal) * 100).toFixed(1)}%</span>
-                </div>
-              </div>
-              <div className="deal-footer">
-                <b>
-                  Success {completedPayments} · {successRate}%
-                </b>
-                <span>Interactions {dash.interactions ?? 0}</span>
-              </div>
-              <small style={{ color: 'var(--muted)', fontSize: 10 }}>
-                Success uses completed payments in the selected filters.
-              </small>
-            </article>
-          </section>
+            </div>
+          </div>
 
           <CityMap
             locations={locations}
@@ -444,191 +346,137 @@ export default function AdminDashboard({ stats }: { stats: DashboardData | null 
             onSelect={(city) => setFilters((f) => ({ ...f, city }))}
           />
 
-          <section className="mid-grid lower-grid">
-            <article className="panel channel-card">
-              <h2>Status by payment method</h2>
-              <p>Each bar shows payment statuses for the method</p>
-              {channels.length ? (
-                channels.map((c) => (
-                  <div key={c.name} className="channel-row">
-                    <span className="channel-name">{c.name}</span>
-                    <div className="stack">
-                      {(Array.isArray(c.values) ? c.values : []).map((v, i) => (
-                        <i
-                          key={i}
-                          className={`seg ${['green-bg', 'gold-bg', 'purple-bg', 'gray-bg', 'blue-bg'][i]}`}
-                          style={{ width: `${c.total ? (v / c.total) * 100 : 0}%` }}
-                          title={`${c.name}: ${v}`}
-                        />
-                      ))}
-                    </div>
-                    <b>{c.total}</b>
-                    <span className="success-rate">{c.success}%</span>
-                  </div>
-                ))
-              ) : (
-                <div className="empty-state">No payment method data for this period.</div>
-              )}
-              <div className="legend">
-                {['Completed', 'Pending', 'Failed', 'Refunded', 'Voided'].map((label, i) => (
-                  <span key={label}>
-                    <i className={['green-bg', 'gold-bg', 'purple-bg', 'gray-bg', 'blue-bg'][i]} />
-                    {label}
-                  </span>
-                ))}
-              </div>
-            </article>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <DashboardBarChart
+              title="Status by payment method"
+              description="Stacked payment outcomes for each method"
+              data={methodChart}
+              config={METHOD_CONFIG}
+              stacked
+            />
+            <DashboardBarChart
+              title="Courses recorded"
+              description="Course catalog volume"
+              data={courseChart}
+              config={COURSE_CONFIG}
+              layout="horizontal"
+            />
+          </div>
 
-            <article className="panel vehicle-card">
-              <h2>Courses recorded</h2>
-              <p>Course catalog volume in the institute</p>
-              {vehicles.length ? (
-                vehicles.map((v) => (
-                  <div key={v.name} className="vehicle-row">
-                    <span className="vehicle-label">{v.name}</span>
-                    <div>
-                      <i
-                        style={{
-                          width: `${(v.total / (vehicles[0]?.total || 1)) * 100}%`,
-                        }}
-                      />
-                    </div>
-                    <b>{v.total}</b>
-                  </div>
-                ))
-              ) : (
-                <div className="empty-state">No course details recorded.</div>
-              )}
-            </article>
-          </section>
+          <SectionPanel
+            title="Status by activity type"
+            description="Current status of enrollments and payments. Expand a row to see subcategories."
+            bodyClassName="pt-2"
+          >
+            <DataTable
+              columns={[
+                {
+                  key: 'name',
+                  header: 'Type / Subcategory',
+                  render: (r) =>
+                    r.subcategories?.length ? (
+                      <PortButton
+                        variant="ghost"
+                        onClick={() =>
+                          setExpandedDealRows((prev) => ({ ...prev, [r.name]: !prev[r.name] }))
+                        }
+                      >
+                        {expandedDealRows[r.name] ? '▾' : '▸'} {r.name}
+                      </PortButton>
+                    ) : (
+                      <span className="font-semibold">{r.name}</span>
+                    ),
+                },
+                { key: 'total', header: 'Total' },
+                {
+                  key: 'a',
+                  header: 'A',
+                  render: (r) => (Array.isArray(r.values) ? r.values[0] : '—'),
+                },
+                {
+                  key: 'b',
+                  header: 'B',
+                  render: (r) => (Array.isArray(r.values) ? r.values[1] : '—'),
+                },
+                {
+                  key: 'c',
+                  header: 'C',
+                  render: (r) => (Array.isArray(r.values) ? r.values[2] : '—'),
+                },
+                {
+                  key: 'd',
+                  header: 'D',
+                  render: (r) => (Array.isArray(r.values) ? r.values[3] : '—'),
+                },
+                {
+                  key: 'e',
+                  header: 'E',
+                  render: (r) => (Array.isArray(r.values) ? r.values[4] : '—'),
+                },
+                { key: 'rate', header: 'Success %', align: 'right', render: (r) => `${r.rate}%` },
+              ]}
+              rows={deals.flatMap((r) => [
+                r,
+                ...(expandedDealRows[r.name]
+                  ? (r.subcategories || []).map((category) => ({
+                      ...category,
+                      name: `↳ ${category.key}`,
+                      subcategories: undefined,
+                    }))
+                  : []),
+              ])}
+              rowKey={(r, i) => `${r.name}-${i}`}
+              emptyMessage="No activity for this period."
+            />
+          </SectionPanel>
 
-          <section className="panel table-card">
-            <h2>Status by activity type</h2>
-            <p>Current status of enrollments and payments. Expand a row to see subcategories.</p>
-            <div className="overflow">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Type / Subcategory</th>
-                    <th>Total</th>
-                    <th>A</th>
-                    <th>B</th>
-                    <th>C</th>
-                    <th>D</th>
-                    <th>E</th>
-                    <th>Success %</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {deals.map((r) => (
-                    <React.Fragment key={r.name}>
-                      <tr>
-                        <td className={r.name === 'Enrollments' ? 'blue' : 'purple'}>
-                          {r.subcategories?.length ? (
-                            <button
-                              type="button"
-                              className="deal-row-toggle"
-                              aria-expanded={!!expandedDealRows[r.name]}
-                              onClick={() =>
-                                setExpandedDealRows((prev) => ({
-                                  ...prev,
-                                  [r.name]: !prev[r.name],
-                                }))
-                              }
-                            >
-                              <span aria-hidden="true">{expandedDealRows[r.name] ? '▾' : '▸'}</span>
-                              <b>{r.name}</b>
-                            </button>
-                          ) : (
-                            <b>{r.name}</b>
-                          )}
-                        </td>
-                        <td>
-                          <b>{r.total}</b>
-                        </td>
-                        {(Array.isArray(r.values) ? r.values : []).map((v, i) => (
-                          <td key={`${r.name}-${i}`}>{v}</td>
-                        ))}
-                        <td className="align-right">{r.rate}%</td>
-                      </tr>
-                      {expandedDealRows[r.name] &&
-                        (r.subcategories || []).map((category) => (
-                          <tr key={`${r.name}-${category.key}`}>
-                            <td style={{ paddingLeft: 30, color: 'var(--muted)' }}>{category.key}</td>
-                            <td>
-                              <b>{category.total}</b>
-                            </td>
-                            {(Array.isArray(category.values) ? category.values : []).map((v, i) => (
-                              <td key={`${r.name}-${category.key}-${i}`}>{v}</td>
-                            ))}
-                            <td className="align-right">{category.rate}%</td>
-                          </tr>
-                        ))}
-                    </React.Fragment>
-                  ))}
-                  {!deals.length && (
-                    <tr>
-                      <td colSpan={8} className="empty-state">
-                        No activity for this period.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </section>
+          <SectionPanel
+            title={`Needs Attention ${dash.attention_total || 0}`}
+            description="Pending/failed payments and inactive students requiring follow-up"
+            headerRight={
+              <PortButton variant="secondary" onClick={() => router.push('/payments')}>
+                View all payments
+              </PortButton>
+            }
+            bodyClassName="pt-2"
+          >
+            <DataTable
+              columns={[
+                { key: 'customer', header: 'Record' },
+                { key: 'contact_number', header: 'Contact', render: (item) => item.contact_number || '—' },
+                { key: 'method', header: 'Method / Email', render: (item) => item.method || '—' },
+                { key: 'deal', header: 'Type', render: (item) => item.deal || '—' },
+                {
+                  key: 'status',
+                  header: 'Status',
+                  render: (item) => (
+                    <StatusChip
+                      label={item.status.replace('_', ' ')}
+                      tone={statusToneFromValue(item.status)}
+                    />
+                  ),
+                },
+                { key: 'vehicle', header: 'Detail', render: (item) => item.vehicle || '—' },
+                { key: 'last', header: 'Last date', render: (item) => item.last || '—' },
+                {
+                  key: 'days',
+                  header: 'Age',
+                  align: 'right',
+                  render: (item) => `${item.days ?? '—'} days`,
+                },
+              ]}
+              rows={attention}
+              rowKey={(item) => item.id}
+              emptyMessage="No items need attention for these filters."
+            />
+          </SectionPanel>
 
-          <section className="panel attention-card">
-            <div className="attention-heading">
-              <div>
-                <h2>Needs Attention&nbsp; {dash.attention_total || 0}</h2>
-                <p>Pending/failed payments and inactive students requiring follow-up</p>
-              </div>
-              <Link href="/payments" className="link-btn">
-                View all payments →
-              </Link>
-            </div>
-            <div className="overflow">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Record</th>
-                    <th>Contact</th>
-                    <th>Method / Email</th>
-                    <th>Type</th>
-                    <th>Status</th>
-                    <th>Detail</th>
-                    <th>Last date</th>
-                    <th className="align-right">Age</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {attention.map((item) => (
-                    <tr key={item.id}>
-                      <td>{item.customer}</td>
-                      <td>{item.contact_number || '—'}</td>
-                      <td>{item.method || '—'}</td>
-                      <td>{item.deal || '—'}</td>
-                      <td>
-                        <span className={statusChipClass(item.status)}>{item.status.replace('_', ' ')}</span>
-                      </td>
-                      <td>{item.vehicle || '—'}</td>
-                      <td>{item.last || '—'}</td>
-                      <td className="align-right gold">{item.days ?? '—'} days</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {!attention.length && <div className="empty-state">No items need attention for these filters.</div>}
-            </div>
-          </section>
-
-          <footer className="dash-footer">
-            <span>Figures reflect saved EMIS institute records{filters.city ? ` for ${filters.city}` : ''}.</span>
-            <span>Snapshot: {snapshot} Kabul time</span>
-          </footer>
+          <p className="text-xs text-muted-foreground">
+            Figures reflect saved EMIS institute records{filters.city ? ` for ${filters.city}` : ''}.
+            Snapshot: {snapshot} Kabul time
+          </p>
         </>
       )}
-    </main>
+    </div>
   );
 }

@@ -1,7 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import FieldLabel from './FieldLabel';
+import { fieldControlClass, fieldInvalidClass } from './fieldStyles';
 
 type InputFieldProps = React.InputHTMLAttributes<HTMLInputElement> & {
   label?: string;
@@ -10,7 +13,7 @@ type InputFieldProps = React.InputHTMLAttributes<HTMLInputElement> & {
   containerClassName?: string;
 };
 
-/** Shared text/number/date input design */
+/** Shared text/number/date input — same chrome as the searchable dropdown. */
 export default function InputField({
   label,
   hint,
@@ -24,22 +27,13 @@ export default function InputField({
   return (
     <div className={cn('space-y-1.5', containerClassName)}>
       {label && (
-        <label htmlFor={inputId} className="block text-sm font-medium text-foreground">
+        <FieldLabel htmlFor={inputId} required={props.required}>
           {label}
-          {props.required && <span className="ms-0.5 text-destructive">*</span>}
-        </label>
+        </FieldLabel>
       )}
       <input
         id={inputId}
-        className={cn(
-          'h-10 w-full rounded-xl border border-border bg-card px-3.5 text-sm text-foreground shadow-sm',
-          'placeholder:text-muted-foreground outline-none transition-all duration-200',
-          'hover:border-primary/35 dark:hover:border-primary/40',
-          'focus:border-primary focus:ring-4 focus:ring-primary/20',
-          'disabled:cursor-not-allowed disabled:opacity-60',
-          error && 'border-destructive focus:border-destructive focus:ring-destructive/20',
-          className
-        )}
+        className={cn(fieldControlClass, error && fieldInvalidClass, className)}
         {...props}
       />
       {error ? (
@@ -53,31 +47,86 @@ export default function InputField({
 
 type TextAreaFieldProps = React.TextareaHTMLAttributes<HTMLTextAreaElement> & {
   label?: string;
+  hint?: string;
   error?: string;
+  required?: boolean;
 };
 
-export function TextAreaField({ label, error, className, id, ...props }: TextAreaFieldProps) {
+export function TextAreaField({
+  label,
+  hint,
+  error,
+  className,
+  id,
+  required,
+  ...props
+}: TextAreaFieldProps) {
   const inputId = id || props.name;
   return (
     <div className="space-y-1.5">
       {label && (
-        <label htmlFor={inputId} className="block text-sm font-medium text-foreground">
+        <FieldLabel htmlFor={inputId} required={required}>
           {label}
-        </label>
+        </FieldLabel>
       )}
       <textarea
         id={inputId}
-        className={cn(
-          'min-h-[96px] w-full rounded-xl border border-border bg-card px-3.5 py-2.5 text-sm text-foreground shadow-sm',
-          'placeholder:text-muted-foreground outline-none transition-all duration-200',
-          'hover:border-primary/35 dark:hover:border-primary/40',
-          'focus:border-primary focus:ring-4 focus:ring-primary/20',
-          error && 'border-destructive',
-          className
-        )}
+        required={required}
+        className={cn(fieldControlClass, 'h-auto min-h-[96px] py-2.5', error && fieldInvalidClass, className)}
         {...props}
       />
-      {error && <p className="text-xs text-destructive">{error}</p>}
+      {error ? (
+        <p className="text-xs text-destructive">{error}</p>
+      ) : hint ? (
+        <p className="text-xs text-muted-foreground">{hint}</p>
+      ) : null}
+    </div>
+  );
+}
+
+type PasswordFieldProps = Omit<InputFieldProps, 'type'> & {
+  toggleLabel?: string;
+};
+
+export function PasswordField({
+  label,
+  hint,
+  error,
+  className,
+  containerClassName,
+  id,
+  ...props
+}: PasswordFieldProps) {
+  const [visible, setVisible] = useState(false);
+  const inputId = id || props.name;
+  return (
+    <div className={cn('space-y-1.5', containerClassName)}>
+      {label && (
+        <FieldLabel htmlFor={inputId} required={props.required}>
+          {label}
+        </FieldLabel>
+      )}
+      <div className="relative">
+        <input
+          id={inputId}
+          type={visible ? 'text' : 'password'}
+          className={cn(fieldControlClass, 'pe-10', error && fieldInvalidClass, className)}
+          {...props}
+        />
+        <button
+          type="button"
+          onClick={() => setVisible((v) => !v)}
+          className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+          aria-label={visible ? 'Hide password' : 'Show password'}
+        >
+          {visible ? <EyeOff size={16} /> : <Eye size={16} />}
+        </button>
+      </div>
+      {error ? (
+        <p className="text-xs text-destructive">{error}</p>
+      ) : hint ? (
+        <p className="text-xs text-muted-foreground">{hint}</p>
+      ) : null}
     </div>
   );
 }

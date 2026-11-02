@@ -24,11 +24,11 @@ export default function SectionPanel({
   return (
     <section
       className={cn(
-        'overflow-hidden rounded-2xl border border-border bg-card shadow-card transition-all duration-200 hover:shadow-soft',
+        'min-w-0 overflow-hidden rounded-2xl border border-border bg-card shadow-card transition-all duration-200 hover:shadow-soft',
         className
       )}
     >
-      {(title || headerRight) && (
+      {(title || description || headerRight) && (
         <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border px-4 py-3.5 sm:px-5">
           <div className="min-w-0">
             {title && (
@@ -43,7 +43,7 @@ export default function SectionPanel({
           {headerRight}
         </div>
       )}
-      <div className={cn('p-4 sm:p-5', bodyClassName)}>{children}</div>
+      <div className={cn('min-w-0 p-4 sm:p-5', bodyClassName)}>{children}</div>
     </section>
   );
 }

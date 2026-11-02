@@ -2,89 +2,190 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, MessageSquare, Users } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { EmptyState, ErrorBanner, InputField, PageHeader, PortButton, SearchBar, SectionPanel } from '@/components/ports';
-import { TextAreaField } from '@/components/ports/InputField';
-import MultiSelect from '@/components/ui/MultiSelect';
+import { MessageSquare } from 'lucide-react';
+import {
+  Dropdown,
+  ErrorBanner,
+  FormDialog,
+  FormDialogFooter,
+  InputField,
+  ListPageShell,
+  MultiSelectField,
+  RowActions,
+  StatusChip,
+  TextAreaField,
+  statusToneFromValue,
+} from '@/components/ports';
 import { toast } from '@/components/ui/Toast';
 import UserAvatar from '@/components/messaging/UserAvatar';
+import { useListQuery } from '@/hooks/useListQuery';
 import { createClient } from '@/lib/supabase/client';
+import {
+  hydrateMessagingType,
+  isDirectMessagingType,
+  type MessagingTypeRow,
+} from '@/lib/messaging-types';
 
-type UserRow = {
+type DirectoryUser = {
   id: string;
+  username: string;
   full_name: string | null;
   email: string | null;
+  phone: string | null;
   role: string | null;
-  is_active: boolean | null;
+  status: string;
+  is_active: boolean;
 };
+
+function usernameOf(user: Pick<DirectoryUser, 'full_name' | 'email' | 'username'>) {
+  return user.username || user.full_name?.trim() || user.email || 'Unnamed user';
+}
+
+function formatRole(role: string | null) {
+  if (!role) return '';
+  return role.replace(/[_-]+/g, ' ');
+}
 
 export default function NewConversationPage() {
   const router = useRouter();
-  const [tab, setTab] = useState<'direct' | 'group'>('direct');
-  const [users, setUsers] = useState<UserRow[]>([]);
+  const [users, setUsers] = useState<DirectoryUser[]>([]);
   const [meId, setMeId] = useState<string | null>(null);
-  const [usersLoading, setUsersLoading] = useState(true);
-  const [usersError, setUsersError] = useState<string | null>(null);
-  const [query, setQuery] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [startingId, setStartingId] = useState<string | null>(null);
+  const [roleFilter, setRoleFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('active');
 
+  const [showCreate, setShowCreate] = useState(false);
   const [groupName, setGroupName] = useState('');
   const [groupDescription, setGroupDescription] = useState('');
   const [memberIds, setMemberIds] = useState<string[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState('');
   const [nameError, setNameError] = useState<string | null>(null);
   const [membersError, setMembersError] = useState<string | null>(null);
   const [creatingGroup, setCreatingGroup] = useState(false);
 
+  const [messagingTypes, setMessagingTypes] = useState<MessagingTypeRow[]>([]);
+  const [selectedTypeSlug, setSelectedTypeSlug] = useState('direct');
+
+  const loadMessagingTypes = useCallback(async () => {
+    try {
+      const res = await fetch('/api/messaging-types', { cache: 'no-store' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to load messaging types');
+      const items = (Array.isArray(data) ? data : [])
+        .map((row) => hydrateMessagingType(row))
+        .filter((item) => item.is_active);
+      setMessagingTypes(items);
+      const requested =
+        typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('type') : null;
+      setSelectedTypeSlug((current) => {
+        if (requested && items.some((item) => item.slug === requested)) return requested;
+        if (current && items.some((item) => item.slug === current)) return current;
+        return items.find((item) => item.slug === 'direct')?.slug || items[0]?.slug || 'direct';
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to load messaging types');
+    }
+  }, []);
+
   const loadUsers = useCallback(async () => {
-    setUsersLoading(true);
+    setLoading(true);
     try {
       const res = await fetch('/api/users', { cache: 'no-store' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to load users');
-      setUsers(Array.isArray(data) ? (data as UserRow[]) : []);
-      setUsersError(null);
+      const rows = (Array.isArray(data) ? data : []).map((row: Record<string, unknown>) => {
+        const fullName = row.full_name ? String(row.full_name) : null;
+        const email = row.email ? String(row.email) : null;
+        const role = row.role_name ? String(row.role_name) : row.role ? String(row.role) : null;
+        const isActive = row.is_active == null ? true : Boolean(row.is_active);
+        return {
+          id: String(row.id),
+          username: fullName?.trim() || email || 'Unnamed user',
+          full_name: fullName,
+          email,
+          phone: row.phone ? String(row.phone) : null,
+          role,
+          status: isActive ? 'active' : 'inactive',
+          is_active: isActive,
+        } satisfies DirectoryUser;
+      });
+      setUsers(rows);
+      setError(null);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load users';
-      setUsersError(message);
+      setUsers([]);
+      setError(message);
       toast.error(message);
     } finally {
-      setUsersLoading(false);
+      setLoading(false);
     }
   }, []);
 
   useEffect(() => {
     loadUsers();
+    loadMessagingTypes();
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => setMeId(data.user?.id ?? null));
-  }, [loadUsers]);
+  }, [loadUsers, loadMessagingTypes]);
 
-  const colleagues = useMemo(
-    () => users.filter((user) => user.id !== meId && user.is_active !== false),
+  const directory = useMemo(
+    () => users.filter((user) => user.id !== meId) as (DirectoryUser & Record<string, unknown>)[],
     [users, meId]
   );
 
-  const filteredUsers = useMemo(() => {
-    const needle = query.trim().toLowerCase();
-    if (!needle) return colleagues;
-    return colleagues.filter(
-      (user) =>
-        (user.full_name ?? '').toLowerCase().includes(needle) ||
-        (user.email ?? '').toLowerCase().includes(needle) ||
-        (user.role ?? '').toLowerCase().includes(needle)
-    );
-  }, [colleagues, query]);
+  const isDirect = isDirectMessagingType(selectedTypeSlug);
+  const selectedType =
+    messagingTypes.find((item) => item.slug === selectedTypeSlug) || messagingTypes[0] || null;
+  const typeLabel = selectedType?.name || (isDirect ? 'Direct' : 'Group');
 
-  const memberOptions = useMemo(
-    () =>
-      colleagues.map((user) => ({
-        value: user.id,
-        label: user.email
-          ? `${user.full_name || user.email} (${user.email})`
-          : user.full_name || 'Unnamed user',
-      })),
-    [colleagues]
+  const typeOptions = useMemo(() => {
+    const options = messagingTypes.map((item) => ({ value: item.slug, label: item.name }));
+    if (options.length) return options;
+    return [
+      { value: 'direct', label: 'Direct' },
+      { value: 'group', label: 'Group' },
+    ];
+  }, [messagingTypes]);
+
+  const roleOptions = useMemo(() => {
+    const roles = Array.from(new Set(directory.map((user) => formatRole(user.role)).filter(Boolean)));
+    return roles.sort().map((role) => ({ value: role, label: role }));
+  }, [directory]);
+
+  const filterFn = useCallback(
+    (item: DirectoryUser & Record<string, unknown>) => {
+      if (statusFilter && item.status !== statusFilter) return false;
+      if (roleFilter && formatRole(item.role) !== roleFilter) return false;
+      return true;
+    },
+    [statusFilter, roleFilter]
   );
+
+  const list = useListQuery({
+    items: directory,
+    searchKeys: ['username', 'full_name', 'email', 'phone', 'role', 'status'],
+    initialPerPage: 10,
+    filterKey: `${statusFilter}:${roleFilter}`,
+    filterFn,
+  });
+
+  const userOptions = useMemo(
+    () => directory.map((user) => ({ value: user.id, label: usernameOf(user) })),
+    [directory]
+  );
+
+  function openCreate() {
+    setNameError(null);
+    setMembersError(null);
+    setShowCreate(true);
+  }
+
+  function closeCreate() {
+    if (creatingGroup) return;
+    setShowCreate(false);
+  }
 
   async function startDirect(userId: string) {
     if (startingId) return;
@@ -104,20 +205,31 @@ export default function NewConversationPage() {
     }
   }
 
-  async function createGroup(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (creatingGroup) return;
+  async function createConversation(event?: React.FormEvent) {
+    event?.preventDefault();
+    if (creatingGroup || startingId) return;
+
+    if (isDirect) {
+      if (!selectedUserId) {
+        setMembersError('Select a user');
+        return;
+      }
+      setMembersError(null);
+      setShowCreate(false);
+      await startDirect(selectedUserId);
+      return;
+    }
 
     const name = groupName.trim();
     let invalid = false;
     if (!name) {
-      setNameError('Group name is required');
+      setNameError(`${typeLabel} name is required`);
       invalid = true;
     } else {
       setNameError(null);
     }
     if (!memberIds.length) {
-      setMembersError('Select at least one member');
+      setMembersError('Add at least one person');
       invalid = true;
     } else {
       setMembersError(null);
@@ -133,184 +245,198 @@ export default function NewConversationPage() {
           name,
           description: groupDescription.trim(),
           memberIds,
+          type: selectedTypeSlug,
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to create group');
-      toast.success('Group created');
+      if (!res.ok) throw new Error(data.error || `Failed to create ${typeLabel.toLowerCase()}`);
+      toast.success(`${typeLabel} created`);
       router.push(`/messaging?c=${data.conversationId}`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to create group');
+      toast.error(err instanceof Error ? err.message : `Failed to create ${typeLabel.toLowerCase()}`);
       setCreatingGroup(false);
     }
   }
 
   return (
-    <>
-      <PageHeader
-        title="New conversation"
-        description="Message a colleague directly or start a group chat."
-        actions={
-          <PortButton variant="secondary" onClick={() => router.push('/messaging')}>
+    <ListPageShell
+      title="New conversation"
+      description="Search users by username, then start a chat or add people to a group. Ten users load per page."
+      primaryAction={{ label: 'Create', onClick: openCreate }}
+      search={list.search}
+      onSearchChange={list.setSearch}
+      searchPlaceholder="Search by username, email, or role…"
+      onResetFilters={() => {
+        list.reset();
+        setRoleFilter('');
+        setStatusFilter('active');
+      }}
+      filters={[
+        {
+          key: 'role',
+          label: 'Role',
+          value: roleFilter,
+          options: roleOptions,
+          onChange: setRoleFilter,
+        },
+        {
+          key: 'status',
+          label: 'Status',
+          value: statusFilter,
+          options: [
+            { value: 'active', label: 'Active' },
+            { value: 'inactive', label: 'Inactive' },
+          ],
+          onChange: setStatusFilter,
+        },
+      ]}
+      loading={loading}
+      columns={[
+        {
+          key: 'username',
+          header: 'Username',
+          render: (row) => (
             <span className="inline-flex items-center gap-2">
-              <ArrowLeft size={16} /> Back to messaging
+              <UserAvatar name={usernameOf(row)} size="sm" />
+              <span className="font-semibold">{usernameOf(row)}</span>
             </span>
-          </PortButton>
+          ),
+        },
+        {
+          key: 'email',
+          header: 'Email',
+          render: (row) => row.email || '—',
+        },
+        {
+          key: 'phone',
+          header: 'Phone',
+          render: (row) => row.phone || '—',
+        },
+        {
+          key: 'role',
+          header: 'Role',
+          render: (row) => {
+            const role = formatRole(row.role);
+            return role ? <StatusChip label={role} tone={statusToneFromValue(role)} /> : '—';
+          },
+        },
+        {
+          key: 'status',
+          header: 'Status',
+          render: (row) => <StatusChip label={row.status} tone={statusToneFromValue(row.status)} />,
+        },
+        {
+          key: 'actions',
+          header: 'Actions',
+          align: 'right',
+          render: (row) => (
+            <RowActions
+              maxInline={1}
+              items={[
+                {
+                  key: 'message',
+                  label: startingId === row.id ? 'Opening…' : 'Message',
+                  icon: <MessageSquare size={14} />,
+                  disabled: startingId !== null,
+                  onClick: () => startDirect(row.id),
+                },
+              ]}
+            />
+          ),
+        },
+      ]}
+      rows={list.rows as DirectoryUser[]}
+      rowKey={(row) => row.id}
+      page={list.page}
+      perPage={list.perPage}
+      total={list.total}
+      onPageChange={list.setPage}
+      onPerPageChange={list.setPerPage}
+      emptyMessage={
+        list.search || roleFilter || statusFilter
+          ? 'No users match this search or filter.'
+          : 'There are no other users yet.'
+      }
+    >
+      {error && <ErrorBanner message={error} />}
+
+      <FormDialog
+        open={showCreate}
+        title={`Create ${typeLabel.toLowerCase()}`}
+        onClose={closeCreate}
+        maxWidth="lg"
+        footer={
+          <FormDialogFooter
+            onCancel={closeCreate}
+            submitLabel={creatingGroup || startingId ? 'Creating…' : `Create ${typeLabel.toLowerCase()}`}
+            submitting={creatingGroup || Boolean(startingId)}
+            formId="create-conversation-form"
+          />
         }
-      />
-
-      <SectionPanel bodyClassName="p-0" className="max-w-3xl">
-        <div className="border-b border-border p-3">
-          <div className="grid grid-cols-2 gap-1 rounded-[9px] bg-muted p-1">
-            <button
-              type="button"
-              onClick={() => setTab('direct')}
-              className={cn(
-                'inline-flex h-9 items-center justify-center gap-2 rounded-[7px] text-sm font-semibold transition-colors',
-                tab === 'direct'
-                  ? 'bg-card text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              <MessageSquare size={15} /> Direct message
-            </button>
-            <button
-              type="button"
-              onClick={() => setTab('group')}
-              className={cn(
-                'inline-flex h-9 items-center justify-center gap-2 rounded-[7px] text-sm font-semibold transition-colors',
-                tab === 'group'
-                  ? 'bg-card text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              <Users size={15} /> Group chat
-            </button>
-          </div>
-        </div>
-
-        {tab === 'direct' ? (
-          <div>
-            <div className="border-b border-border p-3">
-              <SearchBar
-                value={query}
-                onChange={setQuery}
-                placeholder="Search people by name, email, or role…"
-              />
-            </div>
-            {usersError && (
-              <div className="p-4">
-                <ErrorBanner message={usersError} />
-                <PortButton variant="secondary" className="mt-2" onClick={loadUsers}>
-                  Retry
-                </PortButton>
-              </div>
-            )}
-            {usersLoading ? (
-              <p className="p-4 text-sm text-muted-foreground">Loading people…</p>
-            ) : filteredUsers.length === 0 ? (
-              <EmptyState
-                message={
-                  query ? 'No people match your search.' : 'There are no other active users yet.'
-                }
-              />
-            ) : (
-              <ul className="m-0 max-h-[420px] list-none overflow-y-auto p-0">
-                {filteredUsers.map((user) => {
-                  const name = user.full_name?.trim() || user.email || 'Unnamed user';
-                  return (
-                    <li
-                      key={user.id}
-                      className="flex items-center gap-3 border-b border-border/60 px-4 py-3 last:border-b-0"
-                    >
-                      <UserAvatar name={name} />
-                      <div className="min-w-0 flex-1">
-                        <p className="m-0 truncate text-sm font-semibold text-foreground">{name}</p>
-                        <p className="m-0 truncate text-xs text-muted-foreground">
-                          {user.email || '—'}
-                          {user.role ? ` · ${user.role}` : ''}
-                        </p>
-                      </div>
-                      <PortButton
-                        variant="secondary"
-                        className="h-8 px-3 text-xs"
-                        disabled={startingId !== null}
-                        onClick={() => startDirect(user.id)}
-                      >
-                        {startingId === user.id ? 'Opening…' : 'Message'}
-                      </PortButton>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </div>
-        ) : (
-          <form onSubmit={createGroup} className="space-y-4 p-4 sm:p-5">
-            <InputField
-              label="Group name"
-              name="name"
-              required
-              value={groupName}
-              onChange={(event) => {
-                setGroupName(event.target.value);
-                if (nameError) setNameError(null);
+      >
+        <form id="create-conversation-form" onSubmit={createConversation} className="space-y-4">
+          <Dropdown
+            label="Messaging type"
+            value={selectedTypeSlug}
+            onChange={(value) => {
+              setSelectedTypeSlug(value);
+              setNameError(null);
+              setMembersError(null);
+            }}
+            options={typeOptions}
+          />
+          {isDirect ? (
+            <Dropdown
+              label="User"
+              value={selectedUserId}
+              onChange={(value) => {
+                setSelectedUserId(value);
+                if (membersError) setMembersError(null);
               }}
-              maxLength={120}
-              placeholder="e.g. Science department"
-              error={nameError ?? undefined}
+              options={userOptions}
+              placeholder="Search by username…"
+              required
             />
-
-            <TextAreaField
-              label="Description (optional)"
-              name="description"
-              value={groupDescription}
-              onChange={(event) => setGroupDescription(event.target.value)}
-              maxLength={300}
-              placeholder="What is this group about?"
-            />
-
-            <div className="space-y-1.5">
-              <span className="block text-sm font-medium text-foreground">
-                Members <span className="text-destructive">*</span>
-              </span>
-              <MultiSelect
+          ) : (
+            <>
+              <InputField
+                label={`${typeLabel} name`}
+                name="name"
+                required
+                value={groupName}
+                onChange={(event) => {
+                  setGroupName(event.target.value);
+                  if (nameError) setNameError(null);
+                }}
+                maxLength={120}
+                placeholder={`e.g. Science ${typeLabel.toLowerCase()}`}
+                error={nameError ?? undefined}
+              />
+              <TextAreaField
+                label="Description (optional)"
+                name="description"
+                value={groupDescription}
+                onChange={(event) => setGroupDescription(event.target.value)}
+                maxLength={300}
+                placeholder={`What is this ${typeLabel.toLowerCase()} about?`}
+              />
+              <MultiSelectField
+                label="Members"
+                required
                 value={memberIds}
                 onChange={(value) => {
                   setMemberIds(value);
-                  if (membersError) setMembersError(null);
+                  if (value.length) setMembersError(null);
                 }}
-                options={memberOptions}
-                placeholder="Select members"
-                filterPlaceholder="Search people…"
-                loading={usersLoading}
-                invalid={Boolean(membersError)}
+                options={userOptions}
+                placeholder="Search usernames and add people"
+                filterPlaceholder="Search by username…"
               />
-              {membersError ? (
-                <p className="text-xs text-destructive">{membersError}</p>
-              ) : (
-                <p className="text-xs text-muted-foreground">
-                  You are added to the group automatically.
-                  {memberIds.length > 0 && ` ${memberIds.length} selected.`}
-                </p>
-              )}
-            </div>
-
-            <div className="flex items-center justify-end gap-2 border-t border-border pt-4">
-              <PortButton
-                variant="ghost"
-                onClick={() => router.push('/messaging')}
-                disabled={creatingGroup}
-              >
-                Cancel
-              </PortButton>
-              <PortButton type="submit" variant="primary" disabled={creatingGroup}>
-                {creatingGroup ? 'Creating…' : 'Create group'}
-              </PortButton>
-            </div>
-          </form>
-        )}
-      </SectionPanel>
-    </>
+            </>
+          )}
+          {membersError && <ErrorBanner message={membersError} />}
+        </form>
+      </FormDialog>
+    </ListPageShell>
   );
 }

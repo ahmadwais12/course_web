@@ -15,6 +15,10 @@ export async function POST(request: Request) {
     const body = await request.json().catch(() => ({}));
     const name = String(body.name ?? '').trim();
     const description = String(body.description ?? '').trim();
+    const requestedType = String(body.type ?? 'group')
+      .trim()
+      .toLowerCase();
+    const conversationType = !requestedType || requestedType === 'direct' ? 'group' : requestedType;
     const memberIds = uniqueStrings(Array.isArray(body.memberIds) ? body.memberIds : []).filter(
       (id) => id !== user.id
     );
@@ -46,22 +50,31 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'One or more members were not found' }, { status: 400 });
     }
 
-    const { data: created, error: createError } = await admin
-      .from('chat_groups')
-      .insert({
-        name,
-        description: description || null,
-        type: 'group',
-        created_by: user.id,
-      })
-      .select('id')
-      .single();
+    const payload = {
+      name,
+      description: description || null,
+      type: conversationType,
+      created_by: user.id,
+    };
 
-    if (createError) {
-      return NextResponse.json({ error: createError.message }, { status: 500 });
+    let createdResult = await admin.from('chat_groups').insert(payload).select('id').single();
+    if (
+      createdResult.error &&
+      /type|check|constraint/i.test(createdResult.error.message) &&
+      conversationType !== 'group'
+    ) {
+      createdResult = await admin
+        .from('chat_groups')
+        .insert({ ...payload, type: 'group' })
+        .select('id')
+        .single();
     }
 
-    const conversationId = (created as { id: string }).id;
+    if (createdResult.error) {
+      return NextResponse.json({ error: createdResult.error.message }, { status: 500 });
+    }
+
+    const conversationId = (createdResult.data as { id: string }).id;
 
     const { error: memberError } = await admin.from('chat_group_members').insert([
       { group_id: conversationId, user_id: user.id, role: 'admin' },
