@@ -3,7 +3,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import EmptyState from './EmptyState';
-import { TableSkeleton } from './Skeleton';
+import BanterLoader from './BanterLoader';
 import Pagination from './Pagination';
 
 export type DataColumn<T> = {
@@ -53,8 +53,8 @@ export default function DataTable<T>({
   return (
     <div className={cn('w-full min-w-0 max-w-full', className)}>
       {loading ? (
-        <div className="min-w-0 max-w-full overflow-x-auto">
-          <TableSkeleton rows={6} cols={columns.length} />
+        <div className="flex min-h-[240px] w-full items-center justify-center py-12">
+          <BanterLoader label="Loading…" />
         </div>
       ) : (
         <>
@@ -81,7 +81,7 @@ export default function DataTable<T>({
                 {rows.map((row, index) => (
                   <tr
                     key={rowKey(row, index)}
-                    className="border-b border-border transition-colors last:border-0 hover:bg-muted"
+                    className="border-b border-border last:border-0 hover:bg-muted"
                   >
                     {columns.map((col) => (
                       <td

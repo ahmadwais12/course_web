@@ -3,7 +3,7 @@
 import React, { Suspense } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Sidebar from './Sidebar';
-import { ArrowLeft, Bell } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import LanguageSelector from './LanguageSelector';
 import { useLanguage } from '@/context/LanguageContext';
@@ -11,6 +11,8 @@ import { cn } from '@/lib/utils';
 import NavUserMenu, { type NavUser } from './NavUserMenu';
 import { useDataRefresh } from '@/context/DataRefreshContext';
 import AppBreadcrumb from './AppBreadcrumb';
+import NotificationBell from './notifications/NotificationBell';
+import AIAssistantWidget from './ai/AIAssistantWidget';
 
 function MessagingNavBack() {
   const pathname = usePathname();
@@ -38,7 +40,7 @@ export default function DashboardLayout({
   role?: string;
   user?: NavUser | null;
 }) {
-  const { t, isRTL, lang, setLang } = useLanguage();
+  const { isRTL, lang, setLang } = useLanguage();
   const pathname = usePathname() || '/dashboard';
   const { tick } = useDataRefresh();
 
@@ -74,18 +76,7 @@ export default function DashboardLayout({
             />
             <ThemeToggle />
 
-            <button
-              className="relative rounded-full p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              aria-label={t.notifications}
-            >
-              <Bell size={20} />
-              <span
-                className={cn(
-                  'absolute top-1.5 h-2 w-2 rounded-full border-2 border-card bg-destructive',
-                  isRTL ? 'left-1.5' : 'right-1.5'
-                )}
-              />
-            </button>
+            <NotificationBell isRTL={isRTL} />
             <NavUserMenu
               user={{
                 ...user,
@@ -107,6 +98,7 @@ export default function DashboardLayout({
           {children}
         </div>
       </main>
+      <AIAssistantWidget />
     </div>
   );
 }

@@ -6,6 +6,7 @@ import {
   detectOs,
   isInternalPath,
   isLikelyBot,
+  isNativeSurface,
   normalizeSurface,
 } from '@/lib/analytics/classify';
 import { createAnalyticsAdminClient } from '@/lib/analytics/auth';
@@ -79,9 +80,8 @@ export async function POST(request: Request) {
     const surface = normalizeSurface(body.surface);
     const ua = request.headers.get('user-agent') || '';
     const bot = isLikelyBot(ua);
-    // App traffic is never a public website page; keep it out of the public
-    // "web" bucket as well as flagging the surface explicitly.
-    const internal = surface === 'app' ? true : isInternalPath(path);
+    // Mobile app + desktop EXE are never public website pages.
+    const internal = isNativeSurface(surface) ? true : isInternalPath(path);
     const device = detectDeviceType(ua);
     const browser = detectBrowser(ua);
     const os = detectOs(ua);

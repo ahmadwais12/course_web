@@ -8,7 +8,7 @@ Whenever you **create** or **edit** a page under `app/`, use the shared kit from
 
 - Lists: `ListPageShell` + `useListQuery` (search, filters, table, pagination)
 - Tables: `DataTable` / `DataColumn` (never a raw `<table>` on a list page)
-- Search / filters: `SearchBar`, `FilterSection`, `Dropdown` (always searchable), `FilterBar`
+- Search / filters: `Filter` (one Filters button → dialog with all options), `SearchBar`, `Dropdown` (always searchable). Prefer `Filter` / `ListPageShell`; avoid ad-hoc filter bars.
 - Forms: `InputField`, `TextAreaField`, `PasswordField`, `Dropdown`, `MultiSelectField`, `PortButton`
 - Dialogs: `FormDialog` + `FormDialogFooter`
 - Row actions: `RowActions`

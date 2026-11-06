@@ -32,21 +32,53 @@ export const getPublicBusinessBySlug = cache(async (slug: string): Promise<Publi
   return row;
 });
 
-export async function listPublicBusinessSlugs(): Promise<string[]> {
+export type PublicBusinessOption = {
+  id: string;
+  slug: string;
+  name: string;
+  tagline: string | null;
+  plan: string | null;
+  logoUrl: string | null;
+};
+
+export async function listPublicBusinesses(): Promise<PublicBusinessOption[]> {
   try {
     const supabase = createSupabaseAdminClient();
     const { data, error } = await supabase
       .from('tenants')
-      .select('slug, is_active, organization_type')
+      .select('id, name, slug, plan, is_active, organization_type, logo_url, settings')
       .eq('organization_type', 'central')
       .eq('is_active', true)
+      .order('name')
       .limit(500);
 
     if (error || !data) return [];
     return data
-      .map((row) => String(row.slug || '').toLowerCase())
-      .filter((slug) => slug && !isReservedBusinessSlug(slug));
+      .map((row) => {
+        const slug = String(row.slug || '').toLowerCase();
+        if (!slug || isReservedBusinessSlug(slug)) return null;
+        const settings =
+          row.settings && typeof row.settings === 'object'
+            ? (row.settings as Record<string, unknown>)
+            : null;
+        const tagline =
+          settings && typeof settings.tagline === 'string' ? settings.tagline : null;
+        return {
+          id: String(row.id),
+          slug,
+          name: String(row.name || slug),
+          tagline,
+          plan: row.plan ? String(row.plan) : null,
+          logoUrl: row.logo_url ? String(row.logo_url) : null,
+        } satisfies PublicBusinessOption;
+      })
+      .filter((row): row is PublicBusinessOption => Boolean(row));
   } catch {
     return [];
   }
+}
+
+export async function listPublicBusinessSlugs(): Promise<string[]> {
+  const businesses = await listPublicBusinesses();
+  return businesses.map((item) => item.slug);
 }

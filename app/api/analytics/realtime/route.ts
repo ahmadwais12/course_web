@@ -31,14 +31,25 @@ export async function GET(request: Request) {
       activeUsers: new Set(rows.map((r) => r.visitor_id)).size,
       activeSessions: rows.length,
     });
-    const webRows = allRows.filter((r) => r.surface !== 'app' && !r.is_internal);
+    const webRows = allRows.filter(
+      (r) => r.surface !== 'app' && r.surface !== 'desktop' && !r.is_internal
+    );
     const appRows = allRows.filter((r) => r.surface === 'app');
+    const desktopRows = allRows.filter((r) => r.surface === 'desktop');
     const surfaces = {
       web: surfaceBlock(webRows),
       app: surfaceBlock(appRows),
+      desktop: surfaceBlock(desktopRows),
     };
 
-    const rows = surface === 'web' ? webRows : surface === 'app' ? appRows : allRows;
+    const rows =
+      surface === 'web'
+        ? webRows
+        : surface === 'app'
+          ? appRows
+          : surface === 'desktop'
+            ? desktopRows
+            : allRows;
     const activeUsers = new Set(rows.map((r) => r.visitor_id)).size;
     const byPage = new Map<string, number>();
     for (const r of rows) {

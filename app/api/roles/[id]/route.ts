@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createSupabaseAdminClient } from '@/lib/supabase/admin';
 import { GUARD_NAME } from '@/lib/rbac';
 import { toRoleSlug } from '@/lib/roles';
+import { softDeleteEntity } from '@/lib/soft-delete';
+import { requestMeta } from '@/lib/system-access';
 
 export async function PUT(
   request: Request,
@@ -49,17 +52,43 @@ export async function PUT(
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
     const supabase = await createClient();
-    await supabase.from('role_has_permissions').delete().eq('role_id', id);
-    await supabase.from('model_has_roles').delete().eq('role_id', id);
-    const { error } = await supabase.from('roles').delete().eq('id', id);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json({ ok: true });
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: 'Sign in required' }, { status: 401 });
+
+    const admin = createSupabaseAdminClient();
+    const meta = requestMeta(request);
+    const { data: actorProfile } = await admin
+      .from('users')
+      .select('tenant_id')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    const result = await softDeleteEntity({
+      admin,
+      entityType: 'role',
+      entityId: id,
+      deletedBy: user.id,
+      tenantId: (actorProfile?.tenant_id as string | null) ?? null,
+      audit: {
+        userId: user.id,
+        tenantId: (actorProfile?.tenant_id as string | null) ?? null,
+        ipAddress: meta.ipAddress,
+        userAgent: meta.userAgent,
+      },
+    });
+
+    if ('error' in result) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
+    }
+    return NextResponse.json({ ok: true, soft_deleted: true });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to delete role';
     return NextResponse.json({ error: message }, { status: 500 });

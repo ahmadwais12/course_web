@@ -8,6 +8,7 @@
     "start": "next start -p 9999",
     "lint": "oxlint",
     "type-check": "tsc --noEmit",
+    "test:ai": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./tests/ai/register.mjs --test \"tests/ai/**/*.test.ts\"",
     "check-all": "npm run lint && npm run type-check"
   },
   "dependencies": {

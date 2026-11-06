@@ -5,7 +5,7 @@ export const fieldLabelClass = 'block text-sm font-medium text-foreground';
 
 export const fieldControlClass = cn(
   'h-10 w-full rounded-lg border border-border bg-card px-3 text-sm text-foreground',
-  'placeholder:text-muted-foreground outline-none transition-colors',
+  'placeholder:text-muted-foreground outline-none transition-[background-color,color,border-color,outline-color,box-shadow] duration-200',
   'hover:border-primary/60',
   'focus:border-primary focus:ring-1 focus:ring-primary',
   'disabled:cursor-not-allowed disabled:opacity-60'
@@ -13,7 +13,7 @@ export const fieldControlClass = cn(
 
 export const fieldTriggerClass = cn(
   'emis-select flex min-h-10 w-full items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm text-left',
-  'text-foreground transition-colors hover:border-primary/60',
+  'text-foreground transition-[background-color,color,border-color,outline-color,box-shadow] duration-200 hover:border-primary/60',
   'disabled:cursor-not-allowed disabled:opacity-60'
 );
 

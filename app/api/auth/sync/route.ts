@@ -1,5 +1,8 @@
 import { createClient } from '@/lib/supabase/server';
+import { createSupabaseAdminClient } from '@/lib/supabase/admin';
 import { NextResponse } from 'next/server';
+import { recordLoginEvent } from '@/lib/login-history';
+import { requestMeta } from '@/lib/system-access';
 
 function normalizeRole(role?: string | null) {
   if (!role) return 'student';
@@ -7,10 +10,13 @@ function normalizeRole(role?: string | null) {
   return role;
 }
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
     const supabase = await createClient();
-    const { data: { user }, error } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
 
     if (error || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -18,9 +24,7 @@ export async function POST() {
 
     const role = normalizeRole(user.user_metadata?.role);
     const fullName =
-      user.user_metadata?.full_name ||
-      user.email?.split('@')[0] ||
-      'User';
+      user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
 
     const { data: existing, error: selectError } = await supabase
       .from('users')
@@ -60,6 +64,24 @@ export async function POST() {
         });
       }
       profile = created;
+    }
+
+    // Record successful sign-in when the client asks for it (login form / fresh session).
+    const body = await request.json().catch(() => ({}));
+    const recordLogin = body?.record_login === true || body?.record_login === '1';
+    if (recordLogin) {
+      const meta = requestMeta(request);
+      const admin = createSupabaseAdminClient();
+      await recordLoginEvent({
+        admin,
+        eventType: 'login',
+        userId: user.id,
+        tenantId: (profile as { tenant_id?: string | null }).tenant_id ?? null,
+        email: profile.email ?? user.email ?? null,
+        ipAddress: meta.ipAddress,
+        userAgent: meta.userAgent,
+        details: { source: 'auth_sync' },
+      });
     }
 
     return NextResponse.json({

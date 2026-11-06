@@ -13,7 +13,7 @@ const DataRefreshContext = createContext<DataRefreshContextValue>({
   notify: () => {},
 });
 
-const SKIP_NOTIFY = /\/api\/(auth\/sync|analytics\/|messaging\/)/i;
+const SKIP_NOTIFY = /\/api\/(auth\/sync|analytics\/|messaging\/|notifications)/i;
 
 function isMutatingMethod(method?: string) {
   const value = (method || 'GET').toUpperCase();
@@ -77,6 +77,8 @@ export function DataRefreshProvider({ children }: { children: React.ReactNode })
       'business_plans',
       'business_types',
       'messaging_types',
+      'notifications',
+      'student_levels',
     ];
     let channel = supabase.channel('dreamflow-live-data');
     for (const table of liveTables) {

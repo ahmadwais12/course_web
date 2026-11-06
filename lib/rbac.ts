@@ -20,6 +20,8 @@ export const EMIS_PERMISSIONS = [
   'User Management',
   'Roles',
   'Permissions',
+  'System Logs',
+  'Trash',
   'Create Users',
   'Add Students',
   'Edit Students',

@@ -18,6 +18,9 @@ const EXTRA_RESERVED = [
   'create',
   'admin',
   'public',
+  'about',
+  'docs',
+  'download',
 ];
 
 export const RESERVED_BUSINESS_SLUGS = new Set(

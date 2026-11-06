@@ -5,11 +5,22 @@ import { GUARD_NAME } from '@/lib/rbac';
 export async function GET() {
   try {
     const supabase = await createClient();
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('permissions')
       .select('*')
       .eq('guard_name', GUARD_NAME)
+      .is('deleted_at', null)
       .order('name');
+
+    if (error && /deleted_at/i.test(error.message)) {
+      const retry = await supabase
+        .from('permissions')
+        .select('*')
+        .eq('guard_name', GUARD_NAME)
+        .order('name');
+      data = retry.data;
+      error = retry.error;
+    }
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json(data ?? []);

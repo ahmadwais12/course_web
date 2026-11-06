@@ -98,7 +98,10 @@ export async function saveToSettings(
 }
 
 async function loadTypes(admin: AdminClient, tenantId: string | null) {
-  const table = await admin.from('messaging_types').select('*').order('name');
+  let table = await admin.from('messaging_types').select('*').is('deleted_at', null).order('name');
+  if (table.error && /deleted_at/i.test(table.error.message)) {
+    table = await admin.from('messaging_types').select('*').order('name');
+  }
   if (!table.error) {
     return {
       source: 'table' as const,

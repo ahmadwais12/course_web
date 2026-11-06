@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { ListPageShell, StatusChip, statusToneFromValue } from '@/components/ports';
 import { toast } from '@/components/ui/Toast';
 import { useListQuery } from '@/hooks/useListQuery';
@@ -17,6 +18,7 @@ type Student = {
 };
 
 export default function StudentsPage() {
+  const router = useRouter();
   const [items, setItems] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState('');
@@ -74,6 +76,10 @@ export default function StudentsPage() {
       <ListPageShell
         title="Students"
         description="Search, filter, and browse enrolled students"
+        primaryAction={{
+          label: 'Create Student & Parent',
+          onClick: () => router.push('/students/create'),
+        }}
         search={list.search}
         onSearchChange={list.setSearch}
         searchPlaceholder="Search by name, email, code…"

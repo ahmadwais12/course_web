@@ -1,157 +1,335 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Monitor, Smartphone, Tablet } from 'lucide-react';
 import {
+  ErrorBanner,
   ListPageShell,
-  StatusChip,
-  statusToneFromValue,
   StatCard,
+  StatusChip,
 } from '@/components/ports';
-import { useListQuery } from '@/hooks/useListQuery';
+import { toast } from '@/components/ui/Toast';
 
-type ObserverRow = {
+type VisitorSession = {
   id: string;
-  full_name?: string | null;
-  email?: string | null;
-  phone?: string | null;
-  role?: string | null;
-  role_name?: string | null;
-  status?: string | null;
-  created_at?: string | null;
-  [key: string]: unknown;
+  visitorId: string;
+  anonymousId: string | null;
+  isReturning: boolean;
+  startedAt: string;
+  lastActivityAt: string;
+  durationMs: number;
+  pageCount: number;
+  device: string;
+  browser: string | null;
+  os: string | null;
+  source: string | null;
+  medium: string | null;
+  landingPath: string | null;
+  exitPath: string | null;
+  country: string | null;
+  language: string | null;
+  screen: string | null;
+  surface: string;
+  referrer: string | null;
 };
 
-/** Read-only directory of accounts and their assigned roles. */
-export default function ObserversDirectoryPage() {
-  const [items, setItems] = useState<ObserverRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [roleFilter, setRoleFilter] = useState('');
+type SessionsResponse = {
+  total: number;
+  page: number;
+  perPage: number;
+  uniqueVisitors: number;
+  devices: { desktop: number; mobile: number; tablet: number; unknown: number };
+  clients?: { web: number; app: number; desktop: number };
+  rows: VisitorSession[];
+  error?: string;
+};
 
-  const fetchObservers = useCallback(async () => {
+function formatDuration(ms: number) {
+  if (!ms || ms < 1000) return '0s';
+  const s = Math.round(ms / 1000);
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  const rem = s % 60;
+  return `${m}m ${rem}s`;
+}
+
+function formatWhen(iso: string) {
+  try {
+    return new Date(iso).toLocaleString();
+  } catch {
+    return iso;
+  }
+}
+
+function deviceTone(device: string): 'blue' | 'green' | 'gold' | 'gray' {
+  if (device === 'desktop') return 'blue';
+  if (device === 'mobile') return 'green';
+  if (device === 'tablet') return 'gold';
+  return 'gray';
+}
+
+function DeviceIcon({ device }: { device: string }) {
+  if (device === 'mobile') return <Smartphone size={14} className="shrink-0" />;
+  if (device === 'tablet') return <Tablet size={14} className="shrink-0" />;
+  return <Monitor size={14} className="shrink-0" />;
+}
+
+/** System Viewer visitors — who opened the site, on desktop or mobile, with session details. */
+export default function SystemViewerVisitorsPage() {
+  const [range, setRange] = useState('30d');
+  const [surface, setSurface] = useState('all');
+  const [device, setDevice] = useState('');
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(20);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [data, setData] = useState<SessionsResponse | null>(null);
+
+  const load = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
-      const res = await fetch('/api/users');
-      const data = await res.json();
-      setItems(Array.isArray(data) ? data : []);
-    } catch {
-      setItems([]);
+      const params = new URLSearchParams({
+        range,
+        surface,
+        page: String(page),
+        perPage: String(perPage),
+      });
+      if (device) params.set('device', device);
+      if (search.trim()) params.set('q', search.trim());
+      const res = await fetch(`/api/analytics/sessions?${params}`);
+      const json = (await res.json()) as SessionsResponse;
+      if (!res.ok) throw new Error(json.error || 'Failed to load visitors');
+      setData(json);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to load visitors';
+      setError(message);
+      setData(null);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [range, surface, device, search, page, perPage]);
 
   useEffect(() => {
-    fetchObservers();
-  }, [fetchObservers]);
+    load();
+  }, [load]);
 
-  const roleOf = useCallback(
-    (row: ObserverRow) => String(row.role_name ?? row.role ?? '—'),
-    []
-  );
+  useEffect(() => {
+    setPage(1);
+  }, [range, surface, device, search]);
 
-  const filterFn = useCallback(
-    (row: ObserverRow) => !roleFilter || roleOf(row) === roleFilter,
-    [roleFilter, roleOf]
-  );
+  const ranges = [
+    { value: 'today', label: 'Today' },
+    { value: '7d', label: '7 days' },
+    { value: '30d', label: '30 days' },
+    { value: '90d', label: '90 days' },
+    { value: '12m', label: '12 months' },
+  ];
 
-  const list = useListQuery({
-    items,
-    searchKeys: ['full_name', 'email', 'phone', 'role_name', 'role'],
-    filterKey: roleFilter,
-    filterFn,
-  });
-
-  const roleOptions = useMemo(() => {
-    const set = new Set(items.map((i) => roleOf(i)));
-    return [...set].sort().map((r) => ({ value: r, label: r }));
-  }, [items, roleOf]);
-
-  const activeCount = items.filter((i) => i.status === 'active').length;
+  const devices = data?.devices || { desktop: 0, mobile: 0, tablet: 0, unknown: 0 };
+  const clients = data?.clients || { web: 0, app: 0, desktop: 0 };
 
   return (
     <ListPageShell
-      title="Account Directory"
-      description="Read-only directory of accounts and their assigned roles"
-      pill="READ ONLY"
-      search={list.search}
-      onSearchChange={list.setSearch}
-      searchPlaceholder="Search name, email, phone, or role…"
+      title="System Viewer — Visitors"
+      description="Who opened the website, mobile app, or desktop EXE, with browser/OS, path, and session details."
+      pill="LIVE DATA"
+      search={search}
+      onSearchChange={setSearch}
+      searchPlaceholder="Search path, browser, OS, source, visitor…"
       onResetFilters={() => {
-        list.reset();
-        setRoleFilter('');
+        setSearch('');
+        setDevice('');
+        setSurface('all');
+        setRange('30d');
+        setPage(1);
       }}
       filters={[
         {
-          key: 'role',
-          label: 'Role',
-          value: roleFilter,
-          options: roleOptions,
-          onChange: setRoleFilter,
+          key: 'surface',
+          label: 'Client',
+          value: surface,
+          options: [
+            { value: 'all', label: 'All clients' },
+            { value: 'web', label: 'Website (browser)' },
+            { value: 'app', label: 'Mobile app' },
+            { value: 'desktop', label: 'Desktop app (EXE)' },
+          ],
+          onChange: setSurface,
+        },
+        {
+          key: 'device',
+          label: 'Browser screen',
+          value: device,
+          options: [
+            { value: 'desktop', label: 'PC browser' },
+            { value: 'mobile', label: 'Phone browser' },
+            { value: 'tablet', label: 'Tablet browser' },
+            { value: 'unknown', label: 'Unknown' },
+          ],
+          onChange: setDevice,
+        },
+        {
+          key: 'range',
+          label: 'Range',
+          value: range,
+          options: ranges,
+          onChange: setRange,
         },
       ]}
       loading={loading}
       columns={[
         {
-          key: 'full_name',
-          header: 'Observer',
+          key: 'visitor',
+          header: 'Visitor',
           render: (r) => (
-            <div>
-              <div className="font-semibold">{r.full_name || '—'}</div>
-              {r.email && (
-                <div className="text-xs text-muted-foreground">{r.email}</div>
-              )}
+            <div className="min-w-0">
+              <div className="truncate font-mono text-xs font-semibold">
+                {(r.anonymousId || r.visitorId).slice(0, 12)}…
+              </div>
+              <div className="text-[11px] text-muted-foreground">
+                {r.isReturning ? 'Returning' : 'New'} ·{' '}
+                {r.surface === 'desktop'
+                  ? 'Desktop EXE'
+                  : r.surface === 'app'
+                    ? 'Mobile app'
+                    : 'Website'}
+              </div>
             </div>
           ),
         },
         {
-          key: 'role_name',
-          header: 'Role',
-          render: (r) => <span className="capitalize">{roleOf(r)}</span>,
+          key: 'surface',
+          header: 'Client',
+          render: (r) => {
+            const label =
+              r.surface === 'desktop'
+                ? 'Desktop EXE'
+                : r.surface === 'app'
+                  ? 'Mobile app'
+                  : 'Website';
+            const tone =
+              r.surface === 'desktop' ? 'blue' : r.surface === 'app' ? 'green' : 'purple';
+            return <StatusChip label={label} tone={tone} />;
+          },
         },
         {
-          key: 'phone',
-          header: 'Phone',
-          render: (r) => r.phone || '—',
-        },
-        {
-          key: 'status',
-          header: 'Status',
+          key: 'device',
+          header: 'Screen',
           render: (r) => (
-            <StatusChip
-              label={r.status || 'unknown'}
-              tone={statusToneFromValue(r.status || '')}
-            />
+            <span className="inline-flex items-center gap-1.5">
+              <DeviceIcon device={r.device} />
+              <StatusChip
+                label={
+                  r.surface === 'desktop'
+                    ? 'EXE'
+                    : r.device === 'desktop'
+                      ? 'PC browser'
+                      : r.device === 'mobile'
+                        ? 'Phone'
+                        : r.device === 'tablet'
+                          ? 'Tablet'
+                          : r.device
+                }
+                tone={deviceTone(r.device)}
+              />
+            </span>
+          ),
+        },
+        {
+          key: 'client',
+          header: 'Browser / OS',
+          render: (r) => (
+            <div>
+              <div className="text-sm">{r.browser || '—'}</div>
+              <div className="text-xs text-muted-foreground">{r.os || '—'}</div>
+            </div>
+          ),
+        },
+        {
+          key: 'paths',
+          header: 'Landing → Exit',
+          render: (r) => (
+            <div className="max-w-[220px]">
+              <div className="truncate font-mono text-xs">{r.landingPath || '—'}</div>
+              <div className="truncate font-mono text-[11px] text-muted-foreground">
+                → {r.exitPath || '—'}
+              </div>
+            </div>
+          ),
+        },
+        {
+          key: 'pageCount',
+          header: 'Pages',
+          render: (r) => r.pageCount,
+        },
+        {
+          key: 'durationMs',
+          header: 'Duration',
+          render: (r) => formatDuration(r.durationMs),
+        },
+        {
+          key: 'source',
+          header: 'Source',
+          render: (r) => (
+            <div className="text-xs">
+              <div>{r.source || 'direct'}</div>
+              {r.country ? <div className="text-muted-foreground">{r.country}</div> : null}
+            </div>
+          ),
+        },
+        {
+          key: 'lastActivityAt',
+          header: 'Last activity',
+          render: (r) => (
+            <span className="whitespace-nowrap text-xs text-muted-foreground">
+              {formatWhen(r.lastActivityAt)}
+            </span>
           ),
         },
       ]}
-      rows={list.rows}
-      rowKey={(r) => r.id}
-      page={list.page}
-      perPage={list.perPage}
-      total={list.total}
-      onPageChange={list.setPage}
-      onPerPageChange={list.setPerPage}
-      emptyMessage="No observers found."
+      rows={data?.rows ?? []}
+      rowKey={(row) => row.id}
+      page={page}
+      perPage={perPage}
+      total={data?.total ?? 0}
+      onPageChange={setPage}
+      onPerPageChange={(next) => {
+        setPerPage(next);
+        setPage(1);
+      }}
+      emptyMessage="No visitors yet. Open the public website to generate traffic."
     >
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-1">
+      {error ? <ErrorBanner message={error} /> : null}
+
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-5">
         <StatCard
-          label="Total accounts"
-          value={items.length}
-          hint="Loaded from /api/users"
+          label="Unique visitors"
+          value={data?.uniqueVisitors ?? 0}
+          hint={ranges.find((item) => item.value === range)?.label}
           valueClassName="text-sky-500"
         />
+        <StatCard label="Sessions" value={data?.total ?? 0} hint="In this filter" />
+        <StatCard label="Website" value={clients.web} hint="Browser visits" />
         <StatCard
-          label="Active"
-          value={activeCount}
-          hint="is_active = true"
+          label="Mobile app"
+          value={clients.app}
+          hint="Phone / tablet app"
           valueClassName="text-emerald-500"
         />
         <StatCard
-          label="Distinct roles"
-          value={roleOptions.length}
-          hint="Roles present"
+          label="Desktop EXE"
+          value={clients.desktop}
+          hint="Windows desktop app"
           valueClassName="text-[20px]"
         />
+      </div>
+      <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
+        <StatCard label="PC browsers" value={devices.desktop} hint="Website on a computer" />
+        <StatCard label="Phone browsers" value={devices.mobile} hint="Website on a phone" />
+        <StatCard label="Tablet browsers" value={devices.tablet} hint="Website on a tablet" />
       </div>
     </ListPageShell>
   );

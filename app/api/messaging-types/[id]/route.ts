@@ -72,7 +72,7 @@ export async function PATCH(request: Request, { params }: Params) {
   }
 }
 
-export async function DELETE(_request: Request, { params }: Params) {
+export async function DELETE(request: Request, { params }: Params) {
   try {
     const { id } = await params;
     const store = await requireMessagingTypesStore();
@@ -81,9 +81,34 @@ export async function DELETE(_request: Request, { params }: Params) {
     }
 
     if (store.source === 'table') {
-      const { error } = await store.admin.from('messaging_types').delete().eq('id', id);
-      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-      return NextResponse.json({ ok: true });
+      const { softDeleteEntity } = await import('@/lib/soft-delete');
+      const { requestMeta } = await import('@/lib/system-access');
+      const { createClient } = await import('@/lib/supabase/server');
+      const meta = requestMeta(request);
+      const auth = await createClient();
+      const {
+        data: { user: actor },
+      } = await auth.auth.getUser();
+      if (!actor) return NextResponse.json({ error: 'Sign in required' }, { status: 401 });
+
+      const result = await softDeleteEntity({
+        admin: store.admin,
+        entityType: 'messaging_type',
+        entityId: id,
+        deletedBy: actor.id,
+        tenantId: store.tenantId ?? null,
+        extraPatch: { is_active: false, status: 'inactive' },
+        audit: {
+          userId: actor.id,
+          tenantId: store.tenantId ?? null,
+          ipAddress: meta.ipAddress,
+          userAgent: meta.userAgent,
+        },
+      });
+      if ('error' in result) {
+        return NextResponse.json({ error: result.error }, { status: result.status });
+      }
+      return NextResponse.json({ ok: true, soft_deleted: true });
     }
 
     const items = store.items.filter((t) => t.id !== id);

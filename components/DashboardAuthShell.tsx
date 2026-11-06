@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { createClient } from '@/lib/supabase/client';
 import { DataRefreshProvider } from '@/context/DataRefreshContext';
+import BrandLoader from '@/components/ports/BrandLoader';
 import { useRouter } from 'next/navigation';
 
 /** Survive layout remounts so the shell (sidebar/header) never flashes away. */
@@ -75,14 +76,10 @@ export default function DashboardAuthShell({
   if (authed === false || authed === null) {
     return (
       <div className="emis-shell flex min-h-screen items-center justify-center bg-background">
-        <div className="w-full max-w-md space-y-4 px-6 animate-fade-in">
-          <div className="emis-shimmer mx-auto h-12 w-12 rounded-2xl bg-muted" />
-          <div className="emis-shimmer mx-auto h-4 w-40 rounded-lg bg-muted" />
-          <div className="emis-shimmer mx-auto h-3 w-56 rounded-lg bg-muted" />
-          <p className="text-center text-sm text-muted-foreground">
-            {authed === false ? 'Redirecting…' : 'Loading workspace…'}
-          </p>
-        </div>
+        <BrandLoader
+          className="animate-fade-in"
+          label={authed === false ? 'Redirecting…' : 'Loading workspace…'}
+        />
       </div>
     );
   }

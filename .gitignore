@@ -38,3 +38,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local inventory ledger (created at runtime)
+/data/inventory.json
+/data/assets.json

@@ -2,20 +2,13 @@
 
 import React from 'react';
 import PageHeader from './PageHeader';
-import FilterSection from './FilterSection';
+import Filter, { type FilterField } from './Filter';
 import SectionPanel from './SectionPanel';
 import DataTable, { type DataColumn } from './DataTable';
 import PortButton from './PortButton';
-import Dropdown, { type SelectOption } from './Dropdown';
-import DateFilterBar from '@/components/dashboards/DateFilterBar';
 
-export type ListFilter = {
-  key: string;
-  label: string;
-  value: string;
-  options: SelectOption[];
-  onChange: (value: string) => void;
-};
+/** @deprecated Prefer FilterField from `@/components/ports` — kept for existing list pages. */
+export type ListFilter = FilterField;
 
 type ListPageShellProps<T> = {
   title: string;
@@ -23,6 +16,8 @@ type ListPageShellProps<T> = {
   pill?: string;
   /** Primary CTA (e.g. Add) */
   primaryAction?: { label: string; onClick: () => void };
+  /** Extra header buttons shown before the primary CTA (e.g. reports, export). */
+  secondaryActions?: React.ReactNode;
   search: string;
   onSearchChange: (v: string) => void;
   searchPlaceholder?: string;
@@ -42,17 +37,19 @@ type ListPageShellProps<T> = {
   dateFrom?: string;
   dateTo?: string;
   onDateRangeChange?: (next: { from: string; to: string }) => void;
+  filterTitle?: string;
+  filterDescription?: string;
 };
 
 /**
- * Drop-in list page: header + search/filters + table + per-fetch pagination.
- * Use on Students, Courses, Payments, etc.
+ * Drop-in list page: header + reusable Filter dialog + table + pagination.
  */
 export default function ListPageShell<T>({
   title,
   description,
   pill = 'LIVE DATA',
   primaryAction,
+  secondaryActions,
   search,
   onSearchChange,
   searchPlaceholder,
@@ -72,6 +69,8 @@ export default function ListPageShell<T>({
   dateFrom,
   dateTo,
   onDateRangeChange,
+  filterTitle = 'Filters',
+  filterDescription = 'Choose date range and options, then apply to update the table.',
 }: ListPageShellProps<T>) {
   return (
     <div className="min-w-0 space-y-4 animate-fade-up">
@@ -81,42 +80,33 @@ export default function ListPageShell<T>({
         pill={loading ? 'LOADING…' : pill}
         pillTone={loading ? 'neutral' : 'live'}
         actions={
-          primaryAction ? (
-            <PortButton variant="primary" onClick={primaryAction.onClick}>
-              {primaryAction.label}
-            </PortButton>
+          primaryAction || secondaryActions ? (
+            <div className="flex flex-wrap items-center gap-2">
+              {secondaryActions}
+              {primaryAction && (
+                <PortButton variant="primary" onClick={primaryAction.onClick}>
+                  {primaryAction.label}
+                </PortButton>
+              )}
+            </div>
           ) : undefined
         }
       />
 
       {children}
 
-      <FilterSection
+      <Filter
+        title={filterTitle}
+        description={filterDescription}
         search={search}
         onSearchChange={onSearchChange}
         searchPlaceholder={searchPlaceholder}
+        filters={filters}
+        dateFrom={dateFrom}
+        dateTo={dateTo}
+        onDateRangeChange={onDateRangeChange}
         onReset={onResetFilters}
-        extra={
-          onDateRangeChange && dateFrom && dateTo ? (
-            <DateFilterBar from={dateFrom} to={dateTo} onChange={onDateRangeChange} />
-          ) : undefined
-        }
-        activeCount={
-          filters.filter((f) => Boolean(f.value)).length + (dateFrom || dateTo ? 1 : 0)
-        }
-      >
-        {filters.map((f) => (
-          <Dropdown
-            key={f.key}
-            label={f.label}
-            value={f.value}
-            onChange={f.onChange}
-            options={f.options}
-            placeholder={`All ${f.label.toLowerCase()}`}
-            clearable
-          />
-        ))}
-      </FilterSection>
+      />
 
       <SectionPanel description={`Total: ${total}`} bodyClassName="pt-2">
         <DataTable

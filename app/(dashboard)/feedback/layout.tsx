@@ -3,7 +3,7 @@ import { privateAppPageMetadata } from '@/lib/seo';
 
 export const metadata: Metadata = privateAppPageMetadata(
   'Feedback',
-  'Review feedback, complaints, and responses from stakeholders.',
+  'Submit feedback, review ratings, and reply to students, guardians, and staff.',
   '/feedback'
 );
 

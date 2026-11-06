@@ -2,7 +2,9 @@
 
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { usePortsMotion } from '@/components/ports/motion';
 
 type FieldOverlayProps = {
   open: boolean;
@@ -22,6 +24,7 @@ export default function FieldOverlay({
 }: FieldOverlayProps) {
   const [mounted, setMounted] = useState(false);
   const [style, setStyle] = useState<React.CSSProperties>({});
+  const { pop } = usePortsMotion();
 
   useEffect(() => {
     setMounted(true);
@@ -65,19 +68,25 @@ export default function FieldOverlay({
     };
   }, [open, anchorRef]);
 
-  if (!open || !mounted) return null;
+  if (!mounted) return null;
 
   return createPortal(
-    <div
-      ref={overlayRef}
-      className={cn(
-        'fixed z-[220] flex flex-col overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-lg',
-        className
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          key="field-overlay"
+          ref={overlayRef}
+          className={cn(
+            'fixed z-[220] flex flex-col overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-lg',
+            className
+          )}
+          style={{ ...style, transformOrigin: style.bottom !== undefined ? 'bottom' : 'top' }}
+          {...pop}
+        >
+          {children}
+        </motion.div>
       )}
-      style={style}
-    >
-      {children}
-    </div>,
+    </AnimatePresence>,
     document.body
   );
 }

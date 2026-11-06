@@ -15,6 +15,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'weekly',
       priority: 1,
     },
+    {
+      url: absoluteUrl('/about'),
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
+      url: absoluteUrl('/docs'),
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
+      url: absoluteUrl('/download'),
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
+      url: absoluteUrl('/account-deletion'),
+      lastModified: now,
+      changeFrequency: 'yearly',
+      priority: 0.3,
+    },
     ...slugs.map((slug) => ({
       url: absoluteUrl(publicBusinessPath(slug)),
       lastModified: now,

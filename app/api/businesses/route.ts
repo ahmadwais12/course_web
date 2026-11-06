@@ -26,7 +26,11 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: access.error }, { status: access.status });
     }
     const supabase = access.admin;
-    let query = supabase.from('tenants').select(BUSINESS_SELECT).order('name');
+    let query = supabase
+      .from('tenants')
+      .select(BUSINESS_SELECT)
+      .is('deleted_at', null)
+      .order('name');
 
     if (type === 'central') {
       query = query.eq('organization_type', 'central');
@@ -35,16 +39,37 @@ export async function GET(request: Request) {
       if (parentId) query = query.eq('parent_tenant_id', parentId);
     }
 
-    const { data, error } = await query.limit(500);
+    let { data, error } = await query.limit(500);
+    // Soft-delete column may be missing until migration is applied
+    if (error && /deleted_at/i.test(error.message)) {
+      let fallback = supabase.from('tenants').select(BUSINESS_SELECT).order('name');
+      if (type === 'central') fallback = fallback.eq('organization_type', 'central');
+      else if (type === 'branch') {
+        fallback = fallback.eq('organization_type', 'branch');
+        if (parentId) fallback = fallback.eq('parent_tenant_id', parentId);
+      }
+      const retry = await fallback.limit(500);
+      data = retry.data;
+      error = retry.error;
+    }
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
     const rows = data ?? [];
 
     if (type === 'central' || type === 'all') {
-      const { data: branches } = await supabase
+      let branchQuery = supabase
         .from('tenants')
         .select('parent_tenant_id')
-        .eq('organization_type', 'branch');
+        .eq('organization_type', 'branch')
+        .is('deleted_at', null);
+      let { data: branches, error: branchErr } = await branchQuery;
+      if (branchErr && /deleted_at/i.test(branchErr.message)) {
+        const retry = await supabase
+          .from('tenants')
+          .select('parent_tenant_id')
+          .eq('organization_type', 'branch');
+        branches = retry.data;
+      }
 
       const counts = new Map<string, number>();
       for (const b of branches ?? []) {
@@ -210,6 +235,41 @@ export async function POST(request: Request) {
     }
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    try {
+      const { logAccountWork } = await import('@/lib/audit');
+      const { requestMeta } = await import('@/lib/system-access');
+      const meta = requestMeta(request);
+      const { data: actorProfile } = await supabase
+        .from('users')
+        .select('tenant_id')
+        .eq('id', access.user.id)
+        .maybeSingle();
+      await logAccountWork(
+        {
+          admin: supabase,
+          userId: access.user.id,
+          tenantId: (actorProfile?.tenant_id as string | null) ?? data?.id ?? null,
+          ipAddress: meta.ipAddress,
+          userAgent: meta.userAgent,
+        },
+        {
+          action: 'create',
+          entityType: 'tenant',
+          entityId: data!.id,
+          tableName: 'tenants',
+          historyAction: 'insert',
+          details: {
+            display_name: data?.name,
+            organization_type: data?.organization_type,
+          },
+          newValues: { name: data?.name, slug: data?.slug },
+        }
+      );
+    } catch {
+      /* logging must not break create */
+    }
+
     return NextResponse.json(
       withBusinessMeta({
         ...(data ?? {}),

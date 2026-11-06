@@ -121,10 +121,10 @@ function ToastCard({ item }: { item: ToastItem }) {
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: -12, scale: 0.98 }}
+      initial={{ opacity: 0, y: 0, scale: 0.6 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -8, scale: 0.98 }}
-      transition={{ duration: 0.18, ease: 'easeOut' }}
+      exit={{ opacity: 0, y: '-100%', scale: 0.6, transition: { duration: 0.25, ease: 'easeIn' } }}
+      transition={{ duration: 0.3, ease: 'easeOut' }}
       role={isError ? 'alert' : 'status'}
       aria-live={isError ? 'assertive' : 'polite'}
       className="pointer-events-auto relative flex items-start gap-3 overflow-hidden rounded-xl border border-border bg-card py-3 ps-4 pe-2 text-card-foreground shadow-xl"

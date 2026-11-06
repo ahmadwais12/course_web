@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import {
   ShieldCheck,
   Users,
@@ -10,8 +10,6 @@ import {
   CheckCircle2,
   GraduationCap,
   Briefcase,
-  Menu,
-  X,
   Languages,
   Smartphone,
   Activity,
@@ -21,15 +19,18 @@ import {
   CreditCard,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import LanguageSelector from '@/components/LanguageSelector';
-import ThemeToggle from '@/components/ThemeToggle';
 import BrandLogo from '@/components/BrandLogo';
+import MarketingNav from '@/components/landing/MarketingNav';
 import Reveal from '@/components/landing/Reveal';
+import SocialLinks from '@/components/landing/SocialLinks';
+import { Dropdown, PortButton, SvgFrameLoader } from '@/components/ports';
 import { createClient } from '@/lib/supabase/client';
 import { APP_NAME } from '@/lib/branding';
-import { useLanguage } from '@/context/LanguageContext';
+import type { PublicBusinessOption } from '@/lib/public-business';
+import type { PublicDurationOption } from '@/lib/public-durations';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useLanguage } from '@/context/LanguageContext';
 
 const features = [
   {
@@ -106,29 +107,28 @@ const modules = [
 const highlights = [
   { icon: ShieldCheck, label: 'Role-based access' },
   { icon: Languages, label: 'English · دری · پښتو' },
-  { icon: Smartphone, label: 'Web & mobile app' },
+  { icon: Smartphone, label: 'Web, mobile & desktop' },
   { icon: Activity, label: 'Real-time analytics' },
 ];
 
+type LandingPageClientProps = {
+  businesses: PublicBusinessOption[];
+  durations: PublicDurationOption[];
+};
+
 /** Public landing — logged-in users soft-redirect to /dashboard */
-export default function LandingPageClient() {
+export default function LandingPageClient({ businesses, durations }: LandingPageClientProps) {
   const router = useRouter();
-  const { lang, setLang } = useLanguage();
+  const { isRTL } = useLanguage();
+  const reduceMotion = useReducedMotion();
   const [mounted, setMounted] = useState(false);
   const [checking, setChecking] = useState(true);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
+  const [businessSlug, setBusinessSlug] = useState('');
+  const [durationSlug, setDurationSlug] = useState('');
   const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 12);
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
   useEffect(() => {
@@ -145,172 +145,134 @@ export default function LandingPageClient() {
     })();
   }, [mounted, supabase, router]);
 
+  useEffect(() => {
+    if (!businessSlug && businesses[0]) setBusinessSlug(businesses[0].slug);
+  }, [businesses, businessSlug]);
+
+  useEffect(() => {
+    if (!durationSlug && durations[0]) setDurationSlug(durations[0].slug);
+  }, [durations, durationSlug]);
+
   const goTo = (id: string) => {
-    setMenuOpen(false);
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const openSelectedBusiness = () => {
+    if (!businessSlug) return;
+    const params = new URLSearchParams();
+    if (durationSlug) params.set('duration', durationSlug);
+    const query = params.toString();
+    router.push(query ? `/${businessSlug}?${query}` : `/${businessSlug}`);
   };
 
   if (!mounted || checking) {
     return (
       <div
-        className="min-h-screen flex items-center justify-center bg-background text-foreground"
+        className="flex min-h-screen items-center justify-center bg-[#070b12] text-foreground"
         suppressHydrationWarning
       >
-        Loading...
+        <SvgFrameLoader label="Loading" />
       </div>
     );
   }
 
+  const pageEnter = reduceMotion
+    ? undefined
+    : {
+        initial: { opacity: 0, y: 18, filter: 'blur(8px)' },
+        animate: { opacity: 1, y: 0, filter: 'blur(0px)' },
+        transition: { duration: 0.75, ease: [0.22, 1, 0.36, 1] as const },
+      };
+
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.45, ease: 'easeOut' }}
-      className="min-h-screen bg-background text-foreground font-sans selection:bg-accent"
+    <div
+      dir={isRTL ? 'rtl' : 'ltr'}
+      className="min-h-screen bg-background font-sans text-foreground selection:bg-accent"
     >
-      <nav
-        className={cn(
-          'fixed top-0 w-full z-50 border-b border-border transition-all duration-300',
-          scrolled
-            ? 'bg-card/95 backdrop-blur-xl shadow-sm'
-            : 'bg-card/70 backdrop-blur-md'
-        )}
-      >
-        <div
-          className={cn(
-            'max-w-7xl mx-auto px-6 flex items-center justify-between transition-all duration-300',
-            scrolled ? 'h-16' : 'h-20'
-          )}
-        >
-          <button
-            type="button"
-            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className="flex items-center gap-3"
-            aria-label={`${APP_NAME} home`}
-          >
-            <BrandLogo size={scrolled ? 40 : 52} showName={false} />
-            <span className="emis-text-brand text-xl font-black tracking-tight">{APP_NAME}</span>
-          </button>
+      {/* Nav stays outside motion/filter so position:fixed tracks the viewport */}
+      <MarketingNav onHashNavigate={goTo} />
 
-          <div className="hidden md:flex items-center gap-8">
-            <ThemeToggle />
-            <LanguageSelector currentLang={lang} onLanguageChange={setLang} variant="filled" />
-            <button
-              type="button"
-              onClick={() => goTo('features')}
-              className="text-sm font-bold text-muted-foreground hover:text-primary transition-colors"
-            >
-              Features
-            </button>
-            <button
-              type="button"
-              onClick={() => goTo('modules')}
-              className="text-sm font-bold text-muted-foreground hover:text-primary transition-colors"
-            >
-              Modules
-            </button>
-            <Link
-              href="/login"
-              className="emis-btn-primary rounded-xl px-6 py-2.5 text-sm font-bold shadow-sm transition-all"
-            >
-              Login
-            </Link>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setMenuOpen((v) => !v)}
-            aria-expanded={menuOpen}
-            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
-            className="md:hidden p-2 rounded-xl border border-border bg-card text-foreground hover:bg-muted transition-colors"
-          >
-            {menuOpen ? <X size={20} /> : <Menu size={20} />}
-          </button>
-        </div>
-
-        <AnimatePresence initial={false}>
-          {menuOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.22, ease: 'easeOut' }}
-              className="md:hidden overflow-hidden border-t border-border bg-card/95 backdrop-blur-xl"
-            >
-              <div className="px-6 py-5 space-y-4">
-                <div className="flex items-center justify-between">
-                  <ThemeToggle />
-                  <LanguageSelector
-                    currentLang={lang}
-                    onLanguageChange={setLang}
-                    variant="filled"
-                  />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <button
-                    type="button"
-                    onClick={() => goTo('features')}
-                    className="text-left px-3 py-2.5 rounded-lg text-sm font-bold text-foreground hover:bg-muted transition-colors"
-                  >
-                    Features
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => goTo('modules')}
-                    className="text-left px-3 py-2.5 rounded-lg text-sm font-bold text-foreground hover:bg-muted transition-colors"
-                  >
-                    Modules
-                  </button>
-                </div>
-                <Link
-                  href="/login"
-                  onClick={() => setMenuOpen(false)}
-                  className="emis-btn-primary block rounded-xl px-6 py-3 text-center text-sm font-bold shadow-sm transition-all"
-                >
-                  Login
-                </Link>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </nav>
-
-      <section className="relative isolate overflow-hidden pt-40 pb-20 px-6">
+      <motion.div {...pageEnter}>
+      <section className="relative isolate overflow-hidden px-6 pb-20 pt-40">
         <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
           <div className="absolute -top-32 -start-24 h-96 w-96 rounded-full bg-blue-500/20 blur-3xl" />
           <div className="absolute top-40 -end-24 h-[28rem] w-[28rem] rounded-full bg-indigo-500/15 blur-3xl" />
         </div>
 
-        <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
+        <div className="mx-auto grid max-w-7xl items-center gap-16 lg:grid-cols-2">
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
+            initial={reduceMotion ? false : { opacity: 0, x: -28 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6 }}
-            className="bg-card/40 backdrop-blur-md p-8 rounded-[2.5rem] border border-border shadow-xl"
+            transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
+            className="rounded-[2.5rem] border border-border bg-card/40 p-8 shadow-xl backdrop-blur-md"
           >
             <div className="emis-btn-primary mb-6 inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-black uppercase tracking-widest">
               <CheckCircle2 size={14} />
               Next-Gen Education Management
             </div>
-            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black text-foreground leading-[1.1] tracking-tight mb-8">
+            <h1 className="mb-8 text-5xl font-black leading-[1.1] tracking-tight text-foreground sm:text-6xl lg:text-7xl">
               Empower Your <span className="emis-text-brand">Institute</span> with Intelligence.
             </h1>
-            <p className="text-xl text-foreground/80 leading-relaxed mb-10 max-w-xl font-medium">
+            <p className="mb-8 max-w-xl text-xl font-medium leading-relaxed text-foreground/80">
               A comprehensive Education Management Information System designed to streamline
               administration, enhance teaching, and accelerate student success.
             </p>
+
+            <div className="mb-8 grid gap-3 sm:grid-cols-2">
+              <Dropdown
+                label="Business"
+                value={businessSlug}
+                onChange={setBusinessSlug}
+                options={businesses.map((item) => ({
+                  value: item.slug,
+                  label: item.plan ? `${item.name} · ${item.plan}` : item.name,
+                }))}
+                placeholder={businesses.length ? 'Select a business' : 'No businesses yet'}
+                disabled={!businesses.length}
+                hint={
+                  businesses.find((item) => item.slug === businessSlug)?.tagline ||
+                  'Choose an institute to open'
+                }
+              />
+              <Dropdown
+                label="Duration"
+                value={durationSlug}
+                onChange={setDurationSlug}
+                options={durations.map((item) => ({
+                  value: item.slug,
+                  label: `${item.name} (${item.months} mo)`,
+                }))}
+                placeholder={durations.length ? 'Select a duration' : 'No durations yet'}
+                disabled={!durations.length}
+                hint={
+                  durations.find((item) => item.slug === durationSlug)?.description ||
+                  'Program length'
+                }
+              />
+            </div>
+
             <div className="flex flex-wrap gap-4">
+              <PortButton
+                type="button"
+                variant="primary"
+                className="h-12 rounded-2xl px-8"
+                disabled={!businessSlug}
+                onClick={openSelectedBusiness}
+              >
+                Open business
+                <ArrowRight size={18} />
+              </PortButton>
               <Link
                 href="/login"
-                className="emis-btn-primary group flex items-center gap-2 rounded-2xl px-8 py-4 font-bold shadow-2xl transition-all"
+                className="emis-btn-primary group inline-flex h-12 items-center gap-2 rounded-2xl px-8 font-bold shadow-2xl transition-all"
               >
                 Sign in to {APP_NAME}
-                <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
               </Link>
               <button
                 type="button"
                 onClick={() => goTo('features')}
-                className="px-8 py-4 bg-card/80 backdrop-blur-sm border border-border text-foreground/80 rounded-2xl font-bold hover:bg-card transition-all"
+                className="h-12 rounded-2xl border border-border bg-card/80 px-8 font-bold text-foreground/80 backdrop-blur-sm transition-all hover:bg-card"
               >
                 Explore Features
               </button>
@@ -318,33 +280,33 @@ export default function LandingPageClient() {
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
+            initial={reduceMotion ? false : { opacity: 0, scale: 0.94, y: 18 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
             className="relative"
           >
-            <div className="absolute -inset-4 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-[2.5rem] blur-2xl opacity-20 animate-pulse" />
-            <div className="relative bg-card rounded-[2.5rem] border border-border shadow-2xl overflow-hidden">
+            <div className="absolute -inset-4 animate-pulse rounded-[2.5rem] bg-gradient-to-tr from-blue-600 to-indigo-600 opacity-20 blur-2xl" />
+            <div className="relative overflow-hidden rounded-[2.5rem] border border-border bg-card shadow-2xl">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&q=80&w=1200"
                 alt="Educators collaborating with an education management dashboard"
                 width={1200}
                 height={800}
-                className="w-full h-auto"
+                className="h-auto w-full"
               />
             </div>
           </motion.div>
         </div>
 
-        <Reveal className="max-w-7xl mx-auto mt-16" delay={0.1}>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <Reveal className="mx-auto mt-16 max-w-7xl" delay={0.1}>
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             {highlights.map((item) => (
               <div
                 key={item.label}
-                className="flex items-center gap-3 rounded-2xl border border-border bg-card/60 backdrop-blur-sm px-4 py-3"
+                className="flex items-center gap-3 rounded-2xl border border-border bg-card/60 px-4 py-3 backdrop-blur-sm"
               >
-                <item.icon size={18} className="text-primary shrink-0" />
+                <item.icon size={18} className="shrink-0 text-primary" />
                 <span className="text-sm font-semibold text-foreground/80">{item.label}</span>
               </div>
             ))}
@@ -352,32 +314,30 @@ export default function LandingPageClient() {
         </Reveal>
       </section>
 
-      <section id="features" className="scroll-mt-24 py-24 bg-card/30 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-6">
-          <Reveal className="text-center max-w-3xl mx-auto mb-20">
-            <h2 className="text-4xl font-black text-foreground mb-6">
+      <section id="features" className="scroll-mt-24 bg-card/30 py-24 backdrop-blur-md">
+        <div className="mx-auto max-w-7xl px-6">
+          <Reveal className="mx-auto mb-20 max-w-3xl text-center">
+            <h2 className="mb-6 text-4xl font-black text-foreground">
               Everything you need to run your institute.
             </h2>
-            <p className="text-lg text-foreground/80 font-medium">
+            <p className="text-lg font-medium text-foreground/80">
               Powerful tools for every stakeholder in your educational ecosystem.
             </p>
           </Reveal>
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid gap-8 md:grid-cols-3">
             {features.map((feature, i) => (
-              <Reveal key={feature.title} delay={i * 0.06} amount={0.15}>
-                <div className="h-full p-8 rounded-3xl bg-card/60 backdrop-blur-sm border border-border hover:border-blue-200 hover:shadow-xl hover:-translate-y-1 transition-all group">
+              <Reveal key={feature.title} delay={i * 0.07} amount={0.15}>
+                <div className="group h-full rounded-3xl border border-border bg-card/60 p-8 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl">
                   <div
                     className={cn(
-                      'w-14 h-14 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform text-white shadow-lg',
+                      'mb-6 flex h-14 w-14 items-center justify-center rounded-2xl text-white shadow-lg transition-transform duration-300 group-hover:scale-110',
                       feature.gradient
                     )}
                   >
                     <feature.icon size={28} />
                   </div>
-                  <h3 className="text-xl font-black text-foreground mb-4">{feature.title}</h3>
-                  <p className="text-muted-foreground leading-relaxed font-medium">
-                    {feature.desc}
-                  </p>
+                  <h3 className="mb-4 text-xl font-black text-foreground">{feature.title}</h3>
+                  <p className="font-medium leading-relaxed text-muted-foreground">{feature.desc}</p>
                 </div>
               </Reveal>
             ))}
@@ -385,26 +345,26 @@ export default function LandingPageClient() {
         </div>
       </section>
 
-      <section id="modules" className="scroll-mt-24 py-24 px-6">
-        <div className="max-w-7xl mx-auto">
-          <Reveal className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-4xl font-black text-foreground mb-6">
+      <section id="modules" className="scroll-mt-24 px-6 py-24">
+        <div className="mx-auto max-w-7xl">
+          <Reveal className="mx-auto mb-16 max-w-3xl text-center">
+            <h2 className="mb-6 text-4xl font-black text-foreground">
               One platform, every campus operation.
             </h2>
-            <p className="text-lg text-foreground/80 font-medium">
+            <p className="text-lg font-medium text-foreground/80">
               Purpose-built modules that share the same students, staff, and records.
             </p>
           </Reveal>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {modules.map((mod, i) => (
-              <Reveal key={mod.title} delay={i * 0.05} amount={0.15}>
-                <div className="h-full rounded-3xl border border-border bg-card p-7 hover:shadow-lg hover:-translate-y-1 transition-all">
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-5">
+              <Reveal key={mod.title} delay={i * 0.06} amount={0.15}>
+                <div className="h-full rounded-3xl border border-border bg-card p-7 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+                  <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
                     <mod.icon size={24} />
                   </div>
-                  <h3 className="text-lg font-black text-foreground mb-2">{mod.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed font-medium">
+                  <h3 className="mb-2 text-lg font-black text-foreground">{mod.title}</h3>
+                  <p className="text-sm font-medium leading-relaxed text-muted-foreground">
                     {mod.desc}
                   </p>
                 </div>
@@ -414,11 +374,11 @@ export default function LandingPageClient() {
         </div>
       </section>
 
-      <section id="auth-section" className="py-24 px-6">
-        <Reveal className="max-w-3xl mx-auto text-center bg-card border border-border rounded-[2.5rem] p-10 sm:p-14 shadow-sm">
+      <section id="auth-section" className="px-6 py-24">
+        <Reveal className="mx-auto max-w-3xl rounded-[2.5rem] border border-border bg-card p-10 text-center shadow-sm sm:p-14">
           <BrandLogo size={88} showName={false} />
           <h2 className="emis-text-brand mt-4 text-3xl font-black tracking-tight">{APP_NAME}</h2>
-          <p className="mt-4 text-lg text-muted-foreground font-medium">
+          <p className="mt-4 text-lg font-medium text-muted-foreground">
             Sign in with your {APP_NAME} account to open the management panels.
           </p>
           <Link
@@ -431,39 +391,60 @@ export default function LandingPageClient() {
         </Reveal>
       </section>
 
-      <footer className="py-12 border-t border-border bg-card">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-8">
+      <footer className="border-t border-border bg-card py-12">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-8 px-6 md:flex-row">
           <div className="flex items-center gap-3">
             <BrandLogo size={40} showName={false} />
             <span className="font-black text-foreground">{APP_NAME}</span>
           </div>
-          <div className="flex items-center gap-6">
+          <div className="flex flex-wrap items-center justify-center gap-6">
             <button
               type="button"
               onClick={() => goTo('features')}
-              className="text-sm font-semibold text-muted-foreground hover:text-primary transition-colors"
+              className="text-sm font-semibold text-muted-foreground transition-colors hover:text-primary"
             >
               Features
             </button>
-            <button
-              type="button"
-              onClick={() => goTo('modules')}
-              className="text-sm font-semibold text-muted-foreground hover:text-primary transition-colors"
+            <Link
+              href="/docs"
+              className="text-sm font-semibold text-muted-foreground transition-colors hover:text-primary"
             >
-              Modules
-            </button>
+              Docs
+            </Link>
+            <Link
+              href="/download"
+              className="text-sm font-semibold text-muted-foreground transition-colors hover:text-primary"
+            >
+              Download
+            </Link>
+            <Link
+              href="/about"
+              className="text-sm font-semibold text-muted-foreground transition-colors hover:text-primary"
+            >
+              About
+            </Link>
             <Link
               href="/login"
-              className="text-sm font-semibold text-muted-foreground hover:text-primary transition-colors"
+              className="text-sm font-semibold text-muted-foreground transition-colors hover:text-primary"
             >
               Login
             </Link>
+            <Link
+              href="/account-deletion"
+              className="text-sm font-semibold text-muted-foreground transition-colors hover:text-primary"
+            >
+              Delete account
+            </Link>
           </div>
-          <p className="text-sm text-muted-foreground font-medium">
+          <p className="text-sm font-medium text-muted-foreground">
             © {new Date().getFullYear()} {APP_NAME}. All rights reserved.
           </p>
         </div>
+        <div className="mt-10 flex justify-center px-6">
+          <SocialLinks />
+        </div>
       </footer>
-    </motion.div>
+      </motion.div>
+    </div>
   );
 }

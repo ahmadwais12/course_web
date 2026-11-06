@@ -13,7 +13,8 @@ Import from `@/components/ports`. Do not invent a new table, search, filter, but
 
 - `ListPageShell` + `useListQuery` for list pages
 - `DataTable` instead of raw `<table>`
-- `SearchBar` / `FilterSection` / `Dropdown` (always searchable) for search and filters
+- `Filter` (one Filters button → all filters in a dialog) / `SearchBar` / `Dropdown` (always searchable) for search and filters
+- Prefer `ListPageShell` which already embeds `Filter` — do not invent a new filter bar
 - `InputField` / `TextAreaField` / `PasswordField` / `Dropdown` / `MultiSelectField` / `PortButton` for forms
 - `FormDialog` + `FormDialogFooter` for add/edit modals
 - `RowActions` for edit/delete

@@ -29,3 +29,29 @@ export function getSupabaseLogoUrl(mode: 'light' | 'dark' = 'light'): string {
 export function getLocalLogoPath(mode: 'light' | 'dark' = 'light'): string {
   return LOCAL_LOGO[mode];
 }
+
+export type SocialPlatform = 'github' | 'linkedin' | 'youtube' | 'discord';
+
+/** Public social profiles; override per deployment with NEXT_PUBLIC_SOCIAL_* env vars. */
+export const SOCIAL_LINKS: { platform: SocialPlatform; label: string; href: string }[] = [
+  {
+    platform: 'github',
+    label: 'GitHub',
+    href: process.env.NEXT_PUBLIC_SOCIAL_GITHUB || 'https://github.com',
+  },
+  {
+    platform: 'linkedin',
+    label: 'LinkedIn',
+    href: process.env.NEXT_PUBLIC_SOCIAL_LINKEDIN || 'https://www.linkedin.com',
+  },
+  {
+    platform: 'youtube',
+    label: 'YouTube',
+    href: process.env.NEXT_PUBLIC_SOCIAL_YOUTUBE || 'https://www.youtube.com',
+  },
+  {
+    platform: 'discord',
+    label: 'Discord',
+    href: process.env.NEXT_PUBLIC_SOCIAL_DISCORD || 'https://discord.com',
+  },
+];

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
-import { Dropdown, SearchBar } from '@/components/ports';
+import { Filter } from '@/components/ports';
 
 interface SearchFiltersProps {
   onSearch: (query: string) => void;
@@ -11,6 +11,7 @@ interface SearchFiltersProps {
   placeholder?: string;
 }
 
+/** Legacy helper — wraps the shared Ports `Filter` dialog. */
 export default function SearchFilters({
   onSearch,
   onFilter,
@@ -22,28 +23,33 @@ export default function SearchFilters({
   const [filter, setFilter] = useState('');
 
   return (
-    <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-end">
-      <SearchBar
-        value={query}
-        onChange={(value) => {
-          setQuery(value);
-          onSearch(value);
-        }}
-        placeholder={placeholder || t.search}
-        className="flex-1"
-      />
-      <Dropdown
-        label="Filter"
-        value={filter}
-        onChange={(value) => {
-          setFilter(value);
-          onFilter(value);
-        }}
-        options={filterOptions.map((opt) => ({ value: opt, label: opt }))}
-        placeholder="All filters"
-        clearable
-        className="md:w-56"
-      />
-    </div>
+    <Filter
+      search={query}
+      onSearchChange={(value) => {
+        setQuery(value);
+        onSearch(value);
+      }}
+      searchPlaceholder={placeholder || t.search}
+      title="Filters"
+      description="Pick a filter option, then apply."
+      onReset={() => {
+        setQuery('');
+        setFilter('');
+        onSearch('');
+        onFilter('');
+      }}
+      filters={[
+        {
+          key: 'filter',
+          label: 'Filter',
+          value: filter,
+          options: filterOptions.map((opt) => ({ value: opt, label: opt })),
+          onChange: (value) => {
+            setFilter(value);
+            onFilter(value);
+          },
+        },
+      ]}
+    />
   );
 }

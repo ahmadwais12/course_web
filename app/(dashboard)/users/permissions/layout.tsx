@@ -3,7 +3,7 @@ import { privateAppPageMetadata } from '@/lib/seo';
 
 export const metadata: Metadata = privateAppPageMetadata(
   'Permissions',
-  'Manage RBAC permissions used across DreamFlow modules.',
+  'Create module permissions such as assets.read and assign them to roles one module at a time.',
   '/users/permissions'
 );
 

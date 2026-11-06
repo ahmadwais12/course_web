@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import { privateAppPageMetadata } from '@/lib/seo';
 
 export const metadata: Metadata = privateAppPageMetadata(
-  'Account Directory',
-  'Read-only directory of accounts and their assigned roles.',
+  'System Viewer — Visitors',
+  'Visitor sessions for website, mobile app, and desktop EXE clients.',
   '/observers/directory'
 );
 

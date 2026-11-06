@@ -147,7 +147,7 @@ export default function SearchableSelect({
                 <button
                   type="button"
                   className={cn(
-                    'emis-select-option flex w-full items-center gap-2 px-3 py-2 text-sm text-left transition-colors',
+                    'emis-select-option flex w-full items-center gap-2 px-3 py-2 text-sm text-left',
                     isSelected
                       ? 'emis-btn-primary'
                       : 'text-foreground hover:bg-muted'

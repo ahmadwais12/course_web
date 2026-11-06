@@ -119,11 +119,28 @@ export function classifyTraffic(input: {
   return { source: host, medium: 'referral', campaign, term, content };
 }
 
-/** Analytics surface: browser ('web') or Flutter mobile app ('app'). */
-export type AnalyticsSurface = 'web' | 'app';
+/**
+ * Analytics surface clients report:
+ * - web = public website (browser)
+ * - app = Flutter mobile app
+ * - desktop = desktop EXE / Windows app
+ */
+export type AnalyticsSurface = 'web' | 'app' | 'desktop';
 
 export function normalizeSurface(value: unknown): AnalyticsSurface {
-  return value === 'app' ? 'app' : 'web';
+  const v = String(value ?? '')
+    .trim()
+    .toLowerCase();
+  if (v === 'app' || v === 'mobile' || v === 'flutter') return 'app';
+  if (v === 'desktop' || v === 'exe' || v === 'windows' || v === 'electron' || v === 'tauri') {
+    return 'desktop';
+  }
+  return 'web';
+}
+
+/** Native clients (mobile app + desktop EXE) are never counted as public website traffic. */
+export function isNativeSurface(surface: AnalyticsSurface): boolean {
+  return surface === 'app' || surface === 'desktop';
 }
 
 export function isInternalPath(path: string): boolean {

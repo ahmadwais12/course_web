@@ -2,7 +2,9 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import { usePortsMotion } from '@/components/ports/motion';
 import { LogOut, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
@@ -30,7 +32,14 @@ export default function NavUserMenu({ user }: { user?: NavUser | null }) {
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState({ top: 0, left: 0 });
+  const [mounted, setMounted] = useState(false);
+  const { pop } = usePortsMotion();
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const loadingUser = !user?.name && !user?.email;
   const name = user?.name || t.allAccess;
   const email = user?.email || '';
   const avatarUrl = user?.avatarUrl || null;
@@ -64,6 +73,15 @@ export default function NavUserMenu({ user }: { user?: NavUser | null }) {
 
   const handleLogout = async () => {
     setOpen(false);
+    try {
+      await fetch('/api/users/login-history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ event_type: 'logout', details: { source: 'nav_user_menu' } }),
+      });
+    } catch {
+      // best-effort — still sign out
+    }
     const supabase = createClient();
     await supabase.auth.signOut();
     router.replace('/login');
@@ -87,47 +105,63 @@ export default function NavUserMenu({ user }: { user?: NavUser | null }) {
           open && 'ring-2 ring-primary/40'
         )}
       >
-        {avatarUrl ? (
+        {loadingUser ? (
+          <span role="status" aria-label="Loading" className="ports-name-shimmer h-full w-full" />
+        ) : avatarUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={avatarUrl} alt={name} className="h-full w-full object-cover" />
         ) : (
           initials
         )}
       </button>
-      {open &&
+      {mounted &&
         createPortal(
-          <div
-            ref={menuRef}
-            role="menu"
-            className="fixed z-[200] w-56 overflow-hidden rounded-xl border border-border bg-popover p-1 text-popover-foreground shadow-lg"
-            style={{ top: pos.top, left: pos.left }}
-          >
-            <div className="border-b border-border px-3 py-2">
-              <p className="truncate text-sm font-semibold">{name}</p>
-              {email ? <p className="truncate text-xs text-muted-foreground">{email}</p> : null}
-            </div>
-            <button
-              type="button"
-              role="menuitem"
-              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-medium hover:bg-muted"
-              onClick={() => {
-                setOpen(false);
-                router.push('/profile');
-              }}
-            >
-              <User size={16} />
-              {t.profile}
-            </button>
-            <button
-              type="button"
-              role="menuitem"
-              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-medium text-destructive hover:bg-destructive/10"
-              onClick={handleLogout}
-            >
-              <LogOut size={16} />
-              {t.logout}
-            </button>
-          </div>,
+          <AnimatePresence>
+            {open && (
+              <motion.div
+                key="nav-user-menu"
+                ref={menuRef}
+                role="menu"
+                className="fixed z-[200] w-56 overflow-hidden rounded-xl border border-border bg-popover p-1 text-popover-foreground shadow-lg"
+                style={{ top: pos.top, left: pos.left, transformOrigin: isRTL ? 'top left' : 'top right' }}
+                {...pop}
+              >
+                <div className="border-b border-border px-3 py-2">
+                  {loadingUser ? (
+                    <span
+                      role="status"
+                      aria-label="Loading"
+                      className="ports-name-shimmer block h-4 w-[7.5rem] max-w-[85%] rounded-md"
+                    />
+                  ) : (
+                    <p className="truncate text-sm font-semibold">{name}</p>
+                  )}
+                  {email ? <p className="truncate text-xs text-muted-foreground">{email}</p> : null}
+                </div>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-medium hover:bg-muted"
+                  onClick={() => {
+                    setOpen(false);
+                    router.push('/profile');
+                  }}
+                >
+                  <User size={16} />
+                  {t.profile}
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-medium text-destructive hover:bg-destructive/10"
+                  onClick={handleLogout}
+                >
+                  <LogOut size={16} />
+                  {t.logout}
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>,
           document.body
         )}
     </>

@@ -99,7 +99,15 @@ export async function saveToSettings(
 }
 
 async function loadPlans(admin: AdminClient, tenantId: string | null) {
-  const table = await admin.from('business_plans').select('*').order('sort_order').order('name');
+  let table = await admin
+    .from('business_plans')
+    .select('*')
+    .is('deleted_at', null)
+    .order('sort_order')
+    .order('name');
+  if (table.error && /deleted_at/i.test(table.error.message)) {
+    table = await admin.from('business_plans').select('*').order('sort_order').order('name');
+  }
   if (!table.error) {
     return {
       source: 'table' as const,

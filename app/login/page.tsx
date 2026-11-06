@@ -12,7 +12,7 @@ import { APP_NAME } from '@/lib/branding';
 import { useLanguage } from '@/context/LanguageContext';
 import { toast } from '@/components/ui/Toast';
 import { cn } from '@/lib/utils';
-import { Dropdown, ErrorBanner, InputField, PasswordField, PortButton } from '@/components/ports';
+import { BrandLoader, Dropdown, ErrorBanner, InputField, PasswordField, PortButton } from '@/components/ports';
 
 type AuthMode = 'login' | 'signup';
 type SignupRole = 'superadmin' | 'admin';
@@ -64,15 +64,28 @@ export default function LoginPage() {
   };
 
   const signIn = async () => {
+    const trimmedEmail = email.trim();
     const { error: authError } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
+      email: trimmedEmail,
       password,
     });
-    if (authError) throw authError;
+    if (authError) {
+      void fetch('/api/users/login-history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event_type: 'failed_login',
+          email: trimmedEmail,
+          details: { source: 'login_form', message: authError.message },
+        }),
+      });
+      throw authError;
+    }
 
     await fetch('/api/auth/sync', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ record_login: true }),
     });
 
     router.replace('/dashboard');
@@ -157,20 +170,25 @@ export default function LoginPage() {
         className="min-h-screen flex items-center justify-center bg-background text-foreground"
         suppressHydrationWarning
       >
-        Loading...
+        <BrandLoader label="Loading…" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
+    <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
+      <div aria-hidden className="pointer-events-none absolute inset-0">
+        <div className="login-glow" />
+        <div className="login-orb login-orb--a" />
+        <div className="login-orb login-orb--b" />
+      </div>
+      <div className="absolute top-4 end-4 z-10 flex items-center gap-2">
         <ThemeToggle />
         <LanguageSelector currentLang={lang} onLanguageChange={setLang} variant="outline" />
       </div>
 
-      <div className="min-h-screen flex items-center justify-center px-4 py-10">
-        <div className="w-full max-w-md">
+      <div className="relative min-h-screen flex items-center justify-center px-4 py-10">
+        <div className="login-form-panel w-full max-w-md">
           <BrandLogo size={72} showName nameClassName="mb-1 text-4xl" />
           <p className="mb-8 text-center text-sm font-semibold text-foreground/70">
             {mode === 'login' ? `Welcome back to ${APP_NAME}` : `Create your ${APP_NAME} account`}

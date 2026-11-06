@@ -178,7 +178,7 @@ export default function MultiSelect({
                 <button
                   type="button"
                   className={cn(
-                    'emis-multiselect-item flex w-full items-center gap-2 px-3 py-2 text-sm text-left transition-colors',
+                    'emis-multiselect-item flex w-full items-center gap-2 px-3 py-2 text-sm text-left',
                     checked
                       ? 'bg-primary/10 text-foreground'
                       : 'text-foreground hover:bg-muted'

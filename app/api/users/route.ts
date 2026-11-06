@@ -1,14 +1,28 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createSupabaseAdminClient } from '@/lib/supabase/admin';
+import { logAccountWork } from '@/lib/audit';
+import { requestMeta } from '@/lib/system-access';
 
 export async function GET() {
   try {
     const supabase = await createClient();
-    const { data: profiles, error } = await supabase
+    let { data: profiles, error } = await supabase
       .from('users')
       .select('id, email, full_name, phone, role, is_active, tenant_id, created_at')
+      .is('deleted_at', null)
       .order('created_at', { ascending: false })
       .limit(200);
+
+    if (error && /deleted_at/i.test(error.message)) {
+      const retry = await supabase
+        .from('users')
+        .select('id, email, full_name, phone, role, is_active, tenant_id, created_at')
+        .order('created_at', { ascending: false })
+        .limit(200);
+      profiles = retry.data;
+      error = retry.error;
+    }
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
@@ -112,6 +126,36 @@ export async function POST(request: Request) {
 
     if (assignError) {
       return NextResponse.json({ error: assignError.message }, { status: 500 });
+    }
+
+    try {
+      const {
+        data: { user: actor },
+      } = await supabase.auth.getUser();
+      if (actor) {
+        const admin = createSupabaseAdminClient();
+        const meta = requestMeta(request);
+        await logAccountWork(
+          {
+            admin,
+            userId: actor.id,
+            tenantId,
+            ipAddress: meta.ipAddress,
+            userAgent: meta.userAgent,
+          },
+          {
+            action: 'create',
+            entityType: 'user',
+            entityId: uuid,
+            tableName: 'users',
+            historyAction: 'insert',
+            details: { display_name: fullName, email },
+            newValues: { email, full_name: fullName, role: roleSlug },
+          }
+        );
+      }
+    } catch {
+      /* logging must not break create */
     }
 
     return NextResponse.json({ ...profile, roles: [role] }, { status: 201 });

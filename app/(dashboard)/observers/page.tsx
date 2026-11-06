@@ -24,7 +24,7 @@ type Overview = {
   period: Metrics;
   allTime: { visitors: number; sessions: number; pageViews: number };
   trend: { day: string; visitors: number; sessions: number; pageViews: number }[];
-  surfaces: { web: SurfaceMetrics; app: SurfaceMetrics };
+  surfaces: { web: SurfaceMetrics; app: SurfaceMetrics; desktop: SurfaceMetrics };
   devices: Record<string, number>;
   sources: { name: string; visitors: number; sessions: number; pageViews: number }[];
   browsers: { name: string; count: number }[];
@@ -64,6 +64,7 @@ type Realtime = {
   surfaces?: {
     web: { activeUsers: number; activeSessions: number };
     app: { activeUsers: number; activeSessions: number };
+    desktop: { activeUsers: number; activeSessions: number };
   };
   windowMinutes: number;
   pages: { path: string; count: number }[];
@@ -147,10 +148,10 @@ function TrendChart({
   );
 }
 
-export default function ObserversAnalyticsPage() {
+export default function SystemViewerAnalyticsPage() {
   const router = useRouter();
   const [range, setRange] = useState('30d');
-  const [surface, setSurface] = useState<'web' | 'app' | 'all'>('web');
+  const [surface, setSurface] = useState<'web' | 'app' | 'desktop' | 'all'>('all');
   const [overview, setOverview] = useState<Overview | null>(null);
   const [realtime, setRealtime] = useState<Realtime | null>(null);
   const [loading, setLoading] = useState(true);
@@ -203,7 +204,12 @@ export default function ObserversAnalyticsPage() {
 
   const surfaceTotal = useMemo(() => {
     if (!overview) return 1;
-    return Math.max(1, (overview.surfaces?.web.visitors ?? 0) + (overview.surfaces?.app.visitors ?? 0));
+    return Math.max(
+      1,
+      (overview.surfaces?.web.visitors ?? 0) +
+        (overview.surfaces?.app.visitors ?? 0) +
+        (overview.surfaces?.desktop.visitors ?? 0)
+    );
   }, [overview]);
 
   const ranges = [
@@ -217,14 +223,14 @@ export default function ObserversAnalyticsPage() {
   return (
     <div className="space-y-4 animate-fade-up">
       <PageHeader
-        title="Observers — Website & App Analytics"
-        description={`First-party traffic for the website and the Flutter mobile app. Active user = activity in the last ${realtime?.windowMinutes ?? 5} minutes.`}
+        title="System Viewer"
+        description={`See how many people open the website, the mobile app, or the desktop EXE app, and their session details. Active now = activity in the last ${realtime?.windowMinutes ?? 5} minutes.`}
         pill={loading ? 'LOADING…' : 'LIVE DATA'}
         pillTone={loading ? 'neutral' : 'live'}
         actions={
           <div className="flex flex-wrap gap-2">
             <PortButton variant="secondary" onClick={() => router.push('/observers/directory')}>
-              Account directory
+              Visitor details
             </PortButton>
             <PortButton variant="ghost" onClick={load} disabled={loading}>
               Refresh
@@ -233,16 +239,17 @@ export default function ObserversAnalyticsPage() {
         }
       />
 
-      <SectionPanel title="Filters" description="Choose the surface and date range.">
+      <SectionPanel title="Filters" description="Choose the client and date range.">
         <div className="flex flex-wrap items-end gap-3">
           <Dropdown
-            label="Surface"
+            label="Client"
             value={surface}
-            onChange={(value) => setSurface(value as 'web' | 'app' | 'all')}
+            onChange={(value) => setSurface(value as 'web' | 'app' | 'desktop' | 'all')}
             options={[
-              { value: 'web', label: 'Website (public)' },
-              { value: 'app', label: 'Mobile app (Flutter)' },
-              { value: 'all', label: 'All surfaces' },
+              { value: 'all', label: 'All clients' },
+              { value: 'web', label: 'Website (browser)' },
+              { value: 'app', label: 'Mobile app' },
+              { value: 'desktop', label: 'Desktop app (EXE)' },
             ]}
           />
           <div className="space-y-1.5">
@@ -295,19 +302,24 @@ export default function ObserversAnalyticsPage() {
           </div>
 
           <SectionPanel
-            title="Website vs mobile app"
-            description="Website = public website visitors. Mobile app = Flutter app traffic reported with surface “app”."
+            title="Website · Mobile app · Desktop app"
+            description="Website = browser. Mobile app = phone/tablet app. Desktop app = Windows EXE desktop client."
             headerRight={
               <span className="text-xs text-muted-foreground">
-                {ranges.find((r) => r.value === range)?.label} ·{' '}
-                {(overview.surfaces?.web.visitors ?? 0) + (overview.surfaces?.app.visitors ?? 0)} total visitors
+                {ranges.find((r) => r.value === range)?.label} · {surfaceTotal} total visitors
               </span>
             }
           >
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               {[
-                { key: 'web' as const, label: 'Website (public)', icon: Globe, data: overview.surfaces?.web },
-                { key: 'app' as const, label: 'Mobile app (Flutter)', icon: Smartphone, data: overview.surfaces?.app },
+                { key: 'web' as const, label: 'Website', icon: Globe, data: overview.surfaces?.web },
+                { key: 'app' as const, label: 'Mobile app', icon: Smartphone, data: overview.surfaces?.app },
+                {
+                  key: 'desktop' as const,
+                  label: 'Desktop app (EXE)',
+                  icon: Monitor,
+                  data: overview.surfaces?.desktop,
+                },
               ].map(({ key, label, icon: Icon, data }) => {
                 const visitors = data?.visitors ?? 0;
                 const pct = Math.round((visitors / surfaceTotal) * 100);
@@ -347,13 +359,22 @@ export default function ObserversAnalyticsPage() {
             </SectionPanel>
 
             <SectionPanel
-              title="Devices"
-              description={`Unique visitors · ${ranges.find((r) => r.value === range)?.label}`}
+              title="Website screen type"
+              description={`Browser form factor only (not the desktop EXE) · ${ranges.find((r) => r.value === range)?.label}`}
+              headerRight={
+                <PortButton
+                  variant="ghost"
+                  className="h-8 px-2 text-xs"
+                  onClick={() => router.push('/observers/directory')}
+                >
+                  View visitors
+                </PortButton>
+              }
             >
               {[
-                { key: 'desktop', label: 'Desktop', icon: Monitor },
-                { key: 'mobile', label: 'Mobile', icon: Smartphone },
-                { key: 'tablet', label: 'Tablet', icon: Tablet },
+                { key: 'desktop', label: 'PC browser', icon: Monitor },
+                { key: 'mobile', label: 'Phone browser', icon: Smartphone },
+                { key: 'tablet', label: 'Tablet browser', icon: Tablet },
               ].map(({ key, label, icon: Icon }) => {
                 const count = overview.devices[key] || 0;
                 const pct = Math.round((count / deviceTotal) * 100);
@@ -439,7 +460,7 @@ export default function ObserversAnalyticsPage() {
 
             <SectionPanel
               title="Realtime"
-              description={`${realtime?.activeUsers ?? 0} active visitors · ${realtime?.activeSessions ?? 0} sessions. Website ${realtime?.surfaces?.web.activeUsers ?? 0} · Mobile app ${realtime?.surfaces?.app.activeUsers ?? 0}`}
+              description={`${realtime?.activeUsers ?? 0} active · ${realtime?.activeSessions ?? 0} sessions · Website ${realtime?.surfaces?.web.activeUsers ?? 0} · Mobile ${realtime?.surfaces?.app.activeUsers ?? 0} · Desktop EXE ${realtime?.surfaces?.desktop.activeUsers ?? 0}`}
             >
               <h3 className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Live pages</h3>
               <BarList

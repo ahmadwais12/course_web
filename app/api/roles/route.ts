@@ -6,11 +6,22 @@ import { toRoleSlug } from '@/lib/roles';
 export async function GET() {
   try {
     const supabase = await createClient();
-    const { data: roles, error } = await supabase
+    let { data: roles, error } = await supabase
       .from('roles')
       .select('*')
       .eq('guard_name', GUARD_NAME)
+      .is('deleted_at', null)
       .order('name');
+
+    if (error && /deleted_at/i.test(error.message)) {
+      const retry = await supabase
+        .from('roles')
+        .select('*')
+        .eq('guard_name', GUARD_NAME)
+        .order('name');
+      roles = retry.data;
+      error = retry.error;
+    }
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 

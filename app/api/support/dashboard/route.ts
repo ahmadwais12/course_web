@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { requireStaff } from '@/lib/system-access';
 
 type TicketRow = {
   id: string;
@@ -91,7 +91,11 @@ function buildTrend(
 
 export async function GET() {
   try {
-    const supabase = await createClient();
+    const access = await requireStaff();
+    if ('error' in access) {
+      return NextResponse.json({ error: access.error }, { status: access.status });
+    }
+    const supabase = access.admin;
 
     const [ticketsRes, callbacksRes, contactsRes, socialRes, peopleRes] = await Promise.all([
       supabase

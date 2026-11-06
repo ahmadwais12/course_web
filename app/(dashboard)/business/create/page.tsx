@@ -371,7 +371,7 @@ export default function CreateBusinessPage() {
               value={businessTypeId}
               onChange={setBusinessTypeId}
               options={typeOptions}
-              placeholder={typeOptions.length ? 'Select a type' : 'No types yet — add one in Ports'}
+              placeholder={typeOptions.length ? 'Select a type' : 'No types yet — add one in Portable'}
               filter={typeOptions.length > 6}
             />
             <InputField
@@ -395,7 +395,7 @@ export default function CreateBusinessPage() {
               value={plan}
               onChange={setPlan}
               options={planOptions}
-              placeholder={planOptions.length ? 'Select a plan' : 'No plans yet — add one in Ports'}
+              placeholder={planOptions.length ? 'Select a plan' : 'No plans yet — add one in Portable'}
               filter={planOptions.length > 6}
             />
             <Dropdown

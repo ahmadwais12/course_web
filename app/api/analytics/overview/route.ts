@@ -20,7 +20,7 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const range = searchParams.get('range') || '30d';
-  const surface = searchParams.get('surface') || 'web'; // web | app | all
+  const surface = searchParams.get('surface') || 'web'; // web | app | desktop | all
   const includeBots = searchParams.get('bots') === '1';
 
   let from = daysAgo(29);
@@ -47,9 +47,10 @@ export async function GET(request: Request) {
       .limit(20000);
 
     if (!includeBots) sessionsQ = sessionsQ.eq('is_bot', false);
-    // 'web' = public website pages, 'app' = Flutter mobile apps.
+    // web = public website, app = Flutter mobile, desktop = EXE / Windows app
     if (surface === 'web') sessionsQ = sessionsQ.eq('surface', 'web').eq('is_internal', false);
     if (surface === 'app') sessionsQ = sessionsQ.eq('surface', 'app');
+    if (surface === 'desktop') sessionsQ = sessionsQ.eq('surface', 'desktop');
 
     const { data: sessions, error } = await sessionsQ;
     if (error) {
@@ -99,7 +100,7 @@ export async function GET(request: Request) {
         pageViews: v.pageViews,
       }));
 
-    // Website vs mobile-app split (period, independent of the surface filter)
+    // Website vs mobile app vs desktop EXE (period, independent of the surface filter)
     const { data: audienceRows } = await admin
       .from('site_sessions')
       .select('visitor_id, is_internal, surface, device_type, page_count')
@@ -116,8 +117,9 @@ export async function GET(request: Request) {
       };
     };
     const surfaces = {
-      web: surfaceBlock((s) => s.surface !== 'app' && !s.is_internal),
+      web: surfaceBlock((s) => s.surface !== 'app' && s.surface !== 'desktop' && !s.is_internal),
       app: surfaceBlock((s) => s.surface === 'app'),
+      desktop: surfaceBlock((s) => s.surface === 'desktop'),
     };
 
     // Devices — unique visitors in the selected period
@@ -195,6 +197,7 @@ export async function GET(request: Request) {
     if (!includeBots) pvQ = pvQ.eq('is_bot', false);
     if (surface === 'web') pvQ = pvQ.eq('surface', 'web').eq('is_internal', false);
     if (surface === 'app') pvQ = pvQ.eq('surface', 'app');
+    if (surface === 'desktop') pvQ = pvQ.eq('surface', 'desktop');
     const { data: pageViewsRows } = await pvQ;
 
     const pageMap = new Map<
@@ -234,6 +237,7 @@ export async function GET(request: Request) {
     if (!includeBots) allQ = allQ.eq('is_bot', false);
     if (surface === 'web') allQ = allQ.eq('surface', 'web').eq('is_internal', false);
     if (surface === 'app') allQ = allQ.eq('surface', 'app');
+    if (surface === 'desktop') allQ = allQ.eq('surface', 'desktop');
     const { data: allSessions } = await allQ.limit(50000);
     const all = allSessions ?? [];
 

@@ -187,7 +187,7 @@ export async function PATCH(request: Request, { params }: Params) {
   }
 }
 
-export async function DELETE(_request: Request, { params }: Params) {
+export async function DELETE(request: Request, { params }: Params) {
   try {
     const { id } = await params;
     const access = await requireBusinessAdmin();
@@ -199,7 +199,8 @@ export async function DELETE(_request: Request, { params }: Params) {
     const { count } = await supabase
       .from('tenants')
       .select('id', { count: 'exact', head: true })
-      .eq('parent_tenant_id', id);
+      .eq('parent_tenant_id', id)
+      .is('deleted_at', null);
 
     if ((count ?? 0) > 0) {
       return NextResponse.json(
@@ -208,9 +209,34 @@ export async function DELETE(_request: Request, { params }: Params) {
       );
     }
 
-    const { error } = await supabase.from('tenants').delete().eq('id', id);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json({ ok: true });
+    const { softDeleteEntity } = await import('@/lib/soft-delete');
+    const { requestMeta } = await import('@/lib/system-access');
+    const meta = requestMeta(request);
+    const { data: profile } = await supabase
+      .from('users')
+      .select('tenant_id')
+      .eq('id', access.user.id)
+      .maybeSingle();
+
+    const result = await softDeleteEntity({
+      admin: supabase,
+      entityType: 'tenant',
+      entityId: id,
+      deletedBy: access.user.id,
+      tenantId: (profile?.tenant_id as string | null) ?? id,
+      extraPatch: { is_active: false },
+      audit: {
+        userId: access.user.id,
+        tenantId: (profile?.tenant_id as string | null) ?? id,
+        ipAddress: meta.ipAddress,
+        userAgent: meta.userAgent,
+      },
+    });
+
+    if ('error' in result) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
+    }
+    return NextResponse.json({ ok: true, soft_deleted: true });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to delete business';
     return NextResponse.json({ error: message }, { status: 500 });
