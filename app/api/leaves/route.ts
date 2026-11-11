@@ -23,7 +23,6 @@ type StaffRow = {
   profile_id: string | null;
   department: string | null;
 };
-
 type TeacherRow = {
   id: string;
   full_name: string | null;
@@ -67,6 +66,17 @@ function unique(values: (string | null | undefined)[]): string[] {
 
 function isDate(value: string) {
   return DATE_RE.test(value) && !Number.isNaN(Date.parse(value));
+}
+
+/** `employee_leaves.leave_category` only accepts full_day / half_day / hourly. */
+function leaveCategory(value: string) {
+  const normalized = value.trim().toLowerCase().replaceAll(' ', '_');
+  if (normalized === 'half_day' || normalized === 'hourly' || normalized === 'full_day') {
+    return normalized;
+  }
+  if (normalized.includes('half')) return 'half_day';
+  if (normalized.includes('hour')) return 'hourly';
+  return 'full_day';
 }
 
 async function requireUser() {
@@ -228,13 +238,17 @@ export async function GET() {
       ? (((await db
           .from('staff')
           .select('id, full_name, employee_code, profile_id, department')
-          .in('id', employeeIds)).data ?? []) as StaffRow[])
+          .or(
+            `profile_id.in.(${employeeIds.join(',')}),id.in.(${employeeIds.join(',')})`
+          )).data ?? []) as StaffRow[])
       : [];
     const teachers = employeeIds.length
       ? (((await db
           .from('teachers')
           .select('id, full_name, profile_id, department_id')
-          .in('id', employeeIds)).data ?? []) as TeacherRow[])
+          .or(
+            `profile_id.in.(${employeeIds.join(',')}),id.in.(${employeeIds.join(',')})`
+          )).data ?? []) as TeacherRow[])
       : [];
     const departments = (((await db.from('departments').select('id, name, head_id')).data ??
       []) as DeptRow[]);
@@ -260,8 +274,11 @@ export async function GET() {
         (leave) =>
           managerForDepartment(
             departments,
-            staff.find((s) => s.id === leave.employee_id)?.department,
-            teachers.find((t) => t.id === leave.employee_id)?.department_id
+            staff.find((row) => row.id === leave.employee_id || row.profile_id === leave.employee_id)
+              ?.department,
+            teachers.find(
+              (row) => row.id === leave.employee_id || row.profile_id === leave.employee_id
+            )?.department_id
           )?.head_id
       )
     );
@@ -282,7 +299,16 @@ export async function GET() {
     const studentById = new Map(students.map((s) => [s.id, s]));
     const staffById = new Map(staff.map((s) => [s.id, s]));
     const teacherById = new Map(teachers.map((t) => [t.id, t]));
-    for (const t of classTeachers) teacherById.set(t.id, t);
+    for (const s of staff) {
+      if (s.profile_id) staffById.set(s.profile_id, s);
+    }
+    for (const t of teachers) {
+      if (t.profile_id) teacherById.set(t.profile_id, t);
+    }
+    for (const t of classTeachers) {
+      teacherById.set(t.id, t);
+      if (t.profile_id) teacherById.set(t.profile_id, t);
+    }
     const classById = new Map(classes.map((c) => [c.id, c]));
     const headById = new Map(
       heads.map((h) => [h.id, { profileId: h.profile_id, name: h.full_name }])
@@ -344,7 +370,9 @@ export async function GET() {
       }),
     ].sort((a, b) => String(b.created_at ?? '').localeCompare(String(a.created_at ?? '')));
 
-    const ownEmployeeIds = new Set(unique([meStaff?.id, meTeacher?.id]));
+    const ownEmployeeIds = new Set(
+      unique([user.id, meStaff?.id, meTeacher?.id])
+    );
     const visible = isAdmin
       ? items
       : items.filter(
@@ -461,8 +489,8 @@ export async function POST(request: Request) {
     }
 
     const { error } = await db.from('employee_leaves').insert({
-      employee_id: employeeId,
-      leave_category: String(body.leave_type ?? '').trim() || 'Leave',
+      employee_id: user.id,
+      leave_category: leaveCategory(String(body.leave_type ?? '')),
       start_date: startDate,
       end_date: endDate,
       reason,

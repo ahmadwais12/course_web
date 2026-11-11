@@ -49,7 +49,7 @@ export default function LoginPage() {
     const check = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        router.replace('/dashboard');
+        router.replace('/portal');
         return;
       }
       setChecking(false);
@@ -88,7 +88,7 @@ export default function LoginPage() {
       body: JSON.stringify({ record_login: true }),
     });
 
-    router.replace('/dashboard');
+    router.replace('/portal');
   };
 
   /** Matches course_team `SignupScreen._signUp` (+ optional profiles row like registration). */

@@ -13,6 +13,7 @@ import { APP_NAME } from '@/lib/branding';
 import { useLanguage } from '@/context/LanguageContext';
 
 const LINKS = [
+  { href: '/', label: 'Home' },
   { href: '/#features', label: 'Features', hash: 'features' },
   { href: '/#modules', label: 'Modules', hash: 'modules' },
   { href: '/docs', label: 'Docs' },
@@ -60,24 +61,35 @@ export default function MarketingNav({ onHashNavigate }: MarketingNavProps) {
       active ? 'text-primary' : 'text-muted-foreground hover:text-primary'
     );
 
+  const linkActive = (link: (typeof LINKS)[number]) => {
+    if ('hash' in link) return false;
+    return link.href === '/' ? pathname === '/' : pathname === link.href;
+  };
+
   const navLinks = (
     <>
-      {LINKS.map((link) =>
-        'hash' in link && link.hash ? (
-          <button
-            key={link.label}
-            type="button"
-            onClick={() => goHash(link.hash)}
-            className={linkClass(false)}
-          >
-            {link.label}
-          </button>
-        ) : (
-          <Link key={link.label} href={link.href} className={linkClass(pathname === link.href)}>
-            {link.label}
-          </Link>
-        )
-      )}
+      {LINKS.map((link) => (
+        <Link
+          key={link.label}
+          href={link.href}
+          aria-current={linkActive(link) ? 'page' : undefined}
+          onClick={
+            'hash' in link
+              ? (event) => {
+                  if (pathname !== '/') {
+                    setMenuOpen(false);
+                    return;
+                  }
+                  event.preventDefault();
+                  goHash(link.hash);
+                }
+              : undefined
+          }
+          className={linkClass(linkActive(link))}
+        >
+          {link.label}
+        </Link>
+      ))}
     </>
   );
 
@@ -151,27 +163,31 @@ export default function MarketingNav({ onHashNavigate }: MarketingNavProps) {
                 <LanguageSelector currentLang={lang} onLanguageChange={setLang} variant="filled" />
               </div>
               <div className="flex flex-col gap-1">
-                {LINKS.map((link) =>
-                  'hash' in link && link.hash ? (
-                    <button
-                      key={link.label}
-                      type="button"
-                      onClick={() => goHash(link.hash)}
-                      className="rounded-lg px-3 py-2.5 text-start text-sm font-bold text-foreground transition-colors hover:bg-muted"
-                    >
-                      {link.label}
-                    </button>
-                  ) : (
-                    <Link
-                      key={link.label}
-                      href={link.href}
-                      onClick={() => setMenuOpen(false)}
-                      className="rounded-lg px-3 py-2.5 text-start text-sm font-bold text-foreground transition-colors hover:bg-muted"
-                    >
-                      {link.label}
-                    </Link>
-                  )
-                )}
+                {LINKS.map((link) => (
+                  <Link
+                    key={link.label}
+                    href={link.href}
+                    aria-current={linkActive(link) ? 'page' : undefined}
+                    onClick={
+                      'hash' in link
+                        ? (event) => {
+                            if (pathname !== '/') {
+                              setMenuOpen(false);
+                              return;
+                            }
+                            event.preventDefault();
+                            goHash(link.hash);
+                          }
+                        : () => setMenuOpen(false)
+                    }
+                    className={cn(
+                      'rounded-lg px-3 py-2.5 text-start text-sm font-bold transition-colors hover:bg-muted',
+                      linkActive(link) ? 'text-primary' : 'text-foreground'
+                    )}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
               </div>
               <Link
                 href="/login"

@@ -1,0 +1,1499 @@
+# MASTER DEVELOPMENT PROMPT
+# STUDENT PORTAL + TEACHER PORTAL + EMPLOYEE PORTAL
+## Multi-Tenant Education Management & ERP SaaS
+
+You are a Senior Full-Stack Software Architect, UI/UX Designer, Database Architect, and Enterprise SaaS Developer.
+
+Your task is to analyze my existing Education Management and ERP SaaS application and implement three complete, professional, responsive, production-ready portals:
+
+1. Student Portal
+2. Teacher Portal
+3. Employee Portal
+
+These portals must integrate with my existing application, database, APIs, authentication, RBAC, messaging system, notifications, Academic Management, Finance, HR, Payroll, and other existing modules.
+
+**IMPORTANT: Do not create three independent systems. Build three role-specific portal experiences on top of our existing centralized SaaS architecture.**
+
+---
+
+# PART 1 — MANDATORY EXISTING SYSTEM AUDIT
+
+Before writing code, inspect the entire existing project.
+
+Do not assume that a feature is missing simply because you have not seen it in the current frontend.
+
+Inspect both frontend and backend.
+
+### A. Frontend audit
+
+Inspect:
+
+- Framework and version.
+- Project folder structure.
+- Routing system.
+- Existing layouts.
+- Sidebar and navbar.
+- Existing design system.
+- UI components.
+- Responsive behavior.
+- Color themes.
+- Light and dark modes.
+- Icons and animation libraries.
+- Existing image and asset directories.
+- Form validation.
+- Data tables.
+- Charts and analytics.
+- Notification components.
+- Messaging interfaces.
+- State management.
+- API integration.
+- Existing user dashboards.
+
+### B. Backend audit
+
+Inspect:
+
+- Backend framework and architecture.
+- Authentication system.
+- User management.
+- Organization management.
+- Branch management.
+- Role and permission system.
+- API routes.
+- Middleware.
+- Existing business services.
+- File storage.
+- Messaging APIs.
+- Notification services.
+- Background jobs and queues.
+- Database schema and relationships.
+
+### C. Database audit
+
+Inspect the actual existing schema and identify the relevant entities.
+
+Academic:
+- Students.
+- Student profiles.
+- Enrollments.
+- Programs.
+- Courses.
+- Subjects.
+- Classes.
+- Sections.
+- Teachers.
+- Teacher assignments.
+- Timetables.
+- Attendance.
+- Assignments.
+- Examinations.
+- Results.
+- Grades.
+- Certificates.
+
+HR:
+- Employees.
+- Employee profiles.
+- Departments.
+- Designations.
+- Employee attendance.
+- Shifts.
+- Leave types.
+- Leave requests.
+- Payroll.
+- Salary structures.
+- Payslips.
+- Employee documents.
+
+Communication:
+- Conversations.
+- Messages.
+- Conversation participants.
+- Attachments.
+- Read receipts.
+- Unread message counts.
+- Notifications.
+- Announcements.
+
+Finance:
+- Student fees.
+- Fee structures.
+- Invoices.
+- Payments.
+- Receipts.
+- Outstanding balances.
+
+### D. Existing functionality audit
+
+Create a report identifying:
+
+1. Existing functionality.
+2. Existing pages.
+3. Existing database tables.
+4. Existing APIs.
+5. Existing reusable components.
+6. Missing functionality.
+7. Broken or incomplete functionality.
+8. Security concerns.
+9. Required integrations.
+
+**Do not duplicate existing modules. Do not replace working functionality unnecessarily.**
+
+In particular, our application already has a Messaging feature. You MUST inspect it carefully and integrate it into all three portals.
+
+Do not create a second independent messaging system.
+
+---
+
+# PART 2 — OVERALL PORTAL ARCHITECTURE
+
+Build three distinct portal interfaces connected to the same centralized application.
+
+### Portal URLs
+
+Use these routes unless the existing application uses a different routing convention:
+
+- `/student/*`
+- `/teacher/*`
+- `/employee/*`
+- `/admin/*`
+
+### Portal identity and visual themes
+
+Student Portal:
+- Primary accent: Blue.
+- Visual identity: Academic, modern, friendly.
+- Icon identity: Graduation cap and books.
+
+Teacher Portal:
+- Primary accent: Green.
+- Visual identity: Professional, teaching-oriented.
+- Icon identity: Presentation board and book.
+
+Employee Portal:
+- Primary accent: Purple.
+- Visual identity: Corporate, HR-oriented.
+- Icon identity: Briefcase and employee services.
+
+All three must use the same global design system, typography, spacing, reusable components, and interaction patterns.
+
+Only their portal-specific navigation, accent colors, dashboards, and features should differ.
+
+### Centralized architecture
+
+Student Portal
+Teacher Portal
+Employee Portal
+        |
+        v
+Shared Authentication
+        |
+        v
+Role-Based Access Control
+        |
+        v
+Tenant and Branch Validation
+        |
+        v
+Existing Backend APIs and Services
+        |
+        v
+Centralized Database
+
+Every request must validate organization, branch, user, role, permissions, and record ownership.
+
+---
+
+# PART 3 — STUDENT PORTAL
+
+Build a complete Student Portal.
+
+## 3.1 Student Layout
+
+Create:
+
+- StudentLayout.
+- StudentSidebar.
+- StudentNavbar.
+- StudentProfileDropdown.
+- StudentNotificationPanel.
+- StudentMessagePanel.
+- StudentPageHeader.
+- StudentBreadcrumbs.
+- StudentMobileNavigation.
+
+The layout must be responsive for desktop, tablets, and mobile phones.
+
+## 3.2 Student Sidebar
+
+### Dashboard
+- Dashboard.
+
+### My Academics
+- My Profile.
+- My Enrollment.
+- My Programs.
+- My Courses.
+- My Subjects.
+- My Classes.
+- My Sections.
+- My Teachers.
+- Academic Calendar.
+
+### Class Activities
+- My Timetable.
+- Attendance.
+- Assignments.
+- My Submissions.
+- Learning Materials.
+- Class Announcements.
+
+### Examinations and Results
+- Examination Schedule.
+- Exam Results.
+- Grades and Marks.
+- Academic Transcript.
+- Certificates.
+
+### Finance
+- Fee Overview.
+- Fee Structure.
+- My Invoices.
+- Payment History.
+- Outstanding Balance.
+- Receipts.
+
+### Communication
+- Messages.
+- Announcements.
+- Notifications.
+- Support and Complaints.
+
+### Documents
+- My Documents.
+- Download Documents.
+- Request Certificate.
+
+### Settings
+- Personal Settings.
+- Change Password.
+- Language.
+- Theme.
+- Notification Preferences.
+- Security.
+
+## 3.3 Student Dashboard
+
+Build a professional dashboard with:
+
+### KPI cards
+- Total Courses.
+- Attendance Percentage.
+- Upcoming Examinations.
+- Pending Assignments.
+- Outstanding Fees.
+- Latest Academic Grade.
+
+### Dashboard sections
+- Welcome section.
+- Student profile summary.
+- Weekly timetable.
+- Attendance chart.
+- Upcoming examination list.
+- Assignment deadline list.
+- Latest examination results.
+- Fee payment summary.
+- Recent announcements.
+- Recent messages.
+- Upcoming academic events.
+
+Every value must come from the actual backend.
+
+Do not use hardcoded statistics.
+
+## 3.4 Student page implementation
+
+Implement the following pages with real data and complete functionality.
+
+### Profile
+- Personal information.
+- Student identification.
+- Profile image.
+- Contact details.
+- Guardian information.
+- Academic information.
+
+### Enrollment
+- Enrollment status.
+- Academic year.
+- Program.
+- Course.
+- Class and section.
+- Enrollment history where available.
+
+### Courses and Subjects
+- Enrolled courses.
+- Subjects.
+- Assigned teachers.
+- Course details.
+- Learning resources.
+- Course progress.
+
+### Timetable
+- Weekly timetable.
+- Monthly calendar.
+- Class start and end times.
+- Subject.
+- Teacher.
+- Classroom.
+
+### Attendance
+- Daily attendance.
+- Present days.
+- Absent days.
+- Late arrivals.
+- Attendance percentage.
+- Monthly attendance history.
+
+Students must not modify attendance records.
+
+### Assignments
+- Assignment list.
+- Assignment description.
+- Due date.
+- Attachments.
+- Assignment details.
+- Submission upload.
+- Submission history.
+- Teacher feedback.
+- Assignment grades.
+
+### Examinations
+- Examination schedule.
+- Subjects.
+- Examination dates.
+- Examination results.
+- Grades.
+- Result history.
+
+### Finance
+- Fee overview.
+- Fee structure.
+- Invoices.
+- Payments.
+- Outstanding balance.
+- Receipts.
+
+Students must not directly modify financial records or mark their own invoices as paid.
+
+### Documents
+- Academic documents.
+- Certificates.
+- Transcripts.
+- Authorized downloads.
+- Certificate request workflow if supported.
+
+---
+
+# PART 4 — TEACHER PORTAL
+
+Build a dedicated Teacher Portal.
+
+Teachers are employees with additional academic responsibilities.
+
+A teacher may also use the Employee Portal, but must have additional academic functionality inside the Teacher Portal.
+
+## 4.1 Teacher Layout
+
+Create:
+
+- TeacherLayout.
+- TeacherSidebar.
+- TeacherNavbar.
+- TeacherProfileDropdown.
+- TeacherNotificationPanel.
+- TeacherMessagePanel.
+- TeacherPageHeader.
+- TeacherBreadcrumbs.
+- TeacherMobileNavigation.
+
+## 4.2 Teacher Sidebar
+
+### Dashboard
+- Dashboard.
+
+### My Teaching
+- My Profile.
+- My Classes.
+- My Sections.
+- My Subjects.
+- My Students.
+- My Teaching Schedule.
+
+### Attendance Management
+- Take Attendance.
+- Attendance History.
+- Attendance Reports.
+- Student Attendance Overview.
+
+### Assignment Management
+- Create Assignment.
+- Manage Assignments.
+- Student Submissions.
+- Review Submissions.
+- Assignment Grades.
+
+### Examinations
+- Examination Schedule.
+- Enter Marks.
+- Manage Grades.
+- Submit Results.
+- Result History.
+
+### Learning Materials
+- Upload Materials.
+- Manage Materials.
+- Share Resources.
+
+### Academic Reports
+- Class Performance.
+- Student Performance.
+- Attendance Analysis.
+- Subject Performance.
+
+### Communication
+- Messages.
+- Student Messages.
+- Announcements.
+- Notifications.
+
+### Settings
+- Personal Settings.
+- Change Password.
+- Language.
+- Theme.
+- Security.
+
+## 4.3 Teacher Dashboard
+
+### KPI cards
+- Assigned Classes.
+- Total Assigned Students.
+- Subjects Assigned.
+- Attendance Sessions Pending.
+- Assignments Awaiting Review.
+- Upcoming Examinations.
+
+### Dashboard sections
+- Welcome section.
+- Today's teaching schedule.
+- My classes.
+- Attendance tasks.
+- Pending submissions.
+- Upcoming examinations.
+- Class performance charts.
+- Recent messages.
+- Recent announcements.
+- Academic calendar.
+
+## 4.4 Teacher page implementation
+
+### My Classes
+- Display assigned classes.
+- Class details.
+- Sections.
+- Student counts.
+- Assigned subjects.
+- Class timetable.
+
+### My Students
+- Student list.
+- Search and filtering.
+- Student profiles.
+- Academic progress.
+- Authorized attendance information.
+- Performance information.
+
+Teachers must only access their assigned students and authorized records.
+
+### Take Attendance
+- Select assigned class.
+- Select section.
+- Select date.
+- Display enrolled students.
+- Present, Absent, Late, and Excused statuses where supported.
+- Submit attendance.
+- Display submission result.
+- Prevent duplicate attendance submissions according to existing rules.
+
+### Assignments
+- Create assignments.
+- Set deadlines.
+- Upload assignment attachments.
+- Assign to authorized classes.
+- View submissions.
+- Review submissions.
+- Add feedback.
+- Assign grades.
+
+### Examinations
+- View examination schedule.
+- Access authorized examination records.
+- Enter marks.
+- Validate marks against the examination maximum.
+- Save drafts if supported.
+- Submit results through existing approval workflows.
+- View result submission history.
+
+Teachers must not modify finalized results unless explicitly authorized.
+
+### Learning Materials
+- Upload materials.
+- Attach files.
+- Organize by subject and class.
+- Publish materials.
+- Manage previously uploaded materials.
+
+### Academic Reports
+- Class performance.
+- Attendance analysis.
+- Student performance.
+- Subject performance.
+- Examination summaries.
+
+All reports must use real backend calculations.
+
+---
+
+# PART 5 — EMPLOYEE PORTAL
+
+Build a dedicated Employee Self-Service (ESS) Portal.
+
+It must work for teachers and non-teaching employees.
+
+## 5.1 Employee Layout
+
+Create:
+
+- EmployeeLayout.
+- EmployeeSidebar.
+- EmployeeNavbar.
+- EmployeeProfileDropdown.
+- EmployeeNotificationPanel.
+- EmployeeMessagePanel.
+- EmployeePageHeader.
+- EmployeeBreadcrumbs.
+- EmployeeMobileNavigation.
+
+## 5.2 Employee Sidebar
+
+### Dashboard
+- Dashboard.
+
+### My Employment
+- My Profile.
+- Employment Details.
+- My Department.
+- My Designation.
+- Employment Documents.
+
+### Attendance
+- Check In / Check Out, if supported.
+- My Attendance.
+- Attendance History.
+- Working Hours.
+- Attendance Reports.
+
+### Leave Management
+- Apply for Leave.
+- My Leave Requests.
+- Leave Balance.
+- Leave History.
+- Holiday Calendar.
+
+### Payroll and Salary
+- My Salary Information.
+- My Payslips.
+- Salary History.
+- Allowances and Deductions.
+
+### Work Management
+- My Tasks.
+- My Schedule.
+- My Shifts.
+- Assigned Responsibilities.
+
+### Expenses
+- Submit Expense Claim.
+- My Expense Requests.
+- Expense History.
+
+### Documents
+- My Documents.
+- Employment Contract.
+- Certificates.
+- HR Documents.
+
+### Communication
+- Messages.
+- Announcements.
+- HR Requests.
+- Notifications.
+
+### Performance
+- My Performance.
+- Evaluations.
+- Goals and Objectives.
+- Feedback.
+
+### Settings
+- Personal Settings.
+- Change Password.
+- Language.
+- Theme.
+- Security.
+
+## 5.3 Employee Dashboard
+
+### KPI cards
+- Attendance This Month.
+- Leave Balance.
+- Working Hours.
+- Pending Tasks.
+- Latest Payslip.
+- Upcoming Work Schedule.
+
+### Dashboard sections
+- Employee profile summary.
+- Attendance overview.
+- Working schedule.
+- Leave requests.
+- Payroll summary.
+- Tasks.
+- Announcements.
+- Recent messages.
+- Notifications.
+
+## 5.4 Employee page implementation
+
+### Employment Profile
+- Employee ID.
+- Personal information.
+- Department.
+- Designation.
+- Joining date.
+- Employment status.
+- Authorized employment documents.
+
+### Attendance
+- Check in.
+- Check out.
+- Attendance history.
+- Working hours.
+- Late arrival.
+- Early departure.
+- Monthly summary.
+
+Integrate the existing attendance rules and validation.
+
+Do not implement fake check-in behavior.
+
+If location, biometric, or device verification is required by the existing business rules, use the existing approved mechanism.
+
+### Leave Management
+- Leave application form.
+- Leave type.
+- Start date.
+- End date.
+- Reason.
+- Supporting attachment.
+- Leave balance.
+- Approval status.
+- Leave history.
+
+Use the existing approval workflow.
+
+### Payroll
+- Own salary details.
+- Payslips.
+- Salary history.
+- Allowances.
+- Deductions.
+- Bonuses where authorized.
+- Payroll payment status.
+
+Employees must only access their own payroll records.
+
+### Tasks
+- Assigned tasks.
+- Task details.
+- Priority.
+- Due dates.
+- Status.
+- Comments.
+- Attachments.
+
+### Expenses
+If existing Expense Management functionality is available:
+- Submit expense claim.
+- Upload receipts.
+- Track claim status.
+- View approval history.
+
+### Documents
+- Employment contracts.
+- Employee certificates.
+- HR documents.
+- Authorized downloads.
+
+### Performance
+- Performance evaluation.
+- Evaluation history.
+- Goals.
+- Feedback.
+- Performance reports.
+
+---
+
+# PART 6 — CRITICAL: EXISTING MESSAGING SYSTEM INTEGRATION
+
+Our application ALREADY HAS a Messaging feature.
+
+You MUST inspect the existing messaging implementation before developing any messaging functionality.
+
+Do not create a duplicate messaging backend, database, or independent chat system.
+
+Reuse and extend the existing implementation.
+
+### 6.1 Inspect existing messaging functionality
+
+Check:
+
+- Conversation tables.
+- Message tables.
+- Conversation participants.
+- Sender and receiver relationships.
+- Organization and branch ownership.
+- Message attachments.
+- File storage.
+- Read and unread status.
+- Read receipts.
+- Message timestamps.
+- Existing API endpoints.
+- Realtime implementation.
+- WebSocket or broadcasting system.
+- Existing frontend components.
+- Notification integration.
+- Message search.
+- Pagination.
+- Existing access permissions.
+
+Identify all available functionality and document missing parts.
+
+### 6.2 Integrate messaging into Student Portal
+
+Students should be able to:
+
+- View their conversations.
+- Send messages to authorized teachers.
+- Communicate with authorized administration staff.
+- Receive messages.
+- View unread message counts.
+- View message history.
+- Send authorized attachments.
+- Search conversations if supported.
+- Receive message notifications.
+- Mark messages as read.
+
+A student must not automatically message every employee or student. Respect the organization's communication policies.
+
+### 6.3 Integrate messaging into Teacher Portal
+
+Teachers should be able to:
+
+- View conversations.
+- Message authorized students.
+- Message other teachers when permitted.
+- Communicate with administration.
+- Send class-related announcements if supported.
+- Receive student messages.
+- Share permitted attachments.
+- View unread counts.
+- Search conversation history.
+
+Teachers must only communicate with authorized users and assigned classes according to existing permissions.
+
+### 6.4 Integrate messaging into Employee Portal
+
+Employees should be able to:
+
+- View their conversations.
+- Message HR.
+- Message authorized managers.
+- Message colleagues where permitted.
+- Receive organization communications.
+- Send and receive attachments.
+- View unread counts.
+- Search conversation history.
+
+### 6.5 Messaging UI
+
+Create a modern responsive messaging interface.
+
+Desktop layout:
+
+Left panel:
+- Conversation search.
+- Conversation list.
+- User profile image.
+- User name.
+- Last message preview.
+- Last message time.
+- Unread badge.
+- Online status if supported.
+
+Right panel:
+- Conversation header.
+- Recipient information.
+- Message history.
+- Date separators.
+- Message bubbles.
+- Sender and receiver distinction.
+- Message timestamps.
+- Attachment previews.
+- Message input.
+- Send button.
+- File attachment button.
+- Read status if supported.
+
+Mobile layout:
+
+- Conversation list as a separate view.
+- Open conversation as a full-screen view.
+- Back navigation.
+- Responsive message input.
+- Proper attachment preview.
+
+### 6.6 Realtime messaging
+
+If the existing system supports WebSockets, broadcasting, Supabase Realtime, or another realtime mechanism, reuse it.
+
+If realtime functionality does not exist, assess the current architecture and propose the safest compatible solution.
+
+Do not introduce a new realtime infrastructure unnecessarily.
+
+### 6.7 Messaging security
+
+- Validate conversation participation.
+- Validate organization ownership.
+- Validate recipient permissions.
+- Validate attachments.
+- Restrict file access.
+- Prevent users from accessing unauthorized conversations.
+- Prevent cross-tenant messaging leakage.
+
+The frontend must never be the only security layer.
+
+---
+
+# PART 7 — SHARED NOTIFICATIONS
+
+Reuse the existing notification infrastructure.
+
+Integrate notifications into all three portals.
+
+Student notifications:
+- New assignment.
+- Examination reminder.
+- Attendance alert.
+- New result.
+- Fee reminder.
+- New message.
+- New announcement.
+
+Teacher notifications:
+- New student message.
+- Assignment submission.
+- Upcoming examination.
+- Attendance reminder.
+- Result approval status.
+- New announcement.
+
+Employee notifications:
+- Leave approval or rejection.
+- Attendance alerts.
+- Payroll availability.
+- New task.
+- New message.
+- HR announcement.
+- Schedule changes.
+
+Implement:
+- Notification dropdown.
+- Unread count.
+- Mark as read.
+- Mark all as read, if supported.
+- Notification history.
+- Appropriate links to authorized pages.
+
+Use the existing notification service.
+
+---
+
+# PART 8 — IMAGES, AVATARS, ILLUSTRATIONS AND VISUAL ASSETS
+
+Visual quality is a major requirement.
+
+Do not deliver plain dashboards made only of text, boxes, and generic tables.
+
+Use appropriate images and illustrations to make the portals look like a polished enterprise education platform.
+
+### 8.1 Student Portal visual assets
+
+Use appropriate visuals for:
+
+- Student profile avatars.
+- Education and learning illustrations.
+- Course thumbnails.
+- Subject thumbnails.
+- Learning materials.
+- Empty assignment states.
+- Empty results states.
+- Welcome dashboard illustration.
+- Academic events.
+
+### 8.2 Teacher Portal visual assets
+
+Use appropriate visuals for:
+
+- Teacher profile avatars.
+- Classroom and teaching illustrations.
+- Subject and course thumbnails.
+- Assignment illustrations.
+- Learning material previews.
+- Empty submission states.
+- Welcome dashboard illustration.
+
+### 8.3 Employee Portal visual assets
+
+Use appropriate visuals for:
+
+- Employee profile avatars.
+- HR and workplace illustrations.
+- Payroll and document illustrations.
+- Leave management illustrations.
+- Task management illustrations.
+- Empty request states.
+- Welcome dashboard illustration.
+
+### 8.4 Image implementation rules
+
+Use the following priority:
+
+1. Reuse existing uploaded organization and user images.
+2. Reuse existing application assets.
+3. Use approved image URLs from a trusted image source if necessary.
+4. Generate original illustrations or icons if the project supports that workflow.
+5. Use attractive local SVG illustrations when appropriate.
+
+Do not use random unrelated images.
+
+Do not use the same generic illustration everywhere.
+
+Do not invent external image URLs.
+
+Do not use large background photographs that make the dashboard slow.
+
+Do not use copyrighted brand images without authorization.
+
+### 8.5 User-uploaded images
+
+Implement image handling for:
+
+- Student profile photos.
+- Teacher profile photos.
+- Employee profile photos.
+- Assignment attachments.
+- Learning materials.
+- Message attachments.
+- Documents.
+
+Reuse the existing storage system and upload APIs.
+
+Implement:
+- Image preview.
+- File validation.
+- File size limits.
+- Upload progress.
+- Error handling.
+- Secure file access.
+- Image optimization where supported.
+
+Use fallback avatars when a user has no profile photo.
+
+### 8.6 Visual presentation
+
+Use:
+- Professional profile images.
+- Consistent iconography.
+- Appropriate illustrations.
+- Course and subject thumbnails.
+- Small visual indicators.
+- Charts and graphs.
+- Empty-state illustrations.
+- Loading skeletons.
+
+Avoid:
+- Excessive decoration.
+- Unnecessary 3D graphics.
+- Too many gradients.
+- Oversized illustrations.
+- Unrelated stock photos.
+- Repeated decorative elements.
+
+Images must support the actual page content rather than distract from it.
+
+---
+
+# PART 9 — DESIGN SYSTEM AND USER EXPERIENCE
+
+Create a consistent enterprise-grade design.
+
+### General design direction
+
+- Clean modern SaaS UI.
+- Premium enterprise dashboard.
+- Professional typography.
+- Consistent spacing.
+- Well-structured cards.
+- Subtle shadows.
+- Carefully selected borders.
+- Consistent rounded corners.
+- Clear information hierarchy.
+- Accessible contrast.
+- Responsive layouts.
+
+### Color identities
+
+Student:
+- Blue primary accent.
+
+Teacher:
+- Green primary accent.
+
+Employee:
+- Purple primary accent.
+
+Keep neutral backgrounds and text colors consistent across all portals.
+
+### Shared components
+
+Build reusable components:
+
+- PageHeader.
+- Breadcrumbs.
+- Sidebar.
+- Navbar.
+- ProfileDropdown.
+- NotificationDropdown.
+- MessageDropdown.
+- StatCard.
+- DataTable.
+- SearchInput.
+- FilterPanel.
+- DatePicker.
+- Calendar.
+- StatusBadge.
+- Tabs.
+- Dialog.
+- ConfirmationModal.
+- FileUploader.
+- ImageUploader.
+- ChartCard.
+- EmptyState.
+- LoadingSkeleton.
+- ErrorState.
+- Pagination.
+- FormField.
+- RichTextEditor where required.
+
+### UI interaction
+
+Implement:
+- Sidebar collapse.
+- Mobile navigation.
+- Search.
+- Filtering.
+- Sorting.
+- Pagination.
+- Tabs.
+- Modals.
+- Dropdowns.
+- Form validation.
+- Toast notifications.
+- Confirmation dialogs.
+- Loading states.
+- Empty states.
+- Error states.
+
+Use the project's existing libraries and conventions.
+
+Do not add multiple competing UI libraries without a clear reason.
+
+---
+
+# PART 10 — RESPONSIVE DESIGN
+
+Every page must work correctly on:
+
+- Desktop.
+- Laptop.
+- Tablet.
+- iPad-sized screens.
+- Mobile phones.
+
+Desktop:
+- Sidebar navigation.
+- Main content area.
+- Optional right-side widgets.
+
+Tablet:
+- Collapsible sidebar.
+- Responsive tables.
+- Adapted cards and charts.
+
+Mobile:
+- Drawer or bottom navigation where appropriate.
+- Stacked KPI cards.
+- Mobile-friendly forms.
+- Full-screen messaging conversation.
+- Responsive timetable.
+- No horizontal overflow.
+- Touch-friendly controls.
+
+Test the actual layouts at common viewport sizes.
+
+---
+
+# PART 11 — AI ASSISTANT INTEGRATION
+
+Our platform is also implementing a shared AI Assistant using Google Gemini.
+
+If the AI Assistant already exists, integrate it.
+
+Otherwise, prepare a reusable AI Assistant entry point for all three portals.
+
+The assistant should respect portal permissions.
+
+Student:
+- Ask questions about courses, attendance, assignments, and examinations.
+
+Teacher:
+- Ask questions about assigned classes, attendance, assignments, and performance.
+
+Employee:
+- Ask questions about leave, attendance, payroll, and employee services.
+
+Use the centralized backend AI architecture.
+
+Never allow the AI model to bypass tenant or user permissions.
+
+Do not expose unauthorized financial, academic, or HR records.
+
+---
+
+# PART 12 — AUTHENTICATION AND ROLE MANAGEMENT
+
+Use the existing authentication system.
+
+Do not create three independent login systems.
+
+Support:
+
+- Student.
+- Teacher.
+- Employee.
+- Teacher + Employee where applicable.
+- Other existing authorized roles.
+
+A teacher who is also an employee should not need two separate accounts.
+
+Implement a portal switcher only when the authenticated user has multiple authorized portal roles.
+
+After login, route users according to their permitted portal access.
+
+Enforce permissions on both frontend and backend.
+
+Use the authenticated backend session to resolve:
+
+- User ID.
+- Organization ID.
+- Branch access.
+- Role.
+- Permissions.
+
+Never trust IDs supplied by the frontend.
+
+---
+
+# PART 13 — MULTI-TENANT SECURITY
+
+Every portal must preserve strict tenant separation.
+
+Required checks:
+
+- Organization ownership.
+- Branch ownership.
+- Record ownership.
+- User permissions.
+- Conversation participation.
+- File ownership.
+- Academic assignment access.
+- Payroll access.
+- Financial access.
+
+Student:
+- Only own academic and financial records.
+
+Teacher:
+- Only assigned classes and authorized student records.
+
+Employee:
+- Only own employment, attendance, and payroll records.
+
+A user must not access another organization's data by modifying a URL, API parameter, record ID, or frontend state.
+
+Test all security boundaries.
+
+---
+
+# PART 14 — DATABASE AND API IMPLEMENTATION
+
+Inspect existing schema first.
+
+Reuse existing tables and relationships.
+
+Only create migrations for genuinely missing functionality.
+
+Do not assume table names or column names.
+
+Keep business logic in backend services rather than duplicating it in frontend components.
+
+Implement or reuse API endpoints for:
+
+- Portal dashboard.
+- Profile.
+- Enrollment.
+- Courses.
+- Subjects.
+- Classes.
+- Timetable.
+- Attendance.
+- Assignments.
+- Submissions.
+- Examinations.
+- Results.
+- Finance.
+- Payroll.
+- Leave.
+- Tasks.
+- Documents.
+- Messages.
+- Notifications.
+
+Use:
+- Pagination.
+- Server-side filtering.
+- Input validation.
+- Parameterized database queries.
+- Consistent API response structures.
+- Proper authorization.
+- Appropriate caching.
+
+Do not expose unnecessary database fields.
+
+---
+
+# PART 15 — PERFORMANCE AND ACCESSIBILITY
+
+Optimize:
+
+- Initial page loading.
+- Image sizes.
+- API requests.
+- Dashboard queries.
+- Data table rendering.
+- Conversation history loading.
+- File uploads.
+- Chart rendering.
+
+Avoid:
+- Duplicate API calls.
+- Loading entire database collections.
+- Sending huge conversation histories.
+- Large unoptimized images.
+- Unnecessary component re-rendering.
+
+Implement:
+- Lazy loading where appropriate.
+- Pagination.
+- Debounced search.
+- Optimized image rendering.
+- Accessible keyboard navigation.
+- Appropriate ARIA labels.
+- Good color contrast.
+
+---
+
+# PART 16 — TESTING
+
+Test all three portals.
+
+### Student tests
+- Student sees only their own records.
+- Student sees only authorized courses.
+- Student cannot modify attendance.
+- Student cannot change examination results.
+- Student cannot modify payments.
+- Student can submit assignments.
+- Student can message authorized users.
+
+### Teacher tests
+- Teacher sees only assigned classes.
+- Teacher sees only authorized students.
+- Teacher can submit attendance.
+- Teacher can manage authorized assignments.
+- Teacher cannot modify finalized results without permission.
+- Teacher cannot access restricted payroll or financial information.
+- Teacher can communicate with authorized students.
+
+### Employee tests
+- Employee sees only their own HR records.
+- Employee sees only their own payslips.
+- Employee can submit leave requests.
+- Employee cannot approve their own leave unless explicitly authorized.
+- Employee cannot modify payroll.
+- Employee can access authorized messages and documents.
+
+### Messaging tests
+- Conversation participants can access their conversations.
+- Non-participants cannot access private messages.
+- Unread counts are accurate.
+- Read receipts work where supported.
+- Attachments are protected.
+- Cross-tenant messages are impossible.
+- Realtime updates work where supported.
+
+### General tests
+- All routes are protected.
+- Mobile layouts work.
+- Images load correctly.
+- Forms validate.
+- Empty states work.
+- Notifications work.
+- Existing admin functionality remains operational.
+- Existing messaging functionality remains operational.
+
+---
+
+# PART 17 — IMPLEMENTATION STRATEGY
+
+Implement in controlled phases.
+
+Phase 1:
+Existing system audit and architecture documentation.
+
+Phase 2:
+Shared layouts, navigation, authentication, and portal routing.
+
+Phase 3:
+Student Portal dashboard and core academic pages.
+
+Phase 4:
+Teacher Portal dashboard and teaching functionality.
+
+Phase 5:
+Employee Portal dashboard and HR self-service functionality.
+
+Phase 6:
+Integration with the existing Messaging system across all three portals.
+
+Phase 7:
+Notifications, documents, and file uploads.
+
+Phase 8:
+Visual asset integration, responsive design, and UI refinement.
+
+Phase 9:
+AI Assistant integration.
+
+Phase 10:
+Security testing, performance optimization, and production readiness.
+
+Do not attempt a massive unreviewed rewrite.
+
+Complete each phase, run relevant tests, and report the result before proceeding.
+
+---
+
+# PART 18 — FINAL DELIVERABLES
+
+At the end, provide:
+
+1. Existing system audit report.
+2. Updated architecture diagram.
+3. Portal route structure.
+4. Student Portal.
+5. Teacher Portal.
+6. Employee Portal.
+7. Shared reusable components.
+8. Database changes and migrations.
+9. API documentation.
+10. Messaging integration report.
+11. Notification integration report.
+12. Image and asset implementation report.
+13. Responsive design verification.
+14. Security test results.
+15. Automated test results.
+16. Performance assessment.
+17. Deployment instructions.
+18. List of remaining limitations.
+
+For every phase, list:
+
+- Files created.
+- Files modified.
+- Existing functionality reused.
+- New functionality implemented.
+- Database changes.
+- API changes.
+- Tests executed.
+- Test results.
+- Outstanding issues.
+
+# FINAL ACCEPTANCE CRITERIA
+
+The project is not complete just because the dashboards look attractive.
+
+All of the following must be true:
+
+- Student, Teacher, and Employee have separate portal experiences.
+- All portals use existing authentication.
+- All portals use the same centralized backend.
+- Existing tenant and branch isolation is preserved.
+- All pages use real authorized backend data.
+- Existing messaging is integrated, not duplicated.
+- Notifications are integrated.
+- Existing images and file storage are reused.
+- Appropriate new images and illustrations are added where necessary.
+- Every portal is responsive.
+- All page actions work.
+- Forms are validated.
+- Role and record permissions are enforced on the backend.
+- No fake production data is used.
+- Existing admin and ERP functionality continues working.
+- Automated tests pass.
+
+Start by auditing the existing project. Prepare the architecture and implementation plan. Then implement the portals in the specified phases.
+
+Do not stop after producing a design or a list of pages. Build the actual functional application and verify every integration.

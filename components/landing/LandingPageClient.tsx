@@ -17,6 +17,7 @@ import {
   CalendarDays,
   Headphones,
   CreditCard,
+  Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import BrandLogo from '@/components/BrandLogo';
@@ -398,6 +399,12 @@ export default function LandingPageClient({ businesses, durations }: LandingPage
             <span className="font-black text-foreground">{APP_NAME}</span>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-6">
+            <Link
+              href="/"
+              className="text-sm font-semibold text-muted-foreground transition-colors hover:text-primary"
+            >
+              Home
+            </Link>
             <button
               type="button"
               onClick={() => goTo('features')}
@@ -445,6 +452,17 @@ export default function LandingPageClient({ businesses, durations }: LandingPage
         </div>
       </footer>
       </motion.div>
+
+      {/* Kept outside the motion wrapper so position:fixed tracks the viewport */}
+      <Link
+        href="/assistant"
+        aria-label="Open the AI Assistant"
+        title="AI Assistant"
+        className="fixed bottom-5 end-5 z-40 inline-flex h-12 items-center gap-2 rounded-full bg-[#88b6ff] px-4 font-bold text-[#142033] shadow-lg transition hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring print:hidden"
+      >
+        <Sparkles size={18} />
+        <span className="hidden sm:inline">AI Assistant</span>
+      </Link>
     </div>
   );
 }

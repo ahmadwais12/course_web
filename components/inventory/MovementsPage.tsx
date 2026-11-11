@@ -20,6 +20,7 @@ import { useListQuery } from '@/hooks/useListQuery';
 
 type Item = { id: string; item_name: string; quantity: number };
 type Warehouse = { id: string; name: string };
+type Settings = { default_warehouse: string; require_description: boolean; require_holder: boolean };
 type Movement = {
   id: string;
   item_id: string;
@@ -43,6 +44,9 @@ export default function MovementsPage({ type }: { type: 'in' | 'out' }) {
   const [rows, setRows] = useState<Movement[]>([]);
   const [items, setItems] = useState<Item[]>([]);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+  const [settings, setSettings] = useState<Settings | null>(null);
+  const requireDescription = settings?.require_description !== false;
+  const requireHolder = isOut && settings?.require_holder === true;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [itemFilter, setItemFilter] = useState('');
@@ -74,18 +78,21 @@ export default function MovementsPage({ type }: { type: 'in' | 'out' }) {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [txRes, itemRes, whRes] = await Promise.all([
+      const [txRes, itemRes, whRes, settingsRes] = await Promise.all([
         fetch(`/api/inventory/transactions?type=${type}`),
         fetch('/api/inventory/items'),
         fetch('/api/inventory/warehouses'),
+        fetch('/api/inventory/settings'),
       ]);
       const txData = await txRes.json();
       const itemData = await itemRes.json();
       const whData = await whRes.json();
+      const settingsData = await settingsRes.json().catch(() => null);
       if (!txRes.ok) throw new Error(txData.error || 'Failed to load movements');
       setRows(Array.isArray(txData) ? txData : []);
       setItems(Array.isArray(itemData) ? itemData : []);
       setWarehouses(Array.isArray(whData) ? whData : []);
+      setSettings(settingsRes.ok && settingsData ? settingsData : null);
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load movements');
@@ -124,7 +131,7 @@ export default function MovementsPage({ type }: { type: 'in' | 'out' }) {
     holder_name: '',
     transaction_date: today(),
     department: '',
-    location: '',
+    location: settings?.default_warehouse ?? '',
     transaction_description: '',
   });
 
@@ -201,8 +208,12 @@ export default function MovementsPage({ type }: { type: 'in' | 'out' }) {
         title={isOut ? 'Stock Out' : 'Stock In'}
         description={
           isOut
-            ? 'Issue stock. Quantity cannot be higher than what is currently on hand. Description is required. An empty price is stored as 0.'
-            : 'Receive stock. Quantity is added to the item on-hand balance. Description and date are required.'
+            ? `Issue stock. Quantity cannot be higher than what is currently on hand. An empty price is stored as 0. ${
+                requireDescription ? 'Description is required.' : 'Description is optional.'
+              }${requireHolder ? ' Holder is required on issues.' : ''}`
+            : `Receive stock. Quantity is added to the item on-hand balance. ${
+                requireDescription ? 'Description is required.' : 'Description is optional.'
+              }`
         }
         primaryAction={{ label: isOut ? 'New issue' : 'New receipt', onClick: startCreate }}
         search={list.search}
@@ -348,6 +359,7 @@ export default function MovementsPage({ type }: { type: 'in' | 'out' }) {
             label="Holder"
             value={form.holder_name}
             onChange={(e) => setForm({ ...form, holder_name: e.target.value })}
+            required={requireHolder}
           />
           <InputField
             label="Department"
@@ -367,7 +379,7 @@ export default function MovementsPage({ type }: { type: 'in' | 'out' }) {
               label="Description"
               value={form.transaction_description}
               onChange={(e) => setForm({ ...form, transaction_description: e.target.value })}
-              required
+              required={requireDescription}
               rows={3}
             />
           </div>

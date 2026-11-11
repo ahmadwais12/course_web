@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeftRight, Copy, Download, Eye } from 'lucide-react';
+import { ArrowLeftRight, Copy, Download, Eye, Image as ImageIcon } from 'lucide-react';
 import {
   ConfirmDialog,
   DetailDialog,
@@ -20,9 +20,20 @@ import {
 import { toast } from '@/components/ui/Toast';
 import { useListQuery } from '@/hooks/useListQuery';
 import { downloadCsv } from '@/lib/csv';
-import { TRANSACTION_CSV_COLUMNS, type InventoryTransaction } from '@/lib/inventory-options';
+import {
+  TRANSACTION_CSV_COLUMNS,
+  nextBinCardNumber,
+  type InventoryTransaction,
+} from '@/lib/inventory-options';
 
 type Unit = { id: string; name: string };
+type Settings = {
+  currency: string;
+  default_unit_id: string | null;
+  default_min_quantity: number;
+  bin_card_prefix: string;
+  low_stock_alerts: boolean;
+};
 type Item = {
   id: string;
   bin_card_number: string;
@@ -34,6 +45,7 @@ type Item = {
   unit_price: number;
   total_price: number;
   description: string;
+  image_url: string;
   qty_level: 'below' | 'at' | 'comfortable';
 };
 
@@ -45,12 +57,14 @@ const empty = {
   min_quantity: '0',
   unit_price: '0',
   description: '',
+  image_url: '',
 };
 
 export default function ItemsPage() {
   const router = useRouter();
   const [items, setItems] = useState<Item[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
+  const [settings, setSettings] = useState<Settings | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [unitFilter, setUnitFilter] = useState('');
@@ -59,6 +73,7 @@ export default function ItemsPage() {
   const [editing, setEditing] = useState<Item | null>(null);
   const [form, setForm] = useState(empty);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [viewing, setViewing] = useState<Item | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Item | null>(null);
@@ -66,12 +81,18 @@ export default function ItemsPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [itemRes, unitRes] = await Promise.all([fetch('/api/inventory/items'), fetch('/api/inventory/units')]);
+      const [itemRes, unitRes, settingsRes] = await Promise.all([
+        fetch('/api/inventory/items'),
+        fetch('/api/inventory/units'),
+        fetch('/api/inventory/settings'),
+      ]);
       const itemData = await itemRes.json();
       const unitData = await unitRes.json();
+      const settingsData = await settingsRes.json().catch(() => null);
       if (!itemRes.ok) throw new Error(itemData.error || 'Failed to load items');
       setItems(Array.isArray(itemData) ? itemData : []);
       setUnits(Array.isArray(unitData) ? unitData : []);
+      setSettings(settingsRes.ok && settingsData ? settingsData : null);
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load items');
@@ -110,7 +131,12 @@ export default function ItemsPage() {
 
   const startCreate = () => {
     setEditing(null);
-    setForm(empty);
+    setForm({
+      ...empty,
+      unit_id: settings?.default_unit_id ?? '',
+      min_quantity: String(settings?.default_min_quantity ?? 0),
+      bin_card_number: nextBinCardNumber(settings?.bin_card_prefix ?? '', items),
+    });
     setFormError(null);
     setOpen(true);
   };
@@ -125,9 +151,27 @@ export default function ItemsPage() {
       min_quantity: String(item.min_quantity),
       unit_price: String(item.unit_price),
       description: item.description,
+      image_url: item.image_url ?? '',
     });
     setFormError(null);
     setOpen(true);
+  };
+
+  const uploadImage = async (file: File) => {
+    setUploading(true);
+    setFormError(null);
+    try {
+      const body = new FormData();
+      body.append('file', file);
+      const res = await fetch('/api/inventory/items/upload', { method: 'POST', body });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Upload failed');
+      setForm((current) => ({ ...current, image_url: data.url }));
+    } catch (e) {
+      setFormError(e instanceof Error ? e.message : 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
   };
 
   const save = async () => {
@@ -186,6 +230,7 @@ export default function ItemsPage() {
       { header: 'Unit price', value: (row) => row.unit_price },
       { header: 'Total price', value: (row) => row.total_price },
       { header: 'Description', value: (row) => row.description },
+      { header: 'Image', value: (row) => row.image_url },
     ]);
   };
 
@@ -255,8 +300,24 @@ export default function ItemsPage() {
         }}
         columns={[
           {
+            key: 'image_url',
+            header: 'Image',
+            render: (row) =>
+              row.image_url ? (
+                <img
+                  src={row.image_url}
+                  alt=""
+                  className="h-10 w-10 rounded-lg border border-border object-cover"
+                />
+              ) : (
+                <span className="flex h-10 w-10 items-center justify-center rounded-lg border border-dashed border-border text-muted-foreground">
+                  <ImageIcon size={16} />
+                </span>
+              ),
+          },
+          {
             key: 'item_name',
-            header: 'Item',
+            header: 'Item name',
             render: (row) => (
               <div>
                 <div className="font-medium">{row.item_name}</div>
@@ -273,14 +334,15 @@ export default function ItemsPage() {
             render: (row) => (
               <span className="inline-flex items-center gap-2">
                 {row.quantity}
-                {row.qty_level !== 'comfortable' && (
+                {settings?.low_stock_alerts !== false && row.qty_level !== 'comfortable' && (
                   <StatusChip tone="gold" label={row.qty_level === 'below' ? 'Below min' : 'At min'} />
                 )}
               </span>
             ),
           },
-          { key: 'min_quantity', header: 'Minimum' },
-          { key: 'total_price', header: 'Total price' },
+          { key: 'min_quantity', header: 'Minimum quantity' },
+          { key: 'unit_price', header: `Unit price${settings?.currency ? ` (${settings.currency})` : ''}` },
+          { key: 'total_price', header: `Total price${settings?.currency ? ` (${settings.currency})` : ''}` },
           {
             key: 'actions',
             header: 'Actions',
@@ -396,6 +458,42 @@ export default function ItemsPage() {
             onChange={(e) => setForm({ ...form, unit_price: e.target.value })}
           />
           <InputField label="Total price" value={String(totalPrice)} readOnly />
+          <div className="sm:col-span-2 flex items-start gap-3">
+            {form.image_url ? (
+              <div className="shrink-0">
+                <img
+                  src={form.image_url}
+                  alt="Item image preview"
+                  className="h-20 w-20 rounded-xl border border-border object-cover"
+                />
+                <button
+                  type="button"
+                  className="mt-1 block w-full text-xs text-destructive hover:underline"
+                  onClick={() => setForm({ ...form, image_url: '' })}
+                >
+                  Remove
+                </button>
+              </div>
+            ) : (
+              <span className="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl border border-dashed border-border text-muted-foreground">
+                <ImageIcon size={20} />
+              </span>
+            )}
+            <div className="min-w-0 flex-1">
+              <InputField
+                label="Image"
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                disabled={uploading}
+                hint={uploading ? 'Uploading…' : 'JPG, PNG, WEBP, or GIF up to 8MB.'}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) uploadImage(file);
+                  e.target.value = '';
+                }}
+              />
+            </div>
+          </div>
           <div className="sm:col-span-2">
             <TextAreaField
               label="Description"
@@ -413,12 +511,30 @@ export default function ItemsPage() {
         rows={
           viewing
             ? [
+                {
+                  label: 'Image',
+                  value: viewing.image_url ? (
+                    <img
+                      src={viewing.image_url}
+                      alt=""
+                      className="h-16 w-16 rounded-lg border border-border object-cover"
+                    />
+                  ) : (
+                    ''
+                  ),
+                },
                 { label: 'Bin card', value: viewing.bin_card_number },
                 { label: 'Unit', value: viewing.unit_label },
                 { label: 'Quantity', value: String(viewing.quantity) },
-                { label: 'Minimum', value: String(viewing.min_quantity) },
-                { label: 'Unit price', value: String(viewing.unit_price) },
-                { label: 'Total price', value: String(viewing.total_price) },
+                { label: 'Minimum quantity', value: String(viewing.min_quantity) },
+                {
+                  label: `Unit price${settings?.currency ? ` (${settings.currency})` : ''}`,
+                  value: String(viewing.unit_price),
+                },
+                {
+                  label: `Total price${settings?.currency ? ` (${settings.currency})` : ''}`,
+                  value: String(viewing.total_price),
+                },
                 { label: 'Description', value: viewing.description },
               ]
             : []

@@ -31,3 +31,17 @@ export const TRANSACTION_CSV_COLUMNS: CsvColumn<InventoryTransaction>[] = [
   { header: 'Location', value: (row) => row.location },
   { header: 'Description', value: (row) => row.transaction_description },
 ];
+
+/** Next free `PREFIX-0001` bin card number, or '' when no prefix is configured. */
+export function nextBinCardNumber(prefix: string, items: { bin_card_number: string }[]) {
+  const clean = prefix.trim();
+  if (!clean) return '';
+  const used = new Set(items.map((item) => item.bin_card_number));
+  let n = items.filter((item) => item.bin_card_number.startsWith(`${clean}-`)).length + 1;
+  let candidate = `${clean}-${String(n).padStart(4, '0')}`;
+  while (used.has(candidate)) {
+    n += 1;
+    candidate = `${clean}-${String(n).padStart(4, '0')}`;
+  }
+  return candidate;
+}

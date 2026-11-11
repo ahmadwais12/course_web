@@ -18,16 +18,22 @@ type Report = {
 
 export default function InventoryReportPage() {
   const [report, setReport] = useState<Report | null>(null);
+  const [settings, setSettings] = useState<{ organization_name: string; currency: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch('/api/inventory/reports');
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Failed to load report');
+        const [reportRes, settingsRes] = await Promise.all([
+          fetch('/api/inventory/reports'),
+          fetch('/api/inventory/settings'),
+        ]);
+        const data = await reportRes.json();
+        const settingsData = await settingsRes.json().catch(() => null);
+        if (!reportRes.ok) throw new Error(data.error || 'Failed to load report');
         setReport(data);
+        setSettings(settingsRes.ok && settingsData ? settingsData : null);
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Failed to load report');
       } finally {
@@ -42,14 +48,22 @@ export default function InventoryReportPage() {
     <div className="space-y-4">
       <PageHeader
         title="Inventory Reports"
-        description="On-hand totals, stock against minimum, and in versus out counts for the last six months."
+        description={
+          settings?.organization_name
+            ? `${settings.organization_name} — on-hand totals, stock against minimum, and in versus out counts for the last six months.`
+            : 'On-hand totals, stock against minimum, and in versus out counts for the last six months.'
+        }
         pill={loading ? 'LOADING…' : 'LIVE DATA'}
         pillTone={loading ? 'neutral' : 'live'}
       />
       {error && <ErrorBanner message={error} />}
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Inventory items" value={h?.inventory_items ?? '—'} accent="green" />
-        <StatCard label="Total on hand" value={h?.total_on_hand ?? '—'} accent="blue" />
+        <StatCard
+          label={`Total on hand${settings?.currency ? ` (${settings.currency})` : ''}`}
+          value={h?.total_on_hand ?? '—'}
+          accent="blue"
+        />
         <StatCard label="At or below minimum" value={h?.items_at_or_below_minimum ?? '—'} accent="gold" />
         <StatCard label="Movements (30 days)" value={h?.movements_last_30_days ?? '—'} accent="purple" />
       </div>

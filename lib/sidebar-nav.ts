@@ -32,6 +32,7 @@ import {
   FileText,
   FolderKanban,
   FolderTree,
+  Gauge,
   Gem,
   GitBranch,
   Globe,
@@ -472,10 +473,25 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
     label: { en: 'Inventory', dr: 'انبار', ps: 'ګدام' },
     items: [
       {
+        href: '/inventory/overview',
+        icon: Gauge,
+        label: { en: 'Inventory', dr: 'انبار', ps: 'ګدام' },
+      },
+      {
         href: '/inventory',
         icon: LayoutDashboard,
         label: { en: 'Inventory Dashboard', dr: 'داشبورد انبار', ps: 'د ګدام داشبورډ' },
         exact: true,
+      },
+      {
+        href: '/inventory/transactions',
+        icon: Activity,
+        label: { en: 'Transactions', dr: 'تراکنش‌ها', ps: 'کارونې' },
+      },
+      {
+        href: '/inventory/settings',
+        icon: Settings,
+        label: { en: 'Inventory Settings', dr: 'تنظیمات انبار', ps: 'د ګدام تنظیمات' },
       },
       {
         href: '/inventory/assets',
