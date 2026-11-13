@@ -660,6 +660,21 @@ export const PRIVATE_APP_PAGES = [
     description: 'Appearance, language, and account security settings for the Leave portal.',
   },
   {
+    path: '/hr/staff',
+    title: 'Staff Directory',
+    description: 'Employee directory of teachers and non-teaching staff with roles, departments, and salaries.',
+  },
+  {
+    path: '/hr/attendance',
+    title: 'Staff Attendance',
+    description: 'Daily check-in and check-out records for institute employees.',
+  },
+  {
+    path: '/hr/recruitment',
+    title: 'Recruitment',
+    description: 'Open positions with applicant counts and hiring deadlines.',
+  },
+  {
     path: '/hr/designations',
     title: 'Designations',
     description: 'Designation directory with headcount, departments, and salary bands derived from staff and teacher records.',

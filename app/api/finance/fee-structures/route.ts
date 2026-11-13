@@ -15,6 +15,7 @@ type FeeStructureRow = {
   due_day: number | null;
   late_fee: number | null;
   total_amount: number | null;
+  description: string | null;
   effective_from: string | null;
   effective_until: string | null;
   is_active: boolean | null;
@@ -40,7 +41,7 @@ export async function GET() {
         const query = admin
           .from('fee_structures')
           .select(
-            'id, fee_type_id, program_id, class_id, academic_year_id, name, amount, currency, frequency, due_day, late_fee, total_amount, effective_from, effective_until, is_active, created_at'
+            'id, fee_type_id, program_id, class_id, academic_year_id, name, amount, currency, frequency, due_day, late_fee, total_amount, description, effective_from, effective_until, is_active, created_at'
           )
           .order('created_at', { ascending: false });
         return tenantId ? query.eq('tenant_id', tenantId) : query;
@@ -69,6 +70,9 @@ export async function GET() {
         feeTypeId: row.fee_type_id,
         feeType: str(feeType?.name) ?? 'Unassigned type',
         feeTypeCategory: str(feeType?.category) ?? 'other',
+        programId: row.program_id,
+        classId: row.class_id,
+        academicYearId: row.academic_year_id,
         programName: row.program_id ? programById.get(row.program_id) ?? null : null,
         className: row.class_id ? classById.get(row.class_id) ?? null : null,
         academicYear: row.academic_year_id ? yearById.get(row.academic_year_id) ?? null : null,
@@ -78,6 +82,7 @@ export async function GET() {
         frequencyLabel: frequencyLabel(row.frequency),
         dueDay: row.due_day,
         lateFee: num(row.late_fee),
+        description: str(row.description),
         totalAmount: num(row.total_amount) || num(row.amount),
         effectiveFrom: row.effective_from,
         effectiveUntil: row.effective_until,

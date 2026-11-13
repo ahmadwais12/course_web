@@ -64,8 +64,14 @@ export async function GET() {
           .order('pay_date', { ascending: false });
         return tenantId ? query.eq('tenant_id', tenantId) : query;
       })(),
-      admin.from('staff').select('id, profile_id, full_name, employee_code'),
-      admin.from('teachers').select('id, profile_id, full_name, employee_code'),
+      (() => {
+        const query = admin.from('staff').select('id, profile_id, full_name, employee_code');
+        return tenantId ? query.eq('tenant_id', tenantId) : query;
+      })(),
+      (() => {
+        const query = admin.from('teachers').select('id, profile_id, full_name, employee_code');
+        return tenantId ? query.eq('tenant_id', tenantId) : query;
+      })(),
     ]);
 
     const salaries = (salaryRes.data ?? []) as SalaryRow[];

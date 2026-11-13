@@ -86,7 +86,10 @@ export async function GET() {
           );
         return tenantId ? query.eq('tenant_id', tenantId) : query;
       })(),
-      admin.from('departments').select('id, name'),
+      (() => {
+        const query = admin.from('departments').select('id, name');
+        return tenantId ? query.eq('tenant_id', tenantId) : query;
+      })(),
     ]);
 
     const staff = (staffRes.data ?? []) as StaffRow[];
@@ -105,7 +108,7 @@ export async function GET() {
           employeeCode: str(row.employee_code),
           designation: str(row.designation) ?? 'Staff',
           department: str(row.department),
-          contractType: str(row.contract_type) ?? 'Permanent',
+          contractType: str(row.contract_type) ?? 'Contract',
           joinDate: row.join_date,
           contractEndDate: row.contract_end_date,
           salary: num(row.salary),
@@ -124,7 +127,7 @@ export async function GET() {
           employeeCode: str(row.employee_code),
           designation: specialization ? `Teacher — ${specialization}` : 'Teacher',
           department: row.department_id ? departmentById.get(row.department_id) ?? null : null,
-          contractType: str(row.contract_type) ?? 'Permanent',
+          contractType: str(row.contract_type) ?? 'Contract',
           joinDate: row.join_date,
           contractEndDate: row.contract_end_date,
           salary: num(row.salary),

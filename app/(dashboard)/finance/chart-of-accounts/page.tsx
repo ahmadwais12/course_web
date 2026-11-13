@@ -2,18 +2,21 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  ConfirmDialog,
   Dropdown,
   ErrorBanner,
   FormDialog,
   FormDialogFooter,
   InputField,
   ListPageShell,
+  RowActions,
   StatCard,
   StatusChip,
   TextAreaField,
 } from '@/components/ports';
 import { toast } from '@/components/ui/Toast';
 import { useListQuery } from '@/hooks/useListQuery';
+import { PauseCircle, PlayCircle, Trash2 } from 'lucide-react';
 
 type AccountRow = {
   id: string;
@@ -85,6 +88,9 @@ export default function ChartOfAccountsPage() {
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const [editing, setEditing] = useState<AccountRow | null>(null);
+  const [deleting, setDeleting] = useState<AccountRow | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -133,9 +139,62 @@ export default function ChartOfAccountsPage() {
     setForm((prev) => ({ ...prev, [key]: value }));
 
   const openCreate = () => {
+    setEditing(null);
     setForm(EMPTY_FORM);
     setFormError(null);
     setOpen(true);
+  };
+
+  const openEdit = (row: AccountRow) => {
+    setEditing(row);
+    setForm({
+      accountCode: row.code ?? '',
+      name: row.name,
+      type: row.type,
+      normalBalance: row.normalBalance,
+      parentId: row.parentId ?? '',
+      description: row.description ?? '',
+      displayOrder: String(row.displayOrder),
+      status: row.isActive ? 'active' : 'inactive',
+    });
+    setFormError(null);
+    setOpen(true);
+  };
+
+  const toggleActive = async (row: AccountRow) => {
+    setBusyId(row.id);
+    try {
+      const res = await fetch(`/api/finance/chart-of-accounts/${row.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: !row.isActive }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Failed to update account');
+      toast.success(row.isActive ? 'Account deactivated' : 'Account activated');
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to update account');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deleting) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/finance/chart-of-accounts/${deleting.id}`, { method: 'DELETE' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Failed to delete account');
+      toast.success('Account deleted');
+      setDeleting(null);
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to delete account');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const changeType = (value: string) => {
@@ -156,27 +215,31 @@ export default function ChartOfAccountsPage() {
 
     setSaving(true);
     try {
-      const res = await fetch('/api/finance/chart-of-accounts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          accountCode: form.accountCode,
-          name: form.name.trim(),
-          type: form.type,
-          normalBalance: form.normalBalance,
-          parentId: form.parentId || null,
-          description: form.description,
-          displayOrder: Number(form.displayOrder) || 0,
-          isActive: form.status === 'active',
-        }),
-      });
+      const res = await fetch(
+        editing ? `/api/finance/chart-of-accounts/${editing.id}` : '/api/finance/chart-of-accounts',
+        {
+          method: editing ? 'PATCH' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            accountCode: form.accountCode,
+            name: form.name.trim(),
+            type: form.type,
+            normalBalance: form.normalBalance,
+            parentId: form.parentId || null,
+            description: form.description,
+            displayOrder: Number(form.displayOrder) || 0,
+            isActive: form.status === 'active',
+          }),
+        }
+      );
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to create account');
-      toast.success('Account created');
+      if (!res.ok) throw new Error(data.error || 'Failed to save account');
+      toast.success(editing ? 'Account updated' : 'Account created');
       setOpen(false);
+      setEditing(null);
       await load();
     } catch (e) {
-      const message = e instanceof Error ? e.message : 'Failed to create account';
+      const message = e instanceof Error ? e.message : 'Failed to save account';
       setFormError(message);
       toast.error(message);
     } finally {
@@ -263,6 +326,32 @@ export default function ChartOfAccountsPage() {
               <StatusChip label={row.isActive ? 'active' : 'inactive'} tone={row.isActive ? 'green' : 'gray'} />
             ),
           },
+          {
+            key: 'actions',
+            header: 'Actions',
+            align: 'right',
+            render: (row) => (
+              <RowActions
+                onEdit={() => openEdit(row)}
+                overflow={[
+                  {
+                    key: 'toggle',
+                    label: row.isActive ? 'Deactivate' : 'Activate',
+                    icon: row.isActive ? <PauseCircle size={16} /> : <PlayCircle size={16} />,
+                    onClick: () => void toggleActive(row),
+                    disabled: busyId === row.id,
+                  },
+                  {
+                    key: 'delete',
+                    label: 'Delete',
+                    icon: <Trash2 size={16} />,
+                    onClick: () => setDeleting(row),
+                    danger: true,
+                  },
+                ]}
+              />
+            ),
+          },
         ]}
         rows={list.rows as AccountRow[]}
         rowKey={(row) => row.id}
@@ -288,13 +377,19 @@ export default function ChartOfAccountsPage() {
 
       <FormDialog
         open={open}
-        title="New Account"
-        onClose={() => setOpen(false)}
+        title={editing ? 'Edit Account' : 'New Account'}
+        onClose={() => {
+          setOpen(false);
+          setEditing(null);
+        }}
         maxWidth="lg"
         footer={
           <FormDialogFooter
-            onCancel={() => setOpen(false)}
-            submitLabel="Create Account"
+            onCancel={() => {
+              setOpen(false);
+              setEditing(null);
+            }}
+            submitLabel={editing ? 'Save Changes' : 'Create Account'}
             submitting={saving}
             formId="account-form"
           />
@@ -369,6 +464,15 @@ export default function ChartOfAccountsPage() {
           {formError && <ErrorBanner message={formError} />}
         </form>
       </FormDialog>
+
+      <ConfirmDialog
+        open={Boolean(deleting)}
+        title="Delete account"
+        message={`Delete “${deleting?.name ?? 'this account'}”? Accounts used by transactions cannot be removed.`}
+        submitting={saving}
+        onConfirm={() => void confirmDelete()}
+        onClose={() => setDeleting(null)}
+      />
     </>
   );
 }

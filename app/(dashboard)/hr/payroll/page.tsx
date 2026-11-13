@@ -1,10 +1,20 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ErrorBanner, ListPageShell, SectionPanel, StatCard, StatusChip, statusToneFromValue } from '@/components/ports';
+import {
+  ConfirmDialog,
+  ErrorBanner,
+  ListPageShell,
+  RowActions,
+  SectionPanel,
+  StatCard,
+  StatusChip,
+  statusToneFromValue,
+} from '@/components/ports';
 import { toast } from '@/components/ui/Toast';
 import { useListQuery } from '@/hooks/useListQuery';
 import { dateLabel, money, monthKeyLabel } from '@/lib/display';
+import { CheckCircle2, RotateCcw, Trash2 } from 'lucide-react';
 
 type PayrollRow = {
   id: string;
@@ -55,37 +65,70 @@ export default function HrPayrollPage() {
   const [period, setPeriod] = useState('');
   const [status, setStatus] = useState('');
   const [employeeType, setEmployeeType] = useState('');
+  const [deleting, setDeleting] = useState<PayrollRow | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [working, setWorking] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/hr/payroll');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to load payroll');
+      setRows(Array.isArray(data.rows) ? data.rows : []);
+      setRuns(Array.isArray(data.runs) ? data.runs : []);
+      setPeriods(Array.isArray(data.periods) ? data.periods : []);
+      setSummary(data.summary ?? null);
+      setError(null);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Failed to load payroll';
+      setRows([]);
+      setError(message);
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      try {
-        const res = await fetch('/api/hr/payroll');
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Failed to load payroll');
-        if (!cancelled) {
-          setRows(Array.isArray(data.rows) ? data.rows : []);
-          setRuns(Array.isArray(data.runs) ? data.runs : []);
-          setPeriods(Array.isArray(data.periods) ? data.periods : []);
-          setSummary(data.summary ?? null);
-          setError(null);
-        }
-      } catch (e) {
-        if (!cancelled) {
-          const message = e instanceof Error ? e.message : 'Failed to load payroll';
-          setRows([]);
-          setError(message);
-          toast.error(message);
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    void load();
+  }, [load]);
+
+  const changeStatus = async (row: PayrollRow, nextStatus: string) => {
+    setBusyId(row.id);
+    try {
+      const res = await fetch(`/api/hr/payroll/${row.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Failed to update payslip');
+      toast.success(`Payslip marked ${nextStatus}`);
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to update payslip');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deleting) return;
+    setWorking(true);
+    try {
+      const res = await fetch(`/api/hr/payroll/${deleting.id}`, { method: 'DELETE' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Failed to delete payslip');
+      toast.success('Payslip deleted');
+      setDeleting(null);
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to delete payslip');
+    } finally {
+      setWorking(false);
+    }
+  };
 
   const filterFn = useCallback(
     (row: PayrollRow) =>
@@ -108,6 +151,7 @@ export default function HrPayrollPage() {
   );
 
   return (
+    <>
     <ListPageShell
       title="Payroll"
       description="Monthly salary register with gross pay, deductions, and payslip status"
@@ -212,6 +256,38 @@ export default function HrPayrollPage() {
             <StatusChip label={row.status} tone={statusToneFromValue(row.status)} />
           ),
         },
+        {
+          key: 'actions',
+          header: 'Actions',
+          align: 'right',
+          render: (row) => (
+            <RowActions
+              overflow={[
+                {
+                  key: 'paid',
+                  label: 'Mark paid',
+                  icon: <CheckCircle2 size={16} />,
+                  onClick: () => void changeStatus(row, 'paid'),
+                  disabled: busyId === row.id || row.status === 'paid' || row.status === 'cancelled',
+                },
+                {
+                  key: 'pending',
+                  label: 'Set pending',
+                  icon: <RotateCcw size={16} />,
+                  onClick: () => void changeStatus(row, 'pending'),
+                  disabled: busyId === row.id || row.status === 'pending',
+                },
+                {
+                  key: 'delete',
+                  label: 'Delete payslip',
+                  icon: <Trash2 size={16} />,
+                  onClick: () => setDeleting(row),
+                  danger: true,
+                },
+              ]}
+            />
+          ),
+        },
       ]}
       rows={list.rows as PayrollRow[]}
       rowKey={(row) => row.id}
@@ -264,5 +340,14 @@ export default function HrPayrollPage() {
 
       {error && <ErrorBanner message={error} />}
     </ListPageShell>
+    <ConfirmDialog
+      open={Boolean(deleting)}
+      title="Delete payslip"
+      message={`Delete the ${deleting?.period ?? ''} payslip for ${deleting?.employeeName ?? 'this employee'}? This cannot be undone.`}
+      submitting={working}
+      onConfirm={() => void confirmDelete()}
+      onClose={() => setDeleting(null)}
+    />
+    </>
   );
 }

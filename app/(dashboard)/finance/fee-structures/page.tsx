@@ -2,12 +2,14 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  ConfirmDialog,
   Dropdown,
   ErrorBanner,
   FormDialog,
   FormDialogFooter,
   InputField,
   ListPageShell,
+  RowActions,
   StatCard,
   StatusChip,
   TextAreaField,
@@ -15,6 +17,7 @@ import {
 import { toast } from '@/components/ui/Toast';
 import { useListQuery } from '@/hooks/useListQuery';
 import { dateLabel, money } from '@/lib/display';
+import { PauseCircle, PlayCircle, Trash2 } from 'lucide-react';
 
 type FeeStructureRow = {
   id: string;
@@ -22,6 +25,9 @@ type FeeStructureRow = {
   feeTypeId: string | null;
   feeType: string;
   feeTypeCategory: string;
+  programId: string | null;
+  classId: string | null;
+  academicYearId: string | null;
   programName: string | null;
   className: string | null;
   academicYear: string | null;
@@ -31,6 +37,7 @@ type FeeStructureRow = {
   frequencyLabel: string;
   dueDay: number | null;
   lateFee: number;
+  description: string | null;
   effectiveFrom: string | null;
   effectiveUntil: string | null;
   isActive: boolean;
@@ -101,6 +108,9 @@ export default function FeeStructuresPage() {
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [editing, setEditing] = useState<FeeStructureRow | null>(null);
+  const [deleting, setDeleting] = useState<FeeStructureRow | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -154,9 +164,67 @@ export default function FeeStructuresPage() {
   }, [rows]);
 
   const openCreate = () => {
+    setEditing(null);
     setForm({ ...EMPTY_FORM, feeTypeId: feeTypes[0]?.value ?? '' });
     setFormError(null);
     setOpen(true);
+  };
+
+  const openEdit = (row: FeeStructureRow) => {
+    setEditing(row);
+    setForm({
+      name: row.name,
+      feeTypeId: row.feeTypeId ?? '',
+      amount: String(row.amount),
+      frequency: row.frequency,
+      dueDay: row.dueDay ? String(row.dueDay) : '',
+      currency: row.currency,
+      programId: row.programId ?? '',
+      classId: row.classId ?? '',
+      academicYearId: row.academicYearId ?? '',
+      effectiveFrom: row.effectiveFrom ?? '',
+      effectiveUntil: row.effectiveUntil ?? '',
+      description: row.description ?? '',
+      status: row.isActive ? 'active' : 'inactive',
+    });
+    setFormError(null);
+    setOpen(true);
+  };
+
+  const toggleActive = async (row: FeeStructureRow) => {
+    setBusyId(row.id);
+    try {
+      const res = await fetch(`/api/finance/fee-structures/${row.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: !row.isActive }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Failed to update fee structure');
+      toast.success(row.isActive ? 'Fee plan deactivated' : 'Fee plan activated');
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to update fee structure');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deleting) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/finance/fee-structures/${deleting.id}`, { method: 'DELETE' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Failed to delete fee structure');
+      toast.success('Fee structure deleted');
+      setDeleting(null);
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to delete fee structure');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) =>
@@ -182,32 +250,36 @@ export default function FeeStructuresPage() {
 
     setSaving(true);
     try {
-      const res = await fetch('/api/finance/fee-structures', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: form.name.trim(),
-          feeTypeId: form.feeTypeId || null,
-          amount,
-          frequency: form.frequency,
-          dueDay,
-          currency: form.currency,
-          programId: form.programId || null,
-          classId: form.classId || null,
-          academicYearId: form.academicYearId || null,
-          effectiveFrom: form.effectiveFrom || null,
-          effectiveUntil: form.effectiveUntil || null,
-          description: form.description,
-          isActive: form.status === 'active',
-        }),
-      });
+      const res = await fetch(
+        editing ? `/api/finance/fee-structures/${editing.id}` : '/api/finance/fee-structures',
+        {
+          method: editing ? 'PATCH' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: form.name.trim(),
+            feeTypeId: form.feeTypeId || null,
+            amount,
+            frequency: form.frequency,
+            dueDay,
+            currency: form.currency,
+            programId: form.programId || null,
+            classId: form.classId || null,
+            academicYearId: form.academicYearId || null,
+            effectiveFrom: form.effectiveFrom || null,
+            effectiveUntil: form.effectiveUntil || null,
+            description: form.description,
+            isActive: form.status === 'active',
+          }),
+        }
+      );
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to create fee structure');
-      toast.success('Fee structure created');
+      if (!res.ok) throw new Error(data.error || 'Failed to save fee structure');
+      toast.success(editing ? 'Fee structure updated' : 'Fee structure created');
       setOpen(false);
+      setEditing(null);
       await load();
     } catch (e) {
-      const message = e instanceof Error ? e.message : 'Failed to create fee structure';
+      const message = e instanceof Error ? e.message : 'Failed to save fee structure';
       setFormError(message);
       toast.error(message);
     } finally {
@@ -310,6 +382,32 @@ export default function FeeStructuresPage() {
               <StatusChip label={row.isActive ? 'active' : 'inactive'} tone={row.isActive ? 'green' : 'gray'} />
             ),
           },
+          {
+            key: 'actions',
+            header: 'Actions',
+            align: 'right',
+            render: (row) => (
+              <RowActions
+                onEdit={() => openEdit(row)}
+                overflow={[
+                  {
+                    key: 'toggle',
+                    label: row.isActive ? 'Deactivate' : 'Activate',
+                    icon: row.isActive ? <PauseCircle size={16} /> : <PlayCircle size={16} />,
+                    onClick: () => void toggleActive(row),
+                    disabled: busyId === row.id,
+                  },
+                  {
+                    key: 'delete',
+                    label: 'Delete',
+                    icon: <Trash2 size={16} />,
+                    onClick: () => setDeleting(row),
+                    danger: true,
+                  },
+                ]}
+              />
+            ),
+          },
         ]}
         rows={list.rows as FeeStructureRow[]}
         rowKey={(row) => row.id}
@@ -331,13 +429,19 @@ export default function FeeStructuresPage() {
 
       <FormDialog
         open={open}
-        title="New Fee Structure"
-        onClose={() => setOpen(false)}
+        title={editing ? 'Edit Fee Structure' : 'New Fee Structure'}
+        onClose={() => {
+          setOpen(false);
+          setEditing(null);
+        }}
         maxWidth="lg"
         footer={
           <FormDialogFooter
-            onCancel={() => setOpen(false)}
-            submitLabel="Create Fee Structure"
+            onCancel={() => {
+              setOpen(false);
+              setEditing(null);
+            }}
+            submitLabel={editing ? 'Save Changes' : 'Create Fee Structure'}
             submitting={saving}
             formId="fee-structure-form"
           />
@@ -450,6 +554,15 @@ export default function FeeStructuresPage() {
           {formError && <ErrorBanner message={formError} />}
         </form>
       </FormDialog>
+
+      <ConfirmDialog
+        open={Boolean(deleting)}
+        title="Delete fee structure"
+        message={`Delete “${deleting?.name ?? 'this fee plan'}”? Students on this plan may lose their billing schedule.`}
+        submitting={saving}
+        onConfirm={() => void confirmDelete()}
+        onClose={() => setDeleting(null)}
+      />
     </>
   );
 }

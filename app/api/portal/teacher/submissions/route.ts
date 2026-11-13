@@ -113,7 +113,15 @@ export async function POST(request: Request) {
       })
       .eq('id', submissionId);
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) {
+      if (error.code === '42702') {
+        return NextResponse.json(
+          { error: 'Grading is temporarily unavailable. Please contact the administrator.' },
+          { status: 503 }
+        );
+      }
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
 
     return NextResponse.json({ ok: true });
   } catch (error: unknown) {

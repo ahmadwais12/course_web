@@ -60,7 +60,10 @@ export async function GET() {
           .select('id, full_name, employee_code, specialization, department_id, salary, status');
         return tenantId ? query.eq('tenant_id', tenantId) : query;
       })(),
-      admin.from('departments').select('id, name'),
+      (() => {
+        const query = admin.from('departments').select('id, name');
+        return tenantId ? query.eq('tenant_id', tenantId) : query;
+      })(),
     ]);
 
     const staff = (staffRes.data ?? []) as StaffRow[];
@@ -84,7 +87,7 @@ export async function GET() {
       const designation = str(row.designation) ?? 'Unassigned';
       const { entry } = bucket(designation);
       entry.staffCount += 1;
-      if (row.status !== 'inactive') entry.activeCount += 1;
+      if (row.status === 'active') entry.activeCount += 1;
       const salary = num(row.salary);
       if (salary > 0) entry.salaries.push(salary);
       const department = str(row.department);
@@ -96,7 +99,7 @@ export async function GET() {
       const designation = specialization ? `Teacher — ${specialization}` : 'Teacher';
       const { entry } = bucket(designation);
       entry.teacherCount += 1;
-      if (row.status !== 'inactive') entry.activeCount += 1;
+      if (row.status === 'active') entry.activeCount += 1;
       const salary = num(row.salary);
       if (salary > 0) entry.salaries.push(salary);
       const department = row.department_id ? departmentById.get(row.department_id) : null;

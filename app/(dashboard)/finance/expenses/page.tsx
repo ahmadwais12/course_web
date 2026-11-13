@@ -2,12 +2,14 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  ConfirmDialog,
   Dropdown,
   ErrorBanner,
   FormDialog,
   FormDialogFooter,
   InputField,
   ListPageShell,
+  RowActions,
   StatCard,
   StatusChip,
   TextAreaField,
@@ -15,6 +17,7 @@ import {
 } from '@/components/ports';
 import { toast } from '@/components/ui/Toast';
 import { useListQuery } from '@/hooks/useListQuery';
+import { CheckCircle2, RotateCcw, Trash2, Wallet } from 'lucide-react';
 import { dateLabel, money } from '@/lib/display';
 
 type ExpenseRow = {
@@ -39,6 +42,7 @@ type FormState = {
   description: string;
   paymentMethod: string;
   invoiceNumber: string;
+  status: string;
 };
 
 const STANDARD_CATEGORIES = [
@@ -72,7 +76,10 @@ export default function ExpensesPage() {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [form, setForm] = useState<FormState>({
+  const [editing, setEditing] = useState<ExpenseRow | null>(null);
+  const [deleting, setDeleting] = useState<ExpenseRow | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const blankForm = (): FormState => ({
     category: 'Supplies',
     amount: '',
     expenseDate: new Date().toISOString().slice(0, 10),
@@ -80,7 +87,9 @@ export default function ExpensesPage() {
     description: '',
     paymentMethod: '',
     invoiceNumber: '',
+    status: 'pending',
   });
+  const [form, setForm] = useState<FormState>(blankForm);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -148,6 +157,65 @@ export default function ExpensesPage() {
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
+  const openCreate = () => {
+    setEditing(null);
+    setForm(blankForm());
+    setFormError(null);
+    setOpen(true);
+  };
+
+  const openEdit = (row: ExpenseRow) => {
+    setEditing(row);
+    setForm({
+      category: row.category,
+      amount: String(row.amount),
+      expenseDate: row.expenseDate ?? '',
+      vendor: row.vendor ?? '',
+      description: row.description ?? '',
+      paymentMethod: row.paymentMethod ?? '',
+      invoiceNumber: row.invoiceNumber ?? '',
+      status: row.status,
+    });
+    setFormError(null);
+    setOpen(true);
+  };
+
+  const changeStatus = async (row: ExpenseRow, status: string) => {
+    setBusyId(row.id);
+    try {
+      const res = await fetch(`/api/finance/expenses/${row.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Failed to update expense');
+      toast.success(`Expense marked ${status}`);
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to update expense');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deleting) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/finance/expenses/${deleting.id}`, { method: 'DELETE' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Failed to delete expense');
+      toast.success('Expense deleted');
+      setDeleting(null);
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to delete expense');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     setFormError(null);
@@ -163,28 +231,32 @@ export default function ExpensesPage() {
 
     setSaving(true);
     try {
-      const res = await fetch('/api/finance/expenses', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          category: form.category.trim(),
-          amount,
-          expenseDate: form.expenseDate,
-          vendor: form.vendor,
-          description: form.description,
-          paymentMethod: form.paymentMethod || null,
-          invoiceNumber: form.invoiceNumber,
-          status: 'pending',
-        }),
-      });
+      const res = await fetch(
+        editing ? `/api/finance/expenses/${editing.id}` : '/api/finance/expenses',
+        {
+          method: editing ? 'PATCH' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            category: form.category.trim(),
+            amount,
+            expenseDate: form.expenseDate,
+            vendor: form.vendor,
+            description: form.description,
+            paymentMethod: form.paymentMethod || null,
+            invoiceNumber: form.invoiceNumber,
+            status: editing ? form.status : 'pending',
+          }),
+        }
+      );
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to create expense');
-      toast.success('Expense recorded');
+      if (!res.ok) throw new Error(data.error || 'Failed to save expense');
+      toast.success(editing ? 'Expense updated' : 'Expense recorded');
       setOpen(false);
-      setForm((prev) => ({ ...prev, amount: '', vendor: '', description: '', invoiceNumber: '' }));
+      setEditing(null);
+      setForm(blankForm());
       await load();
     } catch (e) {
-      const message = e instanceof Error ? e.message : 'Failed to create expense';
+      const message = e instanceof Error ? e.message : 'Failed to save expense';
       setFormError(message);
       toast.error(message);
     } finally {
@@ -197,7 +269,7 @@ export default function ExpensesPage() {
       <ListPageShell
         title="Expenses"
         description="Institute spending by category, vendor, and approval status"
-        primaryAction={{ label: 'Record Expense', onClick: () => setOpen(true) }}
+        primaryAction={{ label: 'Record Expense', onClick: openCreate }}
         search={list.search}
         onSearchChange={list.setSearch}
         searchPlaceholder="Search category, vendor, or invoice…"
@@ -282,6 +354,46 @@ export default function ExpensesPage() {
               <StatusChip label={row.status} tone={statusToneFromValue(row.status)} />
             ),
           },
+          {
+            key: 'actions',
+            header: 'Actions',
+            align: 'right',
+            render: (row) => (
+              <RowActions
+                onEdit={() => openEdit(row)}
+                overflow={[
+                  {
+                    key: 'approve',
+                    label: 'Approve',
+                    icon: <CheckCircle2 size={16} />,
+                    onClick: () => void changeStatus(row, 'approved'),
+                    disabled: busyId === row.id || row.status !== 'pending',
+                  },
+                  {
+                    key: 'pay',
+                    label: 'Mark paid',
+                    icon: <Wallet size={16} />,
+                    onClick: () => void changeStatus(row, 'paid'),
+                    disabled: busyId === row.id || row.status === 'paid',
+                  },
+                  {
+                    key: 'reopen',
+                    label: 'Set pending',
+                    icon: <RotateCcw size={16} />,
+                    onClick: () => void changeStatus(row, 'pending'),
+                    disabled: busyId === row.id || row.status === 'pending',
+                  },
+                  {
+                    key: 'delete',
+                    label: 'Delete',
+                    icon: <Trash2 size={16} />,
+                    onClick: () => setDeleting(row),
+                    danger: true,
+                  },
+                ]}
+              />
+            ),
+          },
         ]}
         rows={list.rows as ExpenseRow[]}
         rowKey={(row) => row.id}
@@ -303,13 +415,19 @@ export default function ExpensesPage() {
 
       <FormDialog
         open={open}
-        title="Record Expense"
-        onClose={() => setOpen(false)}
+        title={editing ? 'Edit Expense' : 'Record Expense'}
+        onClose={() => {
+          setOpen(false);
+          setEditing(null);
+        }}
         maxWidth="lg"
         footer={
           <FormDialogFooter
-            onCancel={() => setOpen(false)}
-            submitLabel="Record Expense"
+            onCancel={() => {
+              setOpen(false);
+              setEditing(null);
+            }}
+            submitLabel={editing ? 'Save Changes' : 'Record Expense'}
             submitting={saving}
             formId="expense-form"
           />
@@ -369,12 +487,37 @@ export default function ExpensesPage() {
             onChange={(e) => update('description', e.target.value)}
             placeholder="What was purchased"
           />
-          <p className="text-xs text-muted-foreground">
-            New expenses are recorded as pending until approved.
-          </p>
+          {editing && (
+            <Dropdown
+              label="Status"
+              value={form.status}
+              onChange={(value) => update('status', value)}
+              options={[
+                { value: 'pending', label: 'Pending' },
+                { value: 'approved', label: 'Approved' },
+                { value: 'paid', label: 'Paid' },
+                { value: 'rejected', label: 'Rejected' },
+              ]}
+              required
+            />
+          )}
+          {!editing && (
+            <p className="text-xs text-muted-foreground">
+              New expenses are recorded as pending until approved.
+            </p>
+          )}
           {formError && <ErrorBanner message={formError} />}
         </form>
       </FormDialog>
+
+      <ConfirmDialog
+        open={Boolean(deleting)}
+        title="Delete expense"
+        message={`Delete the ${deleting ? money(deleting.amount) : ''} ${deleting?.category ?? ''} expense? This cannot be undone.`}
+        submitting={saving}
+        onConfirm={() => void confirmDelete()}
+        onClose={() => setDeleting(null)}
+      />
     </>
   );
 }

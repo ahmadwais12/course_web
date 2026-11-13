@@ -27,6 +27,18 @@ const ALLOWED_TYPES = new Set([
 ]);
 const MAX_BYTES = 10 * 1024 * 1024;
 
+/** Database trigger misconfiguration is not actionable by the student. */
+function statusCodeFor(error: { code?: string }) {
+  return error.code === '42702' || error.code === '42P01' ? 503 : 500;
+}
+
+function submissionErrorMessage(error: { code?: string; message: string }) {
+  if (error.code === '42702') {
+    return 'Submissions are temporarily unavailable. Please contact the administrator.';
+  }
+  return error.message;
+}
+
 export async function POST(request: Request) {
   const auth = await requirePortalUser((role) => role === 'student');
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
@@ -146,7 +158,9 @@ export async function POST(request: Request) {
         created_at: now,
         updated_at: now,
       });
-      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      if (error) {
+        return NextResponse.json({ error: submissionErrorMessage(error) }, { status: statusCodeFor(error) });
+      }
     }
 
     return NextResponse.json({ ok: true, status });

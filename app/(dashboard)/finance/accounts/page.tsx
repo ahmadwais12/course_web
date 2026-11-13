@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ErrorBanner, ListPageShell, StatCard, StatusChip } from '@/components/ports';
+import { useRouter } from 'next/navigation';
+import { ErrorBanner, ListPageShell, PortButton, StatCard, StatusChip } from '@/components/ports';
 import { toast } from '@/components/ui/Toast';
 import { useListQuery } from '@/hooks/useListQuery';
 import { money } from '@/lib/display';
@@ -37,6 +38,7 @@ const TYPE_TONE: Record<string, 'green' | 'gold' | 'purple' | 'blue' | 'gray'> =
 };
 
 export default function AccountsPage() {
+  const router = useRouter();
   const [rows, setRows] = useState<AccountRow[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -96,6 +98,11 @@ export default function AccountsPage() {
     <ListPageShell
       title="Accounts"
       description="Cash, bank, and ledger accounts with the current cash position"
+      secondaryActions={
+        <PortButton variant="secondary" onClick={() => router.push('/finance/chart-of-accounts')}>
+          Manage chart of accounts
+        </PortButton>
+      }
       search={list.search}
       onSearchChange={list.setSearch}
       searchPlaceholder="Search account name or code…"
