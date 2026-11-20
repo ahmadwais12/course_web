@@ -8,7 +8,10 @@ import {
   DashboardPieChart,
 } from '@/components/dashboards/DashboardCharts';
 import type { ChartConfig } from '@/components/ui/chart';
-import { ErrorBanner, PageHeader, PortButton, StatCard } from '@/components/ports';
+import { ErrorBanner, Filter, PageHeader, PortButton, StatCard } from '@/components/ports';
+import { Download, FileSpreadsheet, FileText, RefreshCw } from 'lucide-react';
+import { downloadFile } from '@/lib/download';
+import type { SelectOption } from '@/components/ports';
 
 type Counted = { name: string; count: number };
 
@@ -18,6 +21,7 @@ type Dashboard = {
     total_on_hand: number;
     items_at_or_below_minimum: number;
     movements_last_30_days: number;
+    movements_in_period: number;
   };
   stock_health: { comfortable: number; at_minimum: number; below_minimum: number };
   monthly_movements: { month: string; in: number; out: number }[];
@@ -27,6 +31,20 @@ type Dashboard = {
     by_status: Counted[];
     by_department: Counted[];
     by_location: Counted[];
+  };
+  procurement: {
+    purchase_orders: number;
+    open_orders: number;
+    received_value: number;
+    suppliers: number;
+    by_status: Counted[];
+  };
+  warehouse: { locations: number };
+  filter_options: {
+    stock_status: SelectOption[];
+    asset_status: SelectOption[];
+    departments: SelectOption[];
+    locations: SelectOption[];
   };
 };
 
@@ -49,6 +67,10 @@ const ASSET_COUNT_CONFIG = {
   count: { label: 'Assets', color: 'var(--chart-3)' },
 } satisfies ChartConfig;
 
+const PURCHASE_CONFIG = {
+  count: { label: 'Orders', color: 'var(--chart-2)' },
+} satisfies ChartConfig;
+
 const PALETTE = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)', 'var(--chart-5)', '#91a0b0'];
 
 function monthLabel(key: string) {
@@ -62,11 +84,25 @@ export default function InventoryDashboardPage() {
   const [data, setData] = useState<Dashboard | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
+  const [stockStatus, setStockStatus] = useState('');
+  const [assetStatus, setAssetStatus] = useState('');
+  const [department, setDepartment] = useState('');
+  const [location, setLocation] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/inventory/dashboard');
+      const params = new URLSearchParams();
+      if (from) params.set('from', from);
+      if (to) params.set('to', to);
+      if (stockStatus) params.set('stockStatus', stockStatus);
+      if (assetStatus) params.set('assetStatus', assetStatus);
+      if (department) params.set('department', department);
+      if (location) params.set('location', location);
+      const query = params.toString();
+      const res = await fetch(`/api/inventory/dashboard${query ? `?${query}` : ''}`);
       const body = await res.json();
       if (!res.ok) throw new Error(body.error || 'Failed to load the inventory dashboard');
       setData(body);
@@ -76,7 +112,7 @@ export default function InventoryDashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [from, to, stockStatus, assetStatus, department, location]);
 
   useEffect(() => {
     load();
@@ -120,6 +156,37 @@ export default function InventoryDashboardPage() {
     () => (data?.assets.by_location ?? []).map((row) => ({ label: row.name, count: row.count })),
     [data]
   );
+  const purchaseChart = useMemo(
+    () => (data?.procurement.by_status ?? []).map((row) => ({ name: row.name, count: row.count })),
+    [data]
+  );
+
+  const filterFields = useMemo(() => [
+    { key: 'stockStatus', label: 'Stock health', value: stockStatus, options: data?.filter_options.stock_status ?? [], onChange: setStockStatus, placeholder: 'All stock levels' },
+    { key: 'assetStatus', label: 'Asset status', value: assetStatus, options: data?.filter_options.asset_status ?? [], onChange: setAssetStatus, placeholder: 'All asset statuses' },
+    { key: 'department', label: 'Department', value: department, options: data?.filter_options.departments ?? [], onChange: setDepartment, placeholder: 'All departments' },
+    { key: 'location', label: 'Asset location', value: location, options: data?.filter_options.locations ?? [], onChange: setLocation, placeholder: 'All locations' },
+  ], [stockStatus, assetStatus, department, location, data]);
+
+  const resetFilters = () => {
+    setFrom('');
+    setTo('');
+    setStockStatus('');
+    setAssetStatus('');
+    setDepartment('');
+    setLocation('');
+  };
+
+  const exportDashboard = (format: 'pdf' | 'xlsx' | 'csv') => {
+    const params = new URLSearchParams({ format });
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    if (stockStatus) params.set('stockStatus', stockStatus);
+    if (assetStatus) params.set('assetStatus', assetStatus);
+    if (department) params.set('department', department);
+    if (location) params.set('location', location);
+    downloadFile(`/api/inventory/dashboard/export?${params.toString()}`);
+  };
 
   const h = data?.headlines;
   const value = (n: number | undefined) => (n == null ? '—' : n.toLocaleString());
@@ -137,10 +204,26 @@ export default function InventoryDashboardPage() {
             <PortButton variant="primary" onClick={() => router.push('/inventory/items')}>
               Inventory items
             </PortButton>
+            <PortButton onClick={() => router.push('/inventory/purchases')}>Procurement</PortButton>
+            <PortButton onClick={() => router.push('/inventory/warehouses')}>Warehouses</PortButton>
+            <PortButton onClick={() => exportDashboard('pdf')}><FileText size={15} /> PDF</PortButton>
+            <PortButton onClick={() => exportDashboard('xlsx')}><FileSpreadsheet size={15} /> Excel</PortButton>
+            <PortButton onClick={() => exportDashboard('csv')}><Download size={15} /> CSV</PortButton>
           </div>
         }
       />
       {error && <ErrorBanner message={error} />}
+
+      <Filter
+        filters={filterFields}
+        dateFrom={from}
+        dateTo={to}
+        onDateRangeChange={({ from: nextFrom, to: nextTo }) => { setFrom(nextFrom); setTo(nextTo); }}
+        onReset={resetFilters}
+        title="Inventory dashboard filters"
+        description="Filter stock health and asset summaries. Date range applies to purchasing and stock movement activity."
+        actions={<PortButton variant="ghost" onClick={() => void load()} disabled={loading}><RefreshCw size={15} /> Refresh</PortButton>}
+      />
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <StatCard label="Inventory items" value={value(h?.inventory_items)} hint="Stock item records" accent="blue" />
@@ -152,9 +235,9 @@ export default function InventoryDashboardPage() {
           accent="gold"
         />
         <StatCard
-          label="Movements (30 days)"
-          value={value(h?.movements_last_30_days)}
-          hint="Stock in and out"
+          label="Stock movements"
+          value={value(h?.movements_in_period)}
+          hint={from || to ? 'Selected date range' : 'Last 30 days'}
           accent="purple"
         />
         <StatCard
@@ -163,6 +246,11 @@ export default function InventoryDashboardPage() {
           hint="Fixed assets, not in trash"
           accent="blue"
         />
+        <StatCard label="Purchase orders" value={value(data?.procurement.purchase_orders)} hint="In selected period" accent="purple" />
+        <StatCard label="Open purchase orders" value={value(data?.procurement.open_orders)} hint="Draft or ordered" accent="gold" />
+        <StatCard label="Received purchase value" value={value(data?.procurement.received_value)} hint="Received in selected period" accent="green" />
+        <StatCard label="Suppliers" value={value(data?.procurement.suppliers)} hint="Registered suppliers" accent="blue" />
+        <StatCard label="Warehouses" value={value(data?.warehouse.locations)} hint="Warehouse locations" accent="purple" />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
@@ -175,7 +263,7 @@ export default function InventoryDashboardPage() {
         <div className="min-w-0 lg:col-span-2">
           <DashboardBarChart
             title="Movement trend"
-            description="In vs out transaction counts by month (last six months)."
+            description={from || to ? 'In vs out transaction counts for the selected activity range.' : 'In vs out transaction counts for the last six months.'}
             data={movementChart}
             config={MOVEMENT_CONFIG}
           />
@@ -196,6 +284,13 @@ export default function InventoryDashboardPage() {
           config={statusConfig}
         />
       </div>
+
+      <DashboardBarChart
+        title="Procurement status"
+        description="Purchase orders grouped by status in the selected date range."
+        data={purchaseChart}
+        config={PURCHASE_CONFIG}
+      />
 
       <DashboardAreaChart
         title="Assets by department"

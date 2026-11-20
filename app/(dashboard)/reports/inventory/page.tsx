@@ -1,5 +1,5 @@
-import InventoryReportPage from '@/components/inventory/InventoryReportPage';
+import { redirect } from 'next/navigation';
 
-export default function Page() {
-  return <InventoryReportPage />;
+export default function LegacyInventoryReportsPage() {
+  redirect('/inventory/reports');
 }

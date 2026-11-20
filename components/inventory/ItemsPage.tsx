@@ -13,6 +13,8 @@ import {
   InputField,
   ListPageShell,
   PortButton,
+  PriceField,
+  PriceText,
   RowActions,
   StatusChip,
   TextAreaField,
@@ -20,6 +22,7 @@ import {
 import { toast } from '@/components/ui/Toast';
 import { useListQuery } from '@/hooks/useListQuery';
 import { downloadCsv } from '@/lib/csv';
+import { formatNumber, parseAmount } from '@/lib/format';
 import {
   TRANSACTION_CSV_COLUMNS,
   nextBinCardNumber,
@@ -125,7 +128,7 @@ export default function ItemsPage() {
 
   const totalPrice = useMemo(() => {
     const qty = Number(form.quantity) || 0;
-    const price = Number(form.unit_price) || 0;
+    const price = parseAmount(form.unit_price) ?? 0;
     return Math.round(qty * price * 100) / 100;
   }, [form.quantity, form.unit_price]);
 
@@ -186,7 +189,7 @@ export default function ItemsPage() {
           unit_id: form.unit_id || null,
           quantity: Number(form.quantity) || 0,
           min_quantity: Number(form.min_quantity) || 0,
-          unit_price: Number(form.unit_price) || 0,
+          unit_price: parseAmount(form.unit_price) ?? 0,
         }),
       });
       const data = await res.json();
@@ -341,8 +344,18 @@ export default function ItemsPage() {
             ),
           },
           { key: 'min_quantity', header: 'Minimum quantity' },
-          { key: 'unit_price', header: `Unit price${settings?.currency ? ` (${settings.currency})` : ''}` },
-          { key: 'total_price', header: `Total price${settings?.currency ? ` (${settings.currency})` : ''}` },
+          {
+            key: 'unit_price',
+            header: `Unit price${settings?.currency ? ` (${settings.currency})` : ''}`,
+            align: 'right',
+            render: (row) => <PriceText value={row.unit_price} />,
+          },
+          {
+            key: 'total_price',
+            header: `Total price${settings?.currency ? ` (${settings.currency})` : ''}`,
+            align: 'right',
+            render: (row) => <PriceText value={row.total_price} />,
+          },
           {
             key: 'actions',
             header: 'Actions',
@@ -449,15 +462,18 @@ export default function ItemsPage() {
             value={form.min_quantity}
             onChange={(e) => setForm({ ...form, min_quantity: e.target.value })}
           />
-          <InputField
+          <PriceField
             label="Unit price"
-            type="number"
-            min={0}
-            step="0.01"
             value={form.unit_price}
-            onChange={(e) => setForm({ ...form, unit_price: e.target.value })}
+            onChange={(unit_price) => setForm({ ...form, unit_price })}
           />
-          <InputField label="Total price" value={String(totalPrice)} readOnly />
+          <InputField
+            label="Total price"
+            value={formatNumber(totalPrice)}
+            readOnly
+            dir="ltr"
+            className="num-ltr-input"
+          />
           <div className="sm:col-span-2 flex items-start gap-3">
             {form.image_url ? (
               <div className="shrink-0">
@@ -529,11 +545,11 @@ export default function ItemsPage() {
                 { label: 'Minimum quantity', value: String(viewing.min_quantity) },
                 {
                   label: `Unit price${settings?.currency ? ` (${settings.currency})` : ''}`,
-                  value: String(viewing.unit_price),
+                  value: <PriceText value={viewing.unit_price} />,
                 },
                 {
                   label: `Total price${settings?.currency ? ` (${settings.currency})` : ''}`,
-                  value: String(viewing.total_price),
+                  value: <PriceText value={viewing.total_price} />,
                 },
                 { label: 'Description', value: viewing.description },
               ]

@@ -6,6 +6,7 @@ import { DashboardBarChart, DashboardPieChart } from '@/components/dashboards/Da
 import { DataTable, ErrorBanner, PageHeader, SectionPanel, StatCard } from '@/components/ports';
 import { toast } from '@/components/ui/Toast';
 import { money } from '@/lib/display';
+import { reportDataUrl, useReportFilters } from '@/components/reports/ReportWorkspace';
 
 type ReportData = {
   summary: {
@@ -34,6 +35,7 @@ const PAYROLL_CONFIG = {
 } satisfies ChartConfig;
 
 export default function HrReportPage() {
+  const filters = useReportFilters();
   const [data, setData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +45,7 @@ export default function HrReportPage() {
     (async () => {
       setLoading(true);
       try {
-        const res = await fetch('/api/reports/hr');
+        const res = await fetch(reportDataUrl('/api/reports/hr', filters));
         const body = await res.json();
         if (!res.ok) throw new Error(body.error || 'Failed to load HR report');
         if (!cancelled) {
@@ -63,7 +65,7 @@ export default function HrReportPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [filters]);
 
   const leaveChart = useMemo(() => {
     const rows = (data?.leaveBreakdown ?? []).filter((row) => row.value > 0);

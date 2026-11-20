@@ -19,6 +19,8 @@ export type FilterField = {
   value: string;
   options: SelectOption[];
   onChange: (value: string) => void;
+  /** Trigger text when nothing is selected. Defaults to "All {label}". */
+  placeholder?: string;
 };
 
 export type FilterProps = {
@@ -327,7 +329,7 @@ export default function Filter({
                                 setDraftFilters((prev) => ({ ...prev, [f.key]: value }))
                               }
                               options={f.options}
-                              placeholder={`All ${f.label.toLowerCase()}`}
+                              placeholder={f.placeholder ?? `All ${f.label.toLowerCase()}`}
                               clearable
                             />
                           ))}

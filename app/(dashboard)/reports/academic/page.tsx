@@ -11,6 +11,7 @@ import {
   StatCard,
 } from '@/components/ports';
 import { toast } from '@/components/ui/Toast';
+import { reportDataUrl, useReportFilters } from '@/components/reports/ReportWorkspace';
 
 type ReportData = {
   summary: {
@@ -34,6 +35,7 @@ const MONTHLY_CONFIG = {
 } satisfies ChartConfig;
 
 export default function AcademicReportPage() {
+  const filters = useReportFilters();
   const [data, setData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +45,7 @@ export default function AcademicReportPage() {
     (async () => {
       setLoading(true);
       try {
-        const res = await fetch('/api/reports/academic');
+        const res = await fetch(reportDataUrl('/api/reports/academic', filters));
         const body = await res.json();
         if (!res.ok) throw new Error(body.error || 'Failed to load academic report');
         if (!cancelled) {
@@ -63,7 +65,7 @@ export default function AcademicReportPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [filters]);
 
   const gradeChart = useMemo(() => {
     const rows = data?.gradeDistribution ?? [];

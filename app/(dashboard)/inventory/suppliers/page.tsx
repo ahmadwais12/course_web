@@ -8,6 +8,9 @@ import {
   FormDialogFooter,
   InputField,
   ListPageShell,
+  PhoneField,
+  PhoneText,
+  PriceText,
   RowActions,
   StatCard,
   StatusChip,
@@ -16,7 +19,8 @@ import {
 } from '@/components/ports';
 import { toast } from '@/components/ui/Toast';
 import { useListQuery } from '@/hooks/useListQuery';
-import { compactMoney, dateLabel } from '@/lib/display';
+import { timestampLabel } from '@/lib/display';
+import { normalizePhone } from '@/lib/format';
 
 type SupplierRow = {
   id: string;
@@ -148,7 +152,11 @@ export default function SuppliersPage() {
         {
           method: editing ? 'PATCH' : 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...form, is_active: form.isActive }),
+          body: JSON.stringify({
+            ...form,
+            phone: normalizePhone(form.phone),
+            is_active: form.isActive,
+          }),
         }
       );
       const data = await res.json();
@@ -209,7 +217,7 @@ export default function SuppliersPage() {
               <div>
                 <div className="font-semibold">{row.name}</div>
                 <div className="text-xs text-muted-foreground">
-                  {row.contact_person || row.email || row.phone || '—'}
+                  {row.contact_person || row.email || (row.phone ? <PhoneText value={row.phone} /> : '—')}
                 </div>
               </div>
             ),
@@ -219,7 +227,7 @@ export default function SuppliersPage() {
             header: 'Contact',
             render: (row) => (
               <div className="text-sm">
-                <div>{row.phone || '—'}</div>
+                <div>{row.phone ? <PhoneText value={row.phone} link /> : '—'}</div>
                 <div className="text-xs text-muted-foreground">{row.email || '—'}</div>
               </div>
             ),
@@ -238,7 +246,7 @@ export default function SuppliersPage() {
           {
             key: 'received',
             header: 'Received value',
-            render: (row) => compactMoney(row.received_total),
+            render: (row) => <PriceText value={row.received_total} />,
           },
           {
             key: 'status',
@@ -252,8 +260,8 @@ export default function SuppliersPage() {
           },
           {
             key: 'added',
-            header: 'Added',
-            render: (row) => dateLabel(row.created_at),
+            header: 'Created at',
+            render: (row) => timestampLabel(row.created_at),
           },
           {
             key: 'actions',
@@ -277,7 +285,7 @@ export default function SuppliersPage() {
           <StatCard label="Suppliers" value={stats.total} accent="blue" />
           <StatCard label="Active" value={stats.active} accent="green" />
           <StatCard label="Purchase orders" value={stats.ordered} accent="gold" />
-          <StatCard label="Received value" value={compactMoney(stats.received)} accent="purple" />
+          <StatCard label="Received value" value={<PriceText value={stats.received} />} accent="purple" />
         </div>
         {error && <ErrorBanner message={error} />}
       </ListPageShell>
@@ -313,11 +321,10 @@ export default function SuppliersPage() {
             />
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
-            <InputField
+            <PhoneField
               label="Phone"
-              type="tel"
               value={form.phone}
-              onChange={(e) => setForm((prev) => ({ ...prev, phone: e.target.value }))}
+              onChange={(phone) => setForm((prev) => ({ ...prev, phone }))}
               placeholder="+93 70 000 0000"
             />
             <InputField

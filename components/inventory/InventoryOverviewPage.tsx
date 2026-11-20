@@ -57,7 +57,7 @@ const SECTIONS: SectionLink[] = [
   { href: '/inventory/holders', icon: Contact, title: 'Asset Holders', description: 'People and offices holding assets.' },
   { href: '/inventory/properties', icon: ListTree, title: 'Asset Properties', description: 'Category, department, location, province values.' },
   { href: '/inventory/assets/trash', icon: Trash2, title: 'Asset Trash', description: 'Restore or permanently remove assets.' },
-  { href: '/reports/inventory', icon: BarChart3, title: 'Inventory Reports', description: 'On-hand totals and stock health.' },
+  { href: '/inventory/reports', icon: BarChart3, title: 'Inventory Reports', description: 'Stock summaries and downloadable inventory reports.' },
 ];
 
 export default function InventoryOverviewPage() {
@@ -96,7 +96,7 @@ export default function InventoryOverviewPage() {
         pillTone={loading ? 'neutral' : 'live'}
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <PortButton onClick={() => router.push('/reports/inventory')}>Reports</PortButton>
+            <PortButton onClick={() => router.push('/inventory/reports')}>Reports</PortButton>
             <PortButton variant="primary" onClick={() => router.push('/inventory/items')}>
               Inventory items
             </PortButton>

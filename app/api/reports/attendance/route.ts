@@ -14,7 +14,7 @@ function monthKey(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const auth = await requireDashboardUser();
     if (!auth.ok) return auth.response;
@@ -32,11 +32,18 @@ export async function GET() {
       })(),
     ]);
 
+    const params = new URL(request.url).searchParams;
+    const from = params.get('from') ?? '';
+    const to = params.get('to') ?? '';
+    const statusFilter = (params.get('status') ?? '').toLowerCase();
+    const classFilter = params.get('classId') ?? '';
     const allowedStudents = new Set(
       ((studentsRes.data ?? []) as { id: string }[]).map((row) => row.id)
     );
-    const rows = ((attendanceRes.data ?? []) as AttendanceRow[]).filter(
-      (row) => !tenantId || (row.student_id && allowedStudents.has(row.student_id))
+    const rows = ((attendanceRes.data ?? []) as AttendanceRow[]).filter((row) =>
+      (!tenantId || (row.student_id && allowedStudents.has(row.student_id))) &&
+      (!from || String(row.date ?? '') >= from) && (!to || String(row.date ?? '') <= to) &&
+      (!statusFilter || String(row.status ?? 'present').toLowerCase() === statusFilter) && (!classFilter || row.class_id === classFilter)
     );
     const classes = (classesRes.data ?? []) as { id: string; name: string }[];
     const className = new Map(classes.map((row) => [row.id, row.name]));

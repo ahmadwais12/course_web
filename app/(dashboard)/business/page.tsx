@@ -301,11 +301,7 @@ export default function BusinessListPage() {
   return (
     <ListPageShell
       title="Business Management"
-      description="Create businesses and manage their branches"
-      primaryAction={{
-        label: 'Create Business',
-        onClick: () => router.push('/business/create'),
-      }}
+      description="Manage businesses and their branches"
       search={list.search}
       onSearchChange={list.setSearch}
       searchPlaceholder="Search businesses…"

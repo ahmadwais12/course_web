@@ -9,6 +9,7 @@ import {
   PROPERTY_TYPES,
   computeDepreciation,
 } from '@/lib/asset-options';
+import { recordChange } from '@/lib/change-log';
 
 /**
  * Fixed-asset records from the Al-Hawa demo: assets, holders, projects,
@@ -205,6 +206,7 @@ export function saveHolder(input: Partial<AssetHolder> & { id?: string | null })
     if (!first) throw new InventoryError('First name is required.', 400, 'first_name');
     const existing = input.id ? db.holders.find((row) => row.id === input.id) : undefined;
     if (input.id && !existing) throw new InventoryError('Holder not found.', 404);
+    const created = !existing;
     const row: AssetHolder = existing ?? {
       id: randomUUID(),
       first_name: '',
@@ -224,6 +226,12 @@ export function saveHolder(input: Partial<AssetHolder> & { id?: string | null })
     row.province = text(input.province);
     row.location = text(input.location);
     if (!existing) db.holders.push(row);
+    recordChange({
+      entity: 'holder',
+      action: created ? 'created' : 'updated',
+      name: `${row.first_name} ${row.last_name}`.trim(),
+      detail: created ? 'New asset holder' : 'Holder details updated',
+    });
     return row;
   });
 }
@@ -235,7 +243,13 @@ export function deleteHolder(id: string) {
     }
     const index = db.holders.findIndex((row) => row.id === id);
     if (index < 0) throw new InventoryError('Holder not found.', 404);
-    db.holders.splice(index, 1);
+    const [removed] = db.holders.splice(index, 1);
+    recordChange({
+      entity: 'holder',
+      action: 'deleted',
+      name: `${removed.first_name} ${removed.last_name}`.trim(),
+      detail: 'Holder deleted',
+    });
     return { ok: true };
   });
 }
@@ -289,6 +303,12 @@ export function saveProject(input: Partial<AssetProject> & { id?: string | null 
       project_note: text(input.project_note),
     });
     if (!existing) db.projects.push(row);
+    recordChange({
+      entity: 'project',
+      action: existing ? 'updated' : 'created',
+      name: row.project_title,
+      detail: existing ? `Project status: ${row.project_status}` : 'New project record',
+    });
     return row;
   });
 }
@@ -300,7 +320,13 @@ export function deleteProject(id: string) {
     }
     const index = db.projects.findIndex((row) => row.id === id);
     if (index < 0) throw new InventoryError('Project not found.', 404);
-    db.projects.splice(index, 1);
+    const [removed] = db.projects.splice(index, 1);
+    recordChange({
+      entity: 'project',
+      action: 'deleted',
+      name: removed.project_title,
+      detail: 'Project deleted',
+    });
     return { ok: true };
   });
 }
@@ -376,9 +402,14 @@ export function listAssets(query: { q?: string; trash?: boolean; status?: string
 }
 
 /** Dashboard counts over registered (not trashed) asset records, highest first. */
-export function assetSummary() {
+export function assetSummary(filters: { status?: string | null; department?: string | null; location?: string | null } = {}) {
   return withDb((db) => {
-    const assets = db.assets.filter((asset) => !asset.deleted_at);
+    const assets = db.assets.filter((asset) =>
+      !asset.deleted_at &&
+      (!filters.status || asset.status === filters.status) &&
+      (!filters.department || (asset.department.trim() || 'Unspecified') === filters.department) &&
+      (!filters.location || (asset.location.trim() || 'Unspecified') === filters.location)
+    );
     const countBy = (pick: (asset: AssetRecord) => string) => {
       const counts = new Map<string, number>();
       for (const asset of assets) {
@@ -424,6 +455,7 @@ export function saveAsset(input: Partial<AssetRecord> & { id?: string | null }) 
     }
     const existing = input.id ? db.assets.find((row) => row.id === input.id) : undefined;
     if (input.id && !existing) throw new InventoryError('Asset not found.', 404);
+    const before = existing ? ({ ...existing } as unknown as Record<string, unknown>) : null;
     const now = new Date().toISOString();
     const row: AssetRecord = existing ?? {
       id: randomUUID(),
@@ -495,6 +527,22 @@ export function saveAsset(input: Partial<AssetRecord> & { id?: string | null }) 
       updated_at: now,
     });
     if (!existing) db.assets.push(row);
+    const after = row as unknown as Record<string, unknown>;
+    const changed = before
+      ? Object.keys(after).filter(
+          (key) => key !== 'updated_at' && String(before[key] ?? '') !== String(after[key] ?? '')
+        )
+      : [];
+    recordChange({
+      entity: 'asset',
+      action: existing ? 'updated' : 'created',
+      name: row.asset_name,
+      detail: existing
+        ? changed.length
+          ? `Changed: ${changed.slice(0, 8).join(', ')}`
+          : 'Saved without field changes'
+        : 'New asset record',
+    });
     return presentAsset(db, row);
   });
 }
@@ -505,6 +553,12 @@ export function trashAsset(id: string) {
     if (!asset) throw new InventoryError('Asset not found.', 404);
     asset.deleted_at = new Date().toISOString();
     asset.updated_at = asset.deleted_at;
+    recordChange({
+      entity: 'asset',
+      action: 'trashed',
+      name: asset.asset_name,
+      detail: 'Moved to asset trash',
+    });
     return { ok: true };
   });
 }
@@ -515,6 +569,12 @@ export function restoreAsset(id: string) {
     if (!asset) throw new InventoryError('Asset not found.', 404);
     asset.deleted_at = null;
     asset.updated_at = new Date().toISOString();
+    recordChange({
+      entity: 'asset',
+      action: 'restored',
+      name: asset.asset_name,
+      detail: 'Restored from asset trash',
+    });
     return presentAsset(db, asset);
   });
 }
@@ -523,8 +583,14 @@ export function purgeAsset(id: string) {
   return withDb((db) => {
     const index = db.assets.findIndex((row) => row.id === id);
     if (index < 0) throw new InventoryError('Asset not found.', 404);
-    db.assets.splice(index, 1);
+    const [removed] = db.assets.splice(index, 1);
     db.transfers = db.transfers.filter((row) => row.asset_id !== id);
+    recordChange({
+      entity: 'asset',
+      action: 'deleted',
+      name: removed.asset_name,
+      detail: 'Deleted permanently',
+    });
     return { ok: true };
   });
 }

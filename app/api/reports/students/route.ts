@@ -19,7 +19,7 @@ function monthKey(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const auth = await requireDashboardUser();
     if (!auth.ok) return auth.response;
@@ -44,7 +44,14 @@ export async function GET() {
       })(),
     ]);
 
-    const students = (studentsRes.data ?? []) as StudentRow[];
+    const params = new URL(request.url).searchParams;
+    const from = params.get('from') ?? ''; const to = params.get('to') ?? ''; const statusFilter = params.get('status') ?? '';
+    const classFilter = params.get('classId') ?? ''; const programFilter = params.get('programId') ?? '';
+    const students = ((studentsRes.data ?? []) as StudentRow[]).filter((row) =>
+      (!from || String(row.enrollment_date ?? '') >= from) && (!to || String(row.enrollment_date ?? '') <= to) &&
+      (!statusFilter || String(row.status ?? 'active') === statusFilter) &&
+      (!classFilter || row.class_id === classFilter) && (!programFilter || row.program_id === programFilter)
+    );
     const className = new Map(
       ((classesRes.data ?? []) as { id: string; name: string }[]).map((row) => [row.id, row.name])
     );

@@ -9,6 +9,7 @@ import {
   FormDialogFooter,
   InputField,
   ListPageShell,
+  PortButton,
   RowActions,
   StatCard,
   StatusChip,
@@ -91,6 +92,7 @@ export default function ChartOfAccountsPage() {
   const [editing, setEditing] = useState<AccountRow | null>(null);
   const [deleting, setDeleting] = useState<AccountRow | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [seeding, setSeeding] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -205,6 +207,19 @@ export default function ChartOfAccountsPage() {
     }));
   };
 
+  const seedInstituteAccounts = async () => {
+    setSeeding(true);
+    try {
+      const res = await fetch('/api/finance/chart-of-accounts/starter', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not add institute starter accounts');
+      toast.success(`${data.created} institute accounts added`);
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Could not add institute starter accounts');
+    } finally { setSeeding(false); }
+  };
+
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     setFormError(null);
@@ -253,6 +268,7 @@ export default function ChartOfAccountsPage() {
         title="Chart of Accounts"
         description="Assets, liabilities, equity, income, and expense accounts"
         primaryAction={{ label: 'New Account', onClick: openCreate }}
+        secondaryActions={rows.length === 0 ? <PortButton variant="secondary" disabled={seeding} onClick={() => void seedInstituteAccounts()}>{seeding ? 'Setting up…' : 'Set up institute accounts'}</PortButton> : undefined}
         search={list.search}
         onSearchChange={list.setSearch}
         searchPlaceholder="Search account name or code…"

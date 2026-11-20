@@ -13,6 +13,8 @@ import {
   InputField,
   ListPageShell,
   PortButton,
+  PriceField,
+  PriceText,
   RowActions,
   StatusChip,
   TextAreaField,
@@ -20,9 +22,7 @@ import {
 import { toast } from '@/components/ui/Toast';
 import { useListQuery } from '@/hooks/useListQuery';
 import { ASSET_STATUSES, DEPRECIATION_METHODS, computeDepreciation } from '@/lib/asset-options';
-
-const money = (value: number | null | undefined, currency?: string) =>
-  value == null ? '—' : `${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}${currency ? ` ${currency}` : ''}`;
+import { parseAmount } from '@/lib/format';
 
 const methodLabel = (value: string) => DEPRECIATION_METHODS.find((item) => item.value === value)?.label || 'Straight-line';
 
@@ -158,10 +158,10 @@ export default function AssetsPage({ trash = false }: { trash?: boolean }) {
           holder_id: form.holder_id || null,
           category_id: form.category_id || null,
           project_id: form.project_id || null,
-          cost: form.cost === '' ? null : Number(form.cost),
+          cost: parseAmount(form.cost),
           quantity: Number(form.quantity) || 1,
           useful_life_years: form.useful_life_years === '' ? null : Number(form.useful_life_years),
-          salvage_value: form.salvage_value === '' ? null : Number(form.salvage_value),
+          salvage_value: parseAmount(form.salvage_value),
         }),
       });
       const data = await res.json();
@@ -208,11 +208,11 @@ export default function AssetsPage({ trash = false }: { trash?: boolean }) {
   const preview = useMemo(
     () =>
       computeDepreciation({
-        cost: form.cost === '' ? null : Number(form.cost),
+        cost: parseAmount(form.cost),
         quantity: Number(form.quantity) || 1,
         invoice_date: form.invoice_date,
         useful_life_years: form.useful_life_years === '' ? null : Number(form.useful_life_years),
-        salvage_value: form.salvage_value === '' ? null : Number(form.salvage_value),
+        salvage_value: parseAmount(form.salvage_value),
         depreciation_method: form.depreciation_method,
       }),
     [form.cost, form.quantity, form.invoice_date, form.useful_life_years, form.salvage_value, form.depreciation_method]
@@ -315,19 +315,40 @@ export default function AssetsPage({ trash = false }: { trash?: boolean }) {
             key: 'cost',
             header: 'Cost',
             align: 'right',
-            render: (row) => (row.cost == null ? '—' : money(Number(row.cost) * (Number(row.quantity) || 1), String(row.asset_currency || ''))),
+            render: (row) =>
+              row.cost == null ? (
+                '—'
+              ) : (
+                <PriceText
+                  value={Number(row.cost) * (Number(row.quantity) || 1)}
+                  currency={String(row.asset_currency || '')}
+                />
+              ),
           },
           {
             key: 'annual_depreciation',
             header: 'Annual depreciation',
             align: 'right',
-            render: (row) => (row.depreciable ? money(Number(row.annual_depreciation)) : '—'),
+            render: (row) =>
+              row.depreciable ? (
+                <PriceText value={Number(row.annual_depreciation)} currency={String(row.asset_currency || '')} />
+              ) : (
+                '—'
+              ),
           },
           {
             key: 'accumulated_depreciation',
             header: 'Accumulated',
             align: 'right',
-            render: (row) => (row.depreciable ? money(Number(row.accumulated_depreciation)) : '—'),
+            render: (row) =>
+              row.depreciable ? (
+                <PriceText
+                  value={Number(row.accumulated_depreciation)}
+                  currency={String(row.asset_currency || '')}
+                />
+              ) : (
+                '—'
+              ),
           },
           {
             key: 'book_value',
@@ -336,7 +357,10 @@ export default function AssetsPage({ trash = false }: { trash?: boolean }) {
             render: (row) =>
               row.depreciable ? (
                 <span className="inline-flex items-center justify-end gap-2">
-                  {money(Number(row.book_value))}
+                  <PriceText
+                    value={Number(row.book_value)}
+                    currency={String(row.asset_currency || '')}
+                  />
                   {row.fully_depreciated ? <StatusChip label="Fully depreciated" tone="gray" /> : null}
                 </span>
               ) : (
@@ -448,7 +472,7 @@ export default function AssetsPage({ trash = false }: { trash?: boolean }) {
           <InputField label="Location" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} />
           <InputField label="Province" value={form.province} onChange={(e) => setForm({ ...form, province: e.target.value })} />
           <InputField label="Quantity" type="number" min={1} value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} />
-          <InputField label="Cost" type="number" min={0} value={form.cost} onChange={(e) => setForm({ ...form, cost: e.target.value })} />
+          <PriceField label="Cost" value={form.cost} onChange={(cost) => setForm({ ...form, cost })} />
           <InputField label="Currency" value={form.asset_currency} onChange={(e) => setForm({ ...form, asset_currency: e.target.value })} />
           <InputField label="Serial number" value={form.serial_number} onChange={(e) => setForm({ ...form, serial_number: e.target.value })} />
           <InputField label="Voucher number" value={form.voucher_number} onChange={(e) => setForm({ ...form, voucher_number: e.target.value })} />
@@ -475,26 +499,29 @@ export default function AssetsPage({ trash = false }: { trash?: boolean }) {
             value={form.useful_life_years}
             onChange={(e) => setForm({ ...form, useful_life_years: e.target.value })}
           />
-          <InputField
+          <PriceField
             label="Salvage value"
-            type="number"
-            min={0}
-            step="0.01"
             value={form.salvage_value}
-            onChange={(e) => setForm({ ...form, salvage_value: e.target.value })}
+            onChange={(salvage_value) => setForm({ ...form, salvage_value })}
           />
           <div className="grid grid-cols-3 gap-2 rounded-xl border border-border bg-muted/40 p-3 text-xs sm:col-span-2">
             <div>
               <div className="text-muted-foreground">Annual</div>
-              <div className="text-sm font-semibold">{preview.depreciable ? money(preview.annual_depreciation) : '—'}</div>
+              <div className="text-sm font-semibold">
+                {preview.depreciable ? <PriceText value={preview.annual_depreciation} /> : '—'}
+              </div>
             </div>
             <div>
               <div className="text-muted-foreground">Accumulated today</div>
-              <div className="text-sm font-semibold">{preview.depreciable ? money(preview.accumulated_depreciation) : '—'}</div>
+              <div className="text-sm font-semibold">
+                {preview.depreciable ? <PriceText value={preview.accumulated_depreciation} /> : '—'}
+              </div>
             </div>
             <div>
               <div className="text-muted-foreground">Book value today</div>
-              <div className="text-sm font-semibold">{preview.depreciable ? money(preview.book_value) : '—'}</div>
+              <div className="text-sm font-semibold">
+                {preview.depreciable ? <PriceText value={preview.book_value} /> : '—'}
+              </div>
             </div>
           </div>
           <div className="sm:col-span-2">
@@ -520,22 +547,55 @@ export default function AssetsPage({ trash = false }: { trash?: boolean }) {
                 { label: 'Location', value: viewing.location },
                 { label: 'Province', value: viewing.province },
                 { label: 'Quantity', value: String(viewing.quantity || 1) },
-                { label: 'Cost', value: viewing.cost == null ? '' : `${viewing.cost} ${viewing.asset_currency || ''}`.trim() },
+                {
+                  label: 'Cost',
+                  value: viewing.cost == null ? '' : (
+                    <PriceText value={viewing.cost} currency={viewing.asset_currency} />
+                  ),
+                },
                 { label: 'Serial number', value: viewing.serial_number },
                 { label: 'Voucher', value: viewing.voucher_number },
                 { label: 'Invoice date', value: viewing.invoice_date },
                 { label: 'Donor', value: viewing.donar },
                 { label: 'Depreciation method', value: methodLabel(viewing.depreciation_method) },
                 { label: 'Useful life', value: viewing.useful_life_years == null ? '' : `${viewing.useful_life_years} years` },
-                { label: 'Salvage value (per unit)', value: viewing.salvage_value == null ? '' : money(viewing.salvage_value, viewing.asset_currency) },
+                {
+                  label: 'Salvage value (per unit)',
+                  value:
+                    viewing.salvage_value == null ? '' : (
+                      <PriceText value={viewing.salvage_value} currency={viewing.asset_currency} />
+                    ),
+                },
                 { label: 'Years in use', value: viewing.depreciable ? String(viewing.years_elapsed) : '' },
-                { label: 'Annual depreciation', value: viewing.depreciable ? money(viewing.annual_depreciation, viewing.asset_currency) : '' },
-                { label: 'Accumulated depreciation', value: viewing.depreciable ? money(viewing.accumulated_depreciation, viewing.asset_currency) : '' },
+                {
+                  label: 'Annual depreciation',
+                  value: viewing.depreciable ? (
+                    <PriceText value={viewing.annual_depreciation} currency={viewing.asset_currency} />
+                  ) : (
+                    ''
+                  ),
+                },
+                {
+                  label: 'Accumulated depreciation',
+                  value: viewing.depreciable ? (
+                    <PriceText
+                      value={viewing.accumulated_depreciation}
+                      currency={viewing.asset_currency}
+                    />
+                  ) : (
+                    ''
+                  ),
+                },
                 {
                   label: 'Book value',
-                  value: viewing.depreciable
-                    ? `${money(viewing.book_value, viewing.asset_currency)}${viewing.fully_depreciated ? ' (fully depreciated)' : ''}`
-                    : '',
+                  value: viewing.depreciable ? (
+                    <>
+                      <PriceText value={viewing.book_value} currency={viewing.asset_currency} />
+                      {viewing.fully_depreciated ? ' (fully depreciated)' : ''}
+                    </>
+                  ) : (
+                    ''
+                  ),
                 },
                 { label: 'Specification', value: viewing.item_specification },
                 { label: 'Remark', value: viewing.remark },

@@ -21,7 +21,7 @@ function daysBetween(start: string | null, end: string | null) {
   return Math.max(1, Math.round((to.getTime() - from.getTime()) / 86_400_000) + 1);
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const auth = await requireDashboardUser();
     if (!auth.ok) return auth.response;
@@ -52,21 +52,31 @@ export async function GET() {
       })(),
     ]);
 
+    const params = new URL(request.url).searchParams;
+    const from = params.get('from') ?? ''; const to = params.get('to') ?? ''; const statusFilter = params.get('status') ?? '';
+    const departmentFilter = params.get('departmentId') ?? '';
     const teachers = (teachersRes.data ?? []) as TeacherRow[];
     const staff = (staffRes.data ?? []) as StaffRow[];
     const departments = (deptRes.data ?? []) as { id: string; name: string }[];
-    const leaves = (leavesRes.data ?? []) as LeaveRow[];
-    const payrolls = (payrollRes.data ?? []) as PayrollRow[];
+    const leaves = ((leavesRes.data ?? []) as LeaveRow[]).filter((row) =>
+      (!statusFilter || String(row.status ?? 'pending') === statusFilter) &&
+      (!from || String(row.end_date ?? row.start_date ?? '') >= from) && (!to || String(row.start_date ?? '') <= to)
+    );
+    const payrolls = ((payrollRes.data ?? []) as PayrollRow[]).filter((row) =>
+      (!from || String(row.pay_date ?? '') >= from) && (!to || String(row.pay_date ?? '') <= to)
+    );
 
     const deptName = new Map(departments.map((row) => [row.id, row.name]));
+    const filteredTeachers = teachers.filter((row) => !departmentFilter || row.department_id === departmentFilter);
+    const filteredStaff = staff.filter((row) => !departmentFilter || row.department?.trim() === deptName.get(departmentFilter));
     const deptCounts = new Map<string, { teachers: number; staff: number }>();
-    for (const row of teachers) {
+    for (const row of filteredTeachers) {
       const name = row.department_id ? deptName.get(row.department_id) ?? 'Unassigned' : 'Unassigned';
       const bucket = deptCounts.get(name) ?? { teachers: 0, staff: 0 };
       bucket.teachers += 1;
       deptCounts.set(name, bucket);
     }
-    for (const row of staff) {
+    for (const row of filteredStaff) {
       const name = row.department?.trim() || 'Unassigned';
       const bucket = deptCounts.get(name) ?? { teachers: 0, staff: 0 };
       bucket.staff += 1;
@@ -92,12 +102,12 @@ export async function GET() {
 
     return NextResponse.json({
       summary: {
-        teachers: teachers.length,
-        staff: staff.length,
-        total: teachers.length + staff.length,
+        teachers: filteredTeachers.length,
+        staff: filteredStaff.length,
+        total: filteredTeachers.length + filteredStaff.length,
         active:
-          teachers.filter((row) => (row.status ?? 'active') === 'active').length +
-          staff.filter((row) => (row.status ?? 'active') === 'active').length,
+          filteredTeachers.filter((row) => (row.status ?? 'active') === 'active').length +
+          filteredStaff.filter((row) => (row.status ?? 'active') === 'active').length,
         departments: departments.length,
         pendingLeaves: leaves.filter((row) => row.status === 'pending').length,
         approvedLeaves: approvedLeaves.length,

@@ -86,7 +86,7 @@ const getInventoryValuation: ToolDefinition = {
         })),
       },
       scope: scopeInfo(ctx, undefined, { basis: 'Value = on-hand quantity × unit price recorded on each item.' }),
-      links: [{ label: 'Inventory Reports', href: '/reports/inventory' }],
+      links: [{ label: 'Inventory Reports', href: '/inventory/reports' }],
       notes: [SHARED_NOTE, 'Item prices have no currency recorded in the inventory module.'],
     };
   },

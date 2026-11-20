@@ -5,6 +5,7 @@ import type { ChartConfig } from '@/components/ui/chart';
 import { DashboardBarChart } from '@/components/dashboards/DashboardCharts';
 import { DataTable, ErrorBanner, PageHeader, SectionPanel, StatCard } from '@/components/ports';
 import { toast } from '@/components/ui/Toast';
+import { reportDataUrl, useReportFilters } from '@/components/reports/ReportWorkspace';
 
 type ReportData = {
   summary: {
@@ -27,6 +28,7 @@ const MONTHLY_CONFIG = {
 } satisfies ChartConfig;
 
 export default function AttendanceReportPage() {
+  const filters = useReportFilters();
   const [data, setData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +38,7 @@ export default function AttendanceReportPage() {
     (async () => {
       setLoading(true);
       try {
-        const res = await fetch('/api/reports/attendance');
+        const res = await fetch(reportDataUrl('/api/reports/attendance', filters));
         const body = await res.json();
         if (!res.ok) throw new Error(body.error || 'Failed to load attendance report');
         if (!cancelled) {
@@ -56,7 +58,7 @@ export default function AttendanceReportPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [filters]);
 
   const summary = data?.summary;
 

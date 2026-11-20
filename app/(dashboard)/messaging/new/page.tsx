@@ -11,6 +11,7 @@ import {
   InputField,
   ListPageShell,
   MultiSelectField,
+  PhoneText,
   RowActions,
   StatusChip,
   TextAreaField,
@@ -310,7 +311,7 @@ export default function NewConversationPage() {
         {
           key: 'phone',
           header: 'Phone',
-          render: (row) => row.phone || '—',
+          render: (row) => <PhoneText value={row.phone} link />,
         },
         {
           key: 'role',

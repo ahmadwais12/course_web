@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { randomUUID } from 'crypto';
+import { recordChange } from '@/lib/change-log';
 
 /**
  * Stock ledger taken from the Al-Hawa inventory demo (inventory-v2).
@@ -543,19 +544,28 @@ export function deleteTransaction(id: string) {
   });
 }
 
-export function inventoryReport() {
+export function inventoryReport(range: { from?: string | null; to?: string | null; stockStatus?: string | null } = {}) {
   return withDb((db) => {
     const items = db.items.map((item) => presentItem(db, item));
+    const reportItems = items.filter((item) => !range.stockStatus || item.qty_level === range.stockStatus);
     const now = new Date();
+    const endMonth = range.to ? new Date(`${range.to}T00:00:00`) : now;
+    const startMonth = range.from
+      ? new Date(`${range.from}T00:00:00`)
+      : new Date(endMonth.getFullYear(), endMonth.getMonth() - 5, 1);
     const monthKeys: string[] = [];
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    for (
+      let d = new Date(startMonth.getFullYear(), startMonth.getMonth(), 1);
+      d <= endMonth && monthKeys.length < 120;
+      d = new Date(d.getFullYear(), d.getMonth() + 1, 1)
+    ) {
       monthKeys.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
     }
+    const inRange = (date: string) => (!range.from || date >= range.from) && (!range.to || date <= range.to);
     const movements = monthKeys.map((key) => ({
       month: key,
-      in: db.transactions.filter((tx) => tx.transaction_type === 'in' && tx.transaction_date.startsWith(key)).length,
-      out: db.transactions.filter((tx) => tx.transaction_type === 'out' && tx.transaction_date.startsWith(key)).length,
+      in: db.transactions.filter((tx) => tx.transaction_type === 'in' && tx.transaction_date.startsWith(key) && inRange(tx.transaction_date)).length,
+      out: db.transactions.filter((tx) => tx.transaction_type === 'out' && tx.transaction_date.startsWith(key) && inRange(tx.transaction_date)).length,
     }));
     const cutoff = new Date(now);
     cutoff.setDate(cutoff.getDate() - 30);
@@ -567,19 +577,22 @@ export function inventoryReport() {
     }
     return {
       headlines: {
-        inventory_items: items.length,
-        total_on_hand: money(items.reduce((sum, item) => sum + item.quantity, 0)),
-        items_at_or_below_minimum: items.filter((item) => item.quantity <= item.min_quantity).length,
-        movements_last_30_days: db.transactions.filter((tx) => tx.transaction_date >= cutoffKey).length,
+        inventory_items: reportItems.length,
+        total_on_hand: money(reportItems.reduce((sum, item) => sum + item.quantity, 0)),
+        items_at_or_below_minimum: reportItems.filter((item) => item.quantity <= item.min_quantity).length,
+        movements_last_30_days: db.transactions.filter((tx) => tx.transaction_date >= cutoffKey && inRange(tx.transaction_date)).length,
+        movements_in_period: db.transactions.filter((tx) =>
+          range.from || range.to ? inRange(tx.transaction_date) : tx.transaction_date >= cutoffKey
+        ).length,
       },
       stock_health: {
-        comfortable: items.filter((item) => item.qty_level === 'comfortable').length,
-        at_minimum: items.filter((item) => item.qty_level === 'at').length,
-        below_minimum: items.filter((item) => item.qty_level === 'below').length,
+        comfortable: reportItems.filter((item) => item.qty_level === 'comfortable').length,
+        at_minimum: reportItems.filter((item) => item.qty_level === 'at').length,
+        below_minimum: reportItems.filter((item) => item.qty_level === 'below').length,
       },
       monthly_movements: movements,
       unit_mix: [...unitMix.entries()].map(([unit, count]) => ({ unit, count })).sort((a, b) => b.count - a.count),
-      low_items: items.filter((item) => item.quantity <= item.min_quantity),
+      low_items: reportItems.filter((item) => item.quantity <= item.min_quantity),
     };
   });
 }
@@ -616,6 +629,15 @@ export function saveSettings(input: Partial<InvSettings>) {
       low_stock_alerts:
         input.low_stock_alerts === undefined ? current.low_stock_alerts : Boolean(input.low_stock_alerts),
     };
+    const changed = (Object.keys(db.settings) as (keyof InvSettings)[]).filter(
+      (key) => String(current[key] ?? '') !== String(db.settings[key] ?? '')
+    );
+    recordChange({
+      entity: 'settings',
+      action: 'updated',
+      name: 'Inventory settings',
+      detail: changed.length ? `Changed: ${changed.join(', ')}` : 'Settings saved without changes',
+    });
     return { ...db.settings };
   });
 }

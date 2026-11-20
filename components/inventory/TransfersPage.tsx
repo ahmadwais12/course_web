@@ -13,6 +13,7 @@ import {
 } from '@/components/ports';
 import { toast } from '@/components/ui/Toast';
 import { useListQuery } from '@/hooks/useListQuery';
+import { timestampLabel } from '@/lib/display';
 
 type Transfer = {
   id: string;
@@ -138,7 +139,7 @@ export default function TransfersPage() {
           list.reset();
         }}
         columns={[
-          { key: 'created_at', header: 'Date', render: (row) => new Date(String(row.created_at)).toLocaleString() },
+          { key: 'created_at', header: 'Created at', render: (row) => timestampLabel(row.created_at) },
           { key: 'asset_name', header: 'Asset' },
           { key: 'holder', header: 'Holder', render: (row) => `${row.from_holder} → ${row.to_holder}` },
           { key: 'department', header: 'Department', render: (row) => `${row.from_department} → ${row.to_department}` },

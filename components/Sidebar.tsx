@@ -26,6 +26,19 @@ function activeSectionIds(pathname: string) {
   ).map((section) => section.id);
 }
 
+/** Nested group keys (`section/group`) that contain the current page. */
+function activeGroupIds(pathname: string) {
+  const ids: string[] = [];
+  for (const section of SIDEBAR_SECTIONS) {
+    for (const group of section.groups ?? []) {
+      if (group.items.some((item) => isNavItemActive(pathname, item))) {
+        ids.push(`${section.id}/${group.id}`);
+      }
+    }
+  }
+  return ids;
+}
+
 export default function Sidebar({ role }: { role?: string }) {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname() || '/dashboard';
@@ -33,11 +46,17 @@ export default function Sidebar({ role }: { role?: string }) {
   const { can, abilities, loading: permsLoading } = usePermissions();
 
   const [openSections, setOpenSections] = useState<Set<string>>(
-    () => new Set([...activeSectionIds(pathname), 'portals'])
+    () =>
+      new Set([
+        ...activeSectionIds(pathname),
+        ...activeGroupIds(pathname),
+        'portals',
+        'inventory',
+      ])
   );
 
   useEffect(() => {
-    const active = activeSectionIds(pathname);
+    const active = [...activeSectionIds(pathname), ...activeGroupIds(pathname)];
     setOpenSections((prev) =>
       active.every((id) => prev.has(id)) ? prev : new Set([...prev, ...active])
     );
@@ -88,6 +107,31 @@ export default function Sidebar({ role }: { role?: string }) {
           className={cn(active ? 'text-accent-foreground' : 'text-muted-foreground')}
         />
         {item.label[lang]}
+      </Link>
+    );
+  };
+
+  const renderNavLink = (item: SidebarItem, prefetch: boolean) => {
+    const isActive = isNavItemActive(pathname, item);
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        prefetch={prefetch}
+        scroll={false}
+        onClick={() => setIsOpen(false)}
+        className={cn(
+          'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
+          isActive
+            ? 'bg-accent text-accent-foreground shadow-sm ring-1 ring-primary/40'
+            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+        )}
+      >
+        <item.icon
+          size={18}
+          className={cn('shrink-0', isActive ? 'text-accent-foreground' : 'text-muted-foreground')}
+        />
+        <span className="truncate">{item.label[lang]}</span>
       </Link>
     );
   };
@@ -240,35 +284,63 @@ export default function Sidebar({ role }: { role?: string }) {
                     )}
                   >
                     <div className="min-h-0 overflow-hidden">
-                      <div className="mt-1 ms-2 space-y-1 border-s border-border ps-2">
-                        {items.map((item) => {
-                          const isActive = isNavItemActive(pathname, item);
-                          return (
-                            <Link
-                              key={item.href}
-                              href={item.href}
-                              prefetch={sectionOpen}
-                              scroll={false}
-                              onClick={() => setIsOpen(false)}
-                              className={cn(
-                                'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
-                                isActive
-                                  ? 'bg-accent text-accent-foreground shadow-sm ring-1 ring-primary/40'
-                                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                              )}
-                            >
-                              <item.icon
-                                size={18}
-                                className={cn(
-                                  'shrink-0',
-                                  isActive ? 'text-accent-foreground' : 'text-muted-foreground'
-                                )}
-                              />
-                              <span className="truncate">{item.label[lang]}</span>
-                            </Link>
-                          );
-                        })}
-                      </div>
+                      {section.groups ? (
+                        <div className="mt-1 ms-2 space-y-1 border-s border-border ps-2">
+                          {section.groups.map((group) => {
+                            const groupItems = group.items.filter(canSeeItem);
+                            if (groupItems.length === 0) return null;
+                            const groupKey = `${section.id}/${group.id}`;
+                            const groupOpen = openSections.has(groupKey);
+                            const groupActive = groupItems.some((item) =>
+                              isNavItemActive(pathname, item)
+                            );
+                            const GroupIcon = group.icon;
+                            return (
+                              <div key={group.id} className="space-y-1">
+                                <button
+                                  type="button"
+                                  onClick={() => toggleSection(groupKey)}
+                                  aria-expanded={groupOpen}
+                                  className={cn(
+                                    'w-full flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-semibold transition-all',
+                                    groupActive
+                                      ? 'bg-muted/70 text-foreground'
+                                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                                  )}
+                                >
+                                  {GroupIcon ? <GroupIcon size={16} className="shrink-0" /> : null}
+                                  <span className="flex-1 text-start">{group.label[lang]}</span>
+                                  <ChevronDown
+                                    size={14}
+                                    className={cn(
+                                      'shrink-0 transition-transform duration-200',
+                                      groupOpen && 'rotate-180'
+                                    )}
+                                  />
+                                </button>
+
+                                <div
+                                  inert={!groupOpen}
+                                  className={cn(
+                                    'grid transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none',
+                                    groupOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+                                  )}
+                                >
+                                  <div className="min-h-0 overflow-hidden">
+                                    <div className="mt-1 ms-2 space-y-1 border-s border-border ps-2">
+                                      {groupItems.map((item) => renderNavLink(item, groupOpen))}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="mt-1 ms-2 space-y-1 border-s border-border ps-2">
+                          {items.map((item) => renderNavLink(item, sectionOpen))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

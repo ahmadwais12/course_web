@@ -26,7 +26,9 @@ import {
   Coins,
   Contact,
   CreditCard,
+  Database,
   DoorOpen,
+  Download,
   FileInput,
   FileSignature,
   FileText,
@@ -64,7 +66,9 @@ import {
   PhoneCall,
   PieChart,
   Plug,
+  Plus,
   Presentation,
+  QrCode,
   Receipt,
   Ruler,
   School,
@@ -90,6 +94,7 @@ import {
   Users,
   Wallet,
   Warehouse,
+  Wrench,
   type LucideIcon,
 } from 'lucide-react';
 import type { Language } from '@/lib/i18n';
@@ -109,13 +114,23 @@ export type SidebarItem = {
   requires?: 'ai' | 'aiOrgAdmin' | 'aiPlatformAdmin';
 };
 
+export type SidebarGroup = {
+  id: string;
+  icon?: LucideIcon;
+  label: NavLabel;
+  items: SidebarItem[];
+};
+
 export type SidebarSection = {
   id: string;
   icon: LucideIcon;
   label: NavLabel;
   /** Ability required to see the section (see `usePermissions().can`). */
   permission?: string;
+  /** All items of the section, flattened — used by breadcrumbs, search, and route helpers. */
   items: SidebarItem[];
+  /** Optional nested dropdowns; when set the sidebar renders these instead of `items` directly. */
+  groups?: SidebarGroup[];
 };
 
 export const DASHBOARD_NAV_ITEM: SidebarItem = {
@@ -165,10 +180,400 @@ const hrReports: SidebarItem = {
 };
 
 const inventoryReports: SidebarItem = {
-  href: '/reports/inventory',
+  href: '/inventory/reports',
   icon: BarChart3,
   label: { en: 'Inventory Reports', dr: 'گزارشات انبار', ps: 'د ګدام راپورونه' },
 };
+
+const inventoryGroups: SidebarGroup[] = [
+  {
+    id: 'assets',
+    icon: Archive,
+    label: { en: 'Asset Management', dr: 'مدیریت دارایی‌ها', ps: 'د شتمنیو مدیریت' },
+    items: [
+      {
+        href: '/inventory/assets',
+        icon: Archive,
+        label: { en: 'Assets', dr: 'دارایی‌ها', ps: 'شتمنۍ' },
+      },
+      {
+        href: '/inventory/handovers',
+        icon: ClipboardCheck,
+        label: { en: 'Handover Management', dr: 'مدیریت تحویلی', ps: 'د سپارلو مدیریت' },
+        description: 'Project and employee custody with approvals, receipts, and returns.',
+      },
+      {
+        href: '/inventory/assets/trash',
+        icon: Trash2,
+        label: { en: 'Asset Trash', dr: 'زباله دارایی', ps: 'د شتمنۍ کثافات' },
+      },
+      {
+        href: '/inventory/holders',
+        icon: Contact,
+        label: { en: 'Asset Holders', dr: 'نگهدارنده‌ها', ps: 'د شتمنۍ ساتونکي' },
+      },
+      {
+        href: '/inventory/properties',
+        icon: SlidersHorizontal,
+        label: { en: 'Asset Properties', dr: 'ویژگی‌های دارایی', ps: 'د شتمنۍ ځانګړتیاوې' },
+      },
+      {
+        href: '/inventory/projects',
+        icon: FolderKanban,
+        label: { en: 'Projects', dr: 'پروژه‌ها', ps: 'پروژې' },
+      },
+    ],
+  },
+  {
+    id: 'asset-verification',
+    icon: BadgeCheck,
+    label: { en: 'Asset Verification', dr: 'تأیید دارایی‌ها', ps: 'د شتمنیو تصدیق' },
+    items: [
+      {
+        href: '/inventory/verification',
+        icon: LayoutDashboard,
+        label: { en: 'Verification Dashboard', dr: 'داشبورد تأیید', ps: 'د تصدیق ډشبورډ' },
+        exact: true,
+      },
+      {
+        href: '/inventory/verification/campaigns',
+        icon: ClipboardList,
+        label: { en: 'Verification Campaigns', dr: 'کمپاین‌های تأیید', ps: 'د تصدیق کمپاینونه' },
+        exact: true,
+      },
+      {
+        href: '/inventory/verification/campaigns/new',
+        icon: Plus,
+        label: { en: 'Create Verification Campaign', dr: 'ایجاد کمپاین تأیید', ps: 'د تصدیق کمپاین جوړول' },
+      },
+      {
+        href: '/inventory/verification/sessions',
+        icon: ClipboardCheck,
+        label: { en: 'Verification Sessions', dr: 'نشست‌های تأیید', ps: 'د تصدیق ناستې' },
+      },
+      {
+        href: '/inventory/verification/workspace',
+        icon: QrCode,
+        label: { en: 'Physical Verification Workspace', dr: 'ورک‌اسپیس تأیید فزیکی', ps: 'د فزیکي تصدیق کاري ځای' },
+      },
+      {
+        href: '/inventory/verification/discrepancies',
+        icon: ScrollText,
+        label: { en: 'Discrepancies', dr: 'مغایرت‌ها', ps: 'توپیرونه' },
+      },
+      {
+        href: '/inventory/verification/reports',
+        icon: BarChart3,
+        label: { en: 'Verification Reports', dr: 'گزارش‌های تأیید', ps: 'د تصدیق راپورونه' },
+      },
+      {
+        href: '/inventory/verification/settings',
+        icon: Cog,
+        label: { en: 'Verification Settings', dr: 'تنظیمات تأیید', ps: 'د تصدیق تنظیمات' },
+      },
+    ],
+  },
+  {
+    id: 'warehouses',
+    icon: Warehouse,
+    label: { en: 'Warehouse Management', dr: 'مدیریت گدام', ps: 'د ګدام مدیریت' },
+    items: [
+      {
+        href: '/inventory/warehouses',
+        icon: Warehouse,
+        label: { en: 'Warehouses', dr: 'گدام‌ها', ps: 'ګدامونه' },
+      },
+      {
+        href: '/inventory/stock-in',
+        icon: PackagePlus,
+        label: { en: 'Stock In', dr: 'ورود اجناس', ps: 'د توکو راتګ' },
+      },
+      {
+        href: '/inventory/stock-out',
+        icon: PackageMinus,
+        label: { en: 'Stock Out', dr: 'خروج اجناس', ps: 'د توکو وتل' },
+      },
+      {
+        href: '/inventory/transfers',
+        icon: ArrowLeftRight,
+        label: { en: 'Transfers', dr: 'انتقالات', ps: 'لېږدونه' },
+      },
+      {
+        href: '/inventory/adjustments',
+        icon: SlidersHorizontal,
+        label: { en: 'Adjustments', dr: 'تعدیلات', ps: 'سمونې' },
+        description: 'Correct stock quantities after counts, damage, or loss.',
+      },
+    ],
+  },
+  {
+    id: 'procurement',
+    icon: ShoppingCart,
+    label: { en: 'Procurement', dr: 'تدارکات', ps: 'تدارکات' },
+    items: [
+      {
+        href: '/inventory/suppliers',
+        icon: Truck,
+        label: { en: 'Suppliers', dr: 'تأمین‌کنندگان', ps: 'عرضه کوونکي' },
+        description: 'Manage suppliers and their contact details.',
+      },
+      {
+        href: '/inventory/purchases',
+        icon: ShoppingCart,
+        label: { en: 'Purchase', dr: 'خریداری', ps: 'پېرود' },
+        description: 'Create purchase orders and receive goods from suppliers.',
+      },
+      {
+        href: '/inventory/transactions',
+        icon: Activity,
+        label: { en: 'Transactions', dr: 'تراکنش‌ها', ps: 'کارونې' },
+      },
+    ],
+  },
+  {
+    id: 'stock',
+    icon: Boxes,
+    label: { en: 'Inventory Management', dr: 'مدیریت انبار', ps: 'د توکو مدیریت' },
+    items: [
+      {
+        href: '/inventory/overview',
+        icon: Gauge,
+        label: { en: 'Inventory', dr: 'انبار', ps: 'ګدام' },
+      },
+      {
+        href: '/inventory/items',
+        icon: Package,
+        label: { en: 'Inventory Items', dr: 'اقلام انبار', ps: 'د ګدام توکي' },
+      },
+      {
+        href: '/inventory/categories',
+        icon: Tags,
+        label: { en: 'Categories', dr: 'دسته‌بندی‌ها', ps: 'کټګورۍ' },
+      },
+      {
+        href: '/inventory/units',
+        icon: Ruler,
+        label: { en: 'Units', dr: 'واحدها', ps: 'واحدونه' },
+      },
+      {
+        href: '/inventory/settings',
+        icon: Settings,
+        label: { en: 'Inventory Settings', dr: 'تنظیمات انبار', ps: 'د ګدام تنظیمات' },
+      },
+      {
+        href: '/inventory/import',
+        icon: FileInput,
+        label: { en: 'Upload Excel', dr: 'آپلود اکسل', ps: 'اکسل پورته کول' },
+        description: 'Import items, assets, or suppliers from a workbook.',
+      },
+    ],
+  },
+  {
+    id: 'lifecycle',
+    icon: History,
+    label: { en: 'Asset Lifecycle', dr: 'چرخه عمر دارایی', ps: 'د شتمنۍ ژوند دوران' },
+    items: [
+      {
+        href: '/inventory/modified-assets',
+        icon: History,
+        label: { en: 'Modified Assets', dr: 'دارایی‌های تغییریافته', ps: 'بدل شوې شتمنۍ' },
+      },
+      {
+        href: '/inventory/assignments',
+        icon: UserCheck,
+        label: { en: 'Assignments', dr: 'تخصیص‌ها', ps: 'ټاکل' },
+      },
+      {
+        href: '/inventory/transfer-requests',
+        icon: ArrowLeftRight,
+        label: { en: 'Transfer Requests', dr: 'درخواست‌های انتقال', ps: 'د لېږد غوښتنې' },
+      },
+      {
+        href: '/inventory/handover',
+        icon: FileSignature,
+        label: { en: 'Handovers', dr: 'تحویل‌ها', ps: 'سپارنې' },
+      },
+      {
+        href: '/inventory/exit-clearance',
+        icon: DoorOpen,
+        label: { en: 'Exit Clearance', dr: 'تصفیه خروج', ps: 'د وتلو تصفیه' },
+      },
+      {
+        href: '/inventory/damaged-lost',
+        icon: TrendingDown,
+        label: { en: 'Damaged & Lost', dr: 'خراب و مفقود', ps: 'خراب او ورک' },
+      },
+      {
+        href: '/inventory/disposal',
+        icon: Trash2,
+        label: { en: 'Disposal', dr: 'امحا', ps: 'له منځه وړل' },
+      },
+      {
+        href: '/inventory/project-closure',
+        icon: FolderKanban,
+        label: { en: 'Project Closure', dr: 'اختتام پروژه', ps: 'د پروژې پای' },
+      },
+      {
+        href: '/inventory/depreciation',
+        icon: TrendingDown,
+        label: { en: 'Depreciation', dr: 'استهلاک', ps: 'استهلاک' },
+      },
+      {
+        href: '/inventory/repairs',
+        icon: Wrench,
+        label: { en: 'Repairs & Service', dr: 'تعمیر و سرویس', ps: 'ترمیم او خدمت' },
+      },
+      {
+        href: '/inventory/service-schedules',
+        icon: CalendarClock,
+        label: { en: 'Service Schedules', dr: 'برنامه سرویس', ps: 'د خدمت مهالوېش' },
+      },
+      {
+        href: '/inventory/warranties',
+        icon: Shield,
+        label: { en: 'Warranties', dr: 'گارانتی‌ها', ps: 'تضمینونه' },
+      },
+    ],
+  },
+  {
+    id: 'fleet',
+    icon: Truck,
+    label: { en: 'Fleet', dr: 'موترها', ps: 'موټرونه' },
+    items: [
+      {
+        href: '/inventory/vehicles',
+        icon: Truck,
+        label: { en: 'Vehicles', dr: 'موترها', ps: 'موټرونه' },
+      },
+      {
+        href: '/inventory/vehicle-logs',
+        icon: ClipboardList,
+        label: { en: 'Vehicle Logs', dr: 'سوابق موتر', ps: 'د موټر ثبتونه' },
+      },
+      {
+        href: '/inventory/fuel-logs',
+        icon: TrendingUp,
+        label: { en: 'Fuel Logs', dr: 'سوابق تیل', ps: 'د تېلو ثبتونه' },
+      },
+      {
+        href: '/inventory/fleet-reports',
+        icon: BarChart3,
+        label: { en: 'Fleet Reports', dr: 'گزارش موترها', ps: 'د موټرو راپورونه' },
+        description: 'Distance, fuel consumption, and fleet running costs.',
+      },
+    ],
+  },
+  {
+    id: 'stock-control',
+    icon: ClipboardCheck,
+    label: { en: 'Stock Control', dr: 'کنترل موجودی', ps: 'د توکو کنټرول' },
+    items: [
+      {
+        href: '/inventory/grn',
+        icon: ClipboardCheck,
+        label: { en: 'Goods Received (GRN)', dr: 'رسید اجناس (GRN)', ps: 'د توکو رسید (GRN)' },
+      },
+      {
+        href: '/inventory/stock-balances',
+        icon: Boxes,
+        label: { en: 'Stock Balances', dr: 'موجودی انبار', ps: 'د توکو موجودي' },
+      },
+      {
+        href: '/inventory/scans',
+        icon: QrCode,
+        label: { en: 'Scan & Field Work', dr: 'اسکن و کار میدانی', ps: 'سکن او ساحوي کار' },
+      },
+      {
+        href: '/inventory/qr-printing',
+        icon: QrCode,
+        label: { en: 'QR Tag Printing', dr: 'چاپ تګ QR', ps: 'د QR ټاګ چاپ' },
+      },
+      {
+        href: '/inventory/monthly-reports',
+        icon: CalendarRange,
+        label: { en: 'Monthly Reports', dr: 'گزارش‌های ماهانه', ps: 'میاشتني راپورونه' },
+      },
+    ],
+  },
+  {
+    id: 'administration',
+    icon: Database,
+    label: { en: 'Administration', dr: 'اداریه', ps: 'ادارې' },
+    items: [
+      {
+        href: '/inventory/ims-holders',
+        icon: Users,
+        label: { en: 'IMS Asset Holders', dr: 'نگهدارنده‌های IMS', ps: 'د IMS ساتونکي' },
+      },
+      {
+        href: '/inventory/duty-stations',
+        icon: Building2,
+        label: { en: 'Duty Stations', dr: 'ایستگاه‌های وظیفه', ps: 'د دندې مرکزونه' },
+      },
+      {
+        href: '/inventory/documents',
+        icon: FileText,
+        label: { en: 'Document Archive', dr: 'آرشیف اسناد', ps: 'د اسنادو آرشیف' },
+      },
+      {
+        href: '/inventory/modified-projects',
+        icon: FolderKanban,
+        label: { en: 'Modified Projects', dr: 'پروژه‌های تغییریافته', ps: 'بدل شوې پروژې' },
+      },
+      {
+        href: '/inventory/modified-holders',
+        icon: Contact,
+        label: { en: 'Modified Holders', dr: 'نگهدارنده‌های تغییریافته', ps: 'بدل شوي ساتونکي' },
+      },
+      {
+        href: '/inventory/modified-settings',
+        icon: Settings,
+        label: { en: 'Modified Settings', dr: 'تنظیمات تغییریافته', ps: 'بدل شوي تنظیمات' },
+      },
+      {
+        href: '/inventory/security',
+        icon: Shield,
+        label: { en: 'Two-Factor Security', dr: 'امنیت دو مرحله‌ای', ps: 'دوه‌پړاوه امنیت' },
+      },
+      {
+        href: '/inventory/backups',
+        icon: Database,
+        label: { en: 'Backups', dr: 'پشتیبان‌گیری', ps: 'بیک اپ' },
+      },
+      {
+        href: '/inventory/release-notes',
+        icon: ScrollText,
+        label: { en: 'Release Notes', dr: 'یادداشت‌های نسخه', ps: 'د خپرېدو یادښتونه' },
+      },
+    ],
+  },
+  {
+    id: 'dashboard',
+    icon: LayoutDashboard,
+    label: { en: 'Dashboard', dr: 'داشبورد', ps: 'ډشبورډ' },
+    items: [
+      {
+        href: '/inventory',
+        icon: Gauge,
+        label: { en: 'Inventory Dashboard', dr: 'داشبورد انبار', ps: 'د ګدام داشبورډ' },
+        exact: true,
+      },
+    ],
+  },
+  {
+    id: 'reports',
+    icon: BarChart3,
+    label: { en: 'Reports', dr: 'گزارش‌ها', ps: 'راپورونه' },
+    items: [
+      {
+        href: '/inventory/reports',
+        icon: Download,
+        label: { en: 'Inventory Reports', dr: 'گزارش‌های انبار', ps: 'د ګدام راپورونه' },
+        description: 'Stock summaries, verification, handovers, movements, and downloadable reports.',
+      },
+    ],
+  },
+];
 
 export const SIDEBAR_SECTIONS: SidebarSection[] = [
   {
@@ -181,6 +586,11 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
         icon: Building2,
         label: { en: 'Business / Institute', dr: 'کسب‌وکار / مؤسسه', ps: 'سوداګري / مؤسسه' },
         exact: true,
+      },
+      {
+        href: '/business/create',
+        icon: Plus,
+        label: { en: 'Create Business', dr: 'ایجاد کسب‌وکار', ps: 'سوداګري جوړول' },
       },
       {
         href: '/business/branches',
@@ -384,6 +794,12 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
         description: 'Record and categorize institute expenses.',
       },
       {
+        href: '/finance/assets-inventory',
+        icon: Boxes,
+        label: { en: 'Assets & Inventory', dr: 'دارایی‌ها و انبار', ps: 'شتمنۍ او ګدام' },
+        description: 'Fixed-asset valuation, depreciation, stock value, and purchase commitments.',
+      },
+      {
         href: '/finance/income',
         icon: TrendingUp,
         label: { en: 'Income', dr: 'عواید', ps: 'عواید' },
@@ -407,6 +823,11 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
         label: { en: 'Chart of Accounts', dr: 'جدول حساب‌ها', ps: 'د حسابونو چارټ' },
         description: 'Organize accounts into assets, liabilities, equity, income, and expenses.',
       },
+      { href: '/finance/general-ledger', icon: BookMarked, label: { en: 'General Ledger', dr: 'دفتر کل', ps: 'عمومي لیجر' }, description: 'Trace posted debits and credits to their source vouchers.' },
+      { href: '/finance/opening-balances', icon: Banknote, label: { en: 'Opening Balances', dr: 'مانده‌های افتتاحیه', ps: 'د پیل بیلانسونه' }, description: 'Review opening entries against the approved trial balance.' },
+      { href: '/finance/fiscal-years', icon: CalendarRange, label: { en: 'Fiscal Years', dr: 'سال‌های مالی', ps: 'مالي کلونه' }, description: 'Set accounting year dates and reporting periods.' },
+      { href: '/finance/fiscal-year-closing', icon: FileSignature, label: { en: 'Fiscal Year Closing', dr: 'بستن سال مالی', ps: 'د مالي کال بندول' }, description: 'Review ledger readiness for year-end closing.' },
+      { href: '/finance/reports', icon: BarChart3, label: { en: 'Accounting Reports', dr: 'گزارش‌های حسابداری', ps: 'د محاسبې راپورونه' }, description: 'Review trial balance, income and expense, and balance sheet.' },
       { ...financeReports, label: { en: 'Financial Reports', dr: 'گزارشات مالی', ps: 'مالي راپورونه' } },
     ],
   },
@@ -470,109 +891,9 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
   {
     id: 'inventory',
     icon: Boxes,
-    label: { en: 'Inventory', dr: 'انبار', ps: 'ګدام' },
-    items: [
-      {
-        href: '/inventory/overview',
-        icon: Gauge,
-        label: { en: 'Inventory', dr: 'انبار', ps: 'ګدام' },
-      },
-      {
-        href: '/inventory',
-        icon: LayoutDashboard,
-        label: { en: 'Inventory Dashboard', dr: 'داشبورد انبار', ps: 'د ګدام داشبورډ' },
-        exact: true,
-      },
-      {
-        href: '/inventory/transactions',
-        icon: Activity,
-        label: { en: 'Transactions', dr: 'تراکنش‌ها', ps: 'کارونې' },
-      },
-      {
-        href: '/inventory/settings',
-        icon: Settings,
-        label: { en: 'Inventory Settings', dr: 'تنظیمات انبار', ps: 'د ګدام تنظیمات' },
-      },
-      {
-        href: '/inventory/assets',
-        icon: Archive,
-        label: { en: 'Assets', dr: 'دارایی‌ها', ps: 'شتمنۍ' },
-      },
-      {
-        href: '/inventory/projects',
-        icon: FolderKanban,
-        label: { en: 'Projects', dr: 'پروژه‌ها', ps: 'پروژې' },
-      },
-      {
-        href: '/inventory/holders',
-        icon: Contact,
-        label: { en: 'Asset Holders', dr: 'نگهدارنده‌ها', ps: 'د شتمنۍ ساتونکي' },
-      },
-      {
-        href: '/inventory/properties',
-        icon: SlidersHorizontal,
-        label: { en: 'Asset Properties', dr: 'ویژگی‌های دارایی', ps: 'د شتمنۍ ځانګړتیاوې' },
-      },
-      {
-        href: '/inventory/assets/trash',
-        icon: Trash2,
-        label: { en: 'Asset Trash', dr: 'زباله دارایی', ps: 'د شتمنۍ کثافات' },
-      },
-      {
-        href: '/inventory/items',
-        icon: Package,
-        label: { en: 'Inventory Items', dr: 'اقلام انبار', ps: 'د ګدام توکي' },
-      },
-      {
-        href: '/inventory/categories',
-        icon: Tags,
-        label: { en: 'Categories', dr: 'دسته‌بندی‌ها', ps: 'کټګورۍ' },
-      },
-      {
-        href: '/inventory/units',
-        icon: Ruler,
-        label: { en: 'Units', dr: 'واحدها', ps: 'واحدونه' },
-      },
-      {
-        href: '/inventory/warehouses',
-        icon: Warehouse,
-        label: { en: 'Warehouses', dr: 'گدام‌ها', ps: 'ګدامونه' },
-      },
-      {
-        href: '/inventory/suppliers',
-        icon: Truck,
-        label: { en: 'Suppliers', dr: 'تأمین‌کنندگان', ps: 'عرضه کوونکي' },
-        description: 'Manage suppliers and their contact details.',
-      },
-      {
-        href: '/inventory/purchases',
-        icon: ShoppingCart,
-        label: { en: 'Purchase', dr: 'خریداری', ps: 'پېرود' },
-        description: 'Create purchase orders and receive goods from suppliers.',
-      },
-      {
-        href: '/inventory/stock-in',
-        icon: PackagePlus,
-        label: { en: 'Stock In', dr: 'ورود اجناس', ps: 'د توکو راتګ' },
-      },
-      {
-        href: '/inventory/stock-out',
-        icon: PackageMinus,
-        label: { en: 'Stock Out', dr: 'خروج اجناس', ps: 'د توکو وتل' },
-      },
-      {
-        href: '/inventory/transfers',
-        icon: ArrowLeftRight,
-        label: { en: 'Transfers', dr: 'انتقالات', ps: 'لېږدونه' },
-      },
-      {
-        href: '/inventory/adjustments',
-        icon: SlidersHorizontal,
-        label: { en: 'Adjustments', dr: 'تعدیلات', ps: 'سمونې' },
-        description: 'Correct stock quantities after counts, damage, or loss.',
-      },
-      inventoryReports,
-    ],
+    label: { en: 'Inventory Management', dr: 'مدیریت انبار', ps: 'د ګدام مدیریت' },
+    items: inventoryGroups.flatMap((group) => group.items),
+    groups: inventoryGroups,
   },
   {
     id: 'communication',

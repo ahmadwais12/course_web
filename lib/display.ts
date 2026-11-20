@@ -22,6 +22,19 @@ export function dateLabel(value: string | null | undefined) {
   return `${MONTHS[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
 }
 
+export function timestampLabel(value: string | null | undefined) {
+  if (!value) return '—';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
 export function monthKeyLabel(key: string | null | undefined) {
   if (!key) return '—';
   const [year, month] = key.split('-');

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ErrorBanner, ListPageShell, StatCard, StatusChip, statusToneFromValue } from '@/components/ports';
+import { Dropdown, ErrorBanner, FormDialog, FormDialogFooter, InputField, ListPageShell, PortButton, StatCard, StatusChip, statusToneFromValue } from '@/components/ports';
 import { toast } from '@/components/ui/Toast';
 import { useListQuery } from '@/hooks/useListQuery';
 import { dateLabel, money } from '@/lib/display';
@@ -39,6 +39,26 @@ export default function VouchersPage() {
   const [error, setError] = useState<string | null>(null);
   const [type, setType] = useState('');
   const [status, setStatus] = useState('');
+  const [createOpen, setCreateOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({ type: 'journal', date: new Date().toISOString().slice(0, 10), description: '', debitAccount: '', creditAccount: '', amount: '' });
+  const [accounts, setAccounts] = useState<{ value: string; label: string }[]>([]);
+
+  const loadVouchers = useCallback(async () => {
+    const res = await fetch('/api/finance/vouchers'); const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to load vouchers');
+    setRows(Array.isArray(data.rows) ? data.rows : []); setSummary(data.summary ?? null);
+  }, []);
+
+  const openCreate = async () => {
+    try { const res = await fetch('/api/finance/chart-of-accounts'); const data = await res.json(); if (!res.ok) throw new Error(data.error || 'Could not load accounts');
+      const options = (data.rows ?? []).filter((row: {isActive:boolean}) => row.isActive).map((row: {id:string;code:string|null;name:string})=>({value:row.id,label:`${row.code ? `${row.code} · ` : ''}${row.name}`}));
+      setAccounts(options); setForm({type:'journal',date:new Date().toISOString().slice(0,10),description:'',debitAccount:options[0]?.value??'',creditAccount:options[1]?.value??'',amount:''}); setCreateOpen(true);
+    } catch(e) { toast.error(e instanceof Error ? e.message : 'Could not load accounts'); }
+  };
+  const saveVoucher = async (event: React.FormEvent) => { event.preventDefault(); const amount=Number(form.amount); if(!form.description.trim()||!form.date||!form.debitAccount||!form.creditAccount||form.debitAccount===form.creditAccount||!Number.isFinite(amount)||amount<=0){toast.error('Complete the voucher fields and choose two different accounts.');return;}
+    setSaving(true); try { const res=await fetch('/api/finance/journals',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({date:form.date,description:form.description,referenceType:`voucher:${form.type}`,lines:[{accountId:form.debitAccount,debit:amount,credit:0},{accountId:form.creditAccount,debit:0,credit:amount}]})});const data=await res.json();if(!res.ok)throw new Error(data.error||'Could not post voucher');toast.success('Voucher posted');setCreateOpen(false);await loadVouchers();}catch(e){toast.error(e instanceof Error?e.message:'Could not post voucher');}finally{setSaving(false);}
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -91,6 +111,7 @@ export default function VouchersPage() {
     <ListPageShell
       title="Vouchers"
       description="Receipt, payment, and journal vouchers in one register"
+      primaryAction={{ label: 'New Voucher', onClick: () => void openCreate() }}
       search={list.search}
       onSearchChange={list.setSearch}
       searchPlaceholder="Search voucher number, party, or description…"
@@ -200,6 +221,9 @@ export default function VouchersPage() {
         />
       </div>
       {error && <ErrorBanner message={error} />}
+      <FormDialog open={createOpen} onClose={() => setCreateOpen(false)} title="New balanced voucher" footer={<FormDialogFooter onCancel={() => setCreateOpen(false)} submitLabel="Post voucher" submitting={saving} formId="voucher-form" />}>
+        <form id="voucher-form" onSubmit={saveVoucher} className="space-y-4"><div className="grid gap-3 sm:grid-cols-2"><Dropdown label="Voucher type" value={form.type} onChange={type=>setForm({...form,type})} options={[{value:'receipt',label:'Receipt'},{value:'payment',label:'Payment'},{value:'journal',label:'Journal'}]}/><InputField label="Posting date" type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})}/></div><InputField label="Description" required value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/><div className="grid gap-3 sm:grid-cols-2"><Dropdown label="Debit account" value={form.debitAccount} onChange={debitAccount=>setForm({...form,debitAccount})} options={accounts}/><Dropdown label="Credit account" value={form.creditAccount} onChange={creditAccount=>setForm({...form,creditAccount})} options={accounts}/></div><InputField label="Amount" type="number" required value={form.amount} onChange={e=>setForm({...form,amount:e.target.value})} placeholder="0.00"/></form>
+      </FormDialog>
     </ListPageShell>
   );
 }

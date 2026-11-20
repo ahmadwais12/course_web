@@ -9,6 +9,8 @@ import {
   FormDialog,
   FormDialogFooter,
   InputField,
+  PriceField,
+  PriceText,
   ListPageShell,
   RowActions,
   StatCard,
@@ -18,7 +20,8 @@ import {
 } from '@/components/ports';
 import { toast } from '@/components/ui/Toast';
 import { useListQuery } from '@/hooks/useListQuery';
-import { compactMoney, dateLabel, money } from '@/lib/display';
+import { dateLabel } from '@/lib/display';
+import { parseAmount } from '@/lib/format';
 
 type PurchaseRow = {
   id: string;
@@ -197,8 +200,8 @@ export default function PurchasesPage() {
       setFormError('Quantity must be greater than zero');
       return;
     }
-    const unitPrice = Number(form.unitPrice);
-    if (!Number.isFinite(unitPrice) || unitPrice < 0) {
+    const unitPrice = parseAmount(form.unitPrice);
+    if (unitPrice == null || unitPrice < 0) {
       setFormError('Unit price must be zero or more');
       return;
     }
@@ -338,12 +341,12 @@ export default function PurchasesPage() {
           {
             key: 'unitPrice',
             header: 'Unit price',
-            render: (row) => money(row.unit_price),
+            render: (row) => <PriceText value={row.unit_price} />,
           },
           {
             key: 'total',
             header: 'Total',
-            render: (row) => money(row.total_price),
+            render: (row) => <PriceText value={row.total_price} />,
           },
           {
             key: 'status',
@@ -417,7 +420,7 @@ export default function PurchasesPage() {
           <StatCard label="Purchase orders" value={stats.total} accent="blue" />
           <StatCard label="Ordered" value={stats.ordered} accent="gold" />
           <StatCard label="Received" value={stats.received} accent="green" />
-          <StatCard label="Received value" value={compactMoney(stats.spend)} accent="purple" />
+          <StatCard label="Received value" value={<PriceText value={stats.spend} />} accent="purple" />
         </div>
         {error && <ErrorBanner message={error} />}
       </ListPageShell>
@@ -465,13 +468,10 @@ export default function PurchasesPage() {
               value={form.quantity}
               onChange={(e) => setForm((prev) => ({ ...prev, quantity: e.target.value }))}
             />
-            <InputField
+            <PriceField
               label="Unit price"
-              type="number"
-              min="0"
-              step="any"
               value={form.unitPrice}
-              onChange={(e) => setForm((prev) => ({ ...prev, unitPrice: e.target.value }))}
+              onChange={(unitPrice) => setForm((prev) => ({ ...prev, unitPrice }))}
             />
             <Dropdown
               label="Status"

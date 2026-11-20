@@ -41,6 +41,7 @@ export default function AccountsPage() {
   const router = useRouter();
   const [rows, setRows] = useState<AccountRow[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
+  const [valuation, setValuation] = useState<{ assetCurrency: string; assetBookValue: number; stockCurrency: string; stockValue: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [type, setType] = useState('');
@@ -51,12 +52,26 @@ export default function AccountsPage() {
     (async () => {
       setLoading(true);
       try {
-        const res = await fetch('/api/finance/accounts');
+        const [res, valuationRes] = await Promise.all([
+          fetch('/api/finance/accounts'),
+          fetch('/api/finance/assets-inventory', { cache: 'no-store' }),
+        ]);
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Failed to load accounts');
+        const linked = valuationRes.ok ? await valuationRes.json() : null;
         if (!cancelled) {
           setRows(Array.isArray(data.rows) ? data.rows : []);
           setSummary(data.summary ?? null);
+          setValuation(
+            linked
+              ? {
+                  assetCurrency: linked.primaryCurrency ?? 'AFN',
+                  assetBookValue: Number(linked.assets?.bookValue ?? 0),
+                  stockCurrency: linked.currency ?? 'AFN',
+                  stockValue: Number(linked.stock?.value ?? 0),
+                }
+              : null
+          );
           setError(null);
         }
       } catch (e) {
@@ -99,9 +114,14 @@ export default function AccountsPage() {
       title="Accounts"
       description="Cash, bank, and ledger accounts with the current cash position"
       secondaryActions={
-        <PortButton variant="secondary" onClick={() => router.push('/finance/chart-of-accounts')}>
-          Manage chart of accounts
-        </PortButton>
+        <>
+          <PortButton variant="secondary" onClick={() => router.push('/finance/assets-inventory')}>
+            Assets & inventory valuation
+          </PortButton>
+          <PortButton variant="secondary" onClick={() => router.push('/finance/chart-of-accounts')}>
+            Manage chart of accounts
+          </PortButton>
+        </>
       }
       search={list.search}
       onSearchChange={list.setSearch}
@@ -190,7 +210,7 @@ export default function AccountsPage() {
       onPerPageChange={list.setPerPage}
       emptyMessage="No accounts defined yet. Add accounts from the chart of accounts."
     >
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
         <StatCard
           label="Net cash position"
           value={money(summary?.netPosition ?? 0)}
@@ -199,6 +219,18 @@ export default function AccountsPage() {
         <StatCard label="Cash on hand" value={money(summary?.cashBalance ?? 0)} accent="green" />
         <StatCard label="Bank balance" value={money(summary?.bankBalance ?? 0)} accent="purple" />
         <StatCard label="Total expenses" value={money(summary?.totalExpenses ?? 0)} accent="gold" />
+        <StatCard
+          label="Fixed asset book value"
+          value={money(valuation?.assetBookValue ?? 0, valuation?.assetCurrency)}
+          hint="From the asset register and depreciation"
+          accent="blue"
+        />
+        <StatCard
+          label="Stock value"
+          value={money(valuation?.stockValue ?? 0, valuation?.stockCurrency)}
+          hint="On-hand inventory valuation"
+          accent="green"
+        />
       </div>
       {error && <ErrorBanner message={error} />}
     </ListPageShell>

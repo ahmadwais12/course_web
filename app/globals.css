@@ -1106,3 +1106,35 @@
     radial-gradient(circle at 18px 36px, color-mix(in srgb, var(--brand) 14%, transparent) 1px, transparent 1.4px);
   background-size: 44px 44px;
 }
+
+/* Prices and phone numbers stay LTR and isolated inside RTL layouts */
+.num-ltr {
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-variant-numeric: tabular-nums;
+}
+
+.num-ltr-input {
+  direction: ltr;
+  unicode-bidi: isolate;
+  text-align: left;
+}
+
+[dir='rtl'] .num-ltr {
+  text-align: right;
+}
+
+[dir='rtl'] .num-ltr-input {
+  text-align: right;
+}
+
+/* Phone numbers and tel: links are always LTR, even inside RTL pages */
+input[type='tel'],
+a[href^='tel:'] {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+[dir='rtl'] input[type='tel'] {
+  text-align: right;
+}

@@ -2,7 +2,15 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { Eye } from 'lucide-react';
-import { DetailDialog, Dropdown, ErrorBanner, ListPageShell, RowActions, StatusChip } from '@/components/ports';
+import {
+  DetailDialog,
+  Dropdown,
+  ErrorBanner,
+  ListPageShell,
+  PriceText,
+  RowActions,
+  StatusChip,
+} from '@/components/ports';
 import { useListQuery } from '@/hooks/useListQuery';
 
 type Item = { id: string; item_name: string; quantity: number };
@@ -179,7 +187,7 @@ export default function InventoryTransactionsPage() {
                 { label: 'Type', value: viewing.transaction_type === 'out' ? 'Stock out' : 'Stock in' },
                 { label: 'Invoice', value: viewing.invoice_number },
                 { label: 'Quantity', value: String(viewing.quantity) },
-                { label: 'Price', value: String(viewing.price) },
+                { label: 'Price', value: <PriceText value={viewing.price} /> },
                 { label: 'Date', value: viewing.transaction_date },
                 { label: 'Employee ID', value: viewing.employee_id_number },
                 { label: 'Holder', value: viewing.holder_name },

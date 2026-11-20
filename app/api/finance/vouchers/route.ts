@@ -98,7 +98,7 @@ export async function GET() {
       ...((journalsRes.data ?? []) as JournalRow[]).map((row) => ({
         id: `journal-${row.id}`,
         voucherNo: str(row.journal_no) ?? '—',
-        type: 'journal' as const,
+        type: (row.reference_type === 'voucher:receipt' ? 'receipt' : row.reference_type === 'voucher:payment' ? 'payment' : 'journal') as 'receipt' | 'payment' | 'journal',
         date: row.journal_date,
         party: str(row.reference_type) ?? 'General ledger',
         description: str(row.description) ?? 'Journal entry',

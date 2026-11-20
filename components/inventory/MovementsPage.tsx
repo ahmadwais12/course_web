@@ -11,12 +11,15 @@ import {
   FormDialogFooter,
   InputField,
   ListPageShell,
+  PriceField,
+  PriceText,
   RowActions,
   StatusChip,
   TextAreaField,
 } from '@/components/ports';
 import { toast } from '@/components/ui/Toast';
 import { useListQuery } from '@/hooks/useListQuery';
+import { parseAmount } from '@/lib/format';
 
 type Item = { id: string; item_name: string; quantity: number };
 type Warehouse = { id: string; name: string };
@@ -171,7 +174,7 @@ export default function MovementsPage({ type }: { type: 'in' | 'out' }) {
           ...form,
           transaction_type: type,
           quantity: Number(form.quantity),
-          price: form.price === '' ? null : Number(form.price),
+          price: parseAmount(form.price),
         }),
       });
       const data = await res.json();
@@ -337,13 +340,10 @@ export default function MovementsPage({ type }: { type: 'in' | 'out' }) {
             onChange={(e) => setForm({ ...form, quantity: e.target.value })}
             required
           />
-          <InputField
+          <PriceField
             label={isOut ? 'Price (empty becomes 0)' : 'Price'}
-            type="number"
-            min={0}
-            step="0.01"
             value={form.price}
-            onChange={(e) => setForm({ ...form, price: e.target.value })}
+            onChange={(price) => setForm({ ...form, price })}
           />
           <InputField
             label="Invoice number"
@@ -395,7 +395,7 @@ export default function MovementsPage({ type }: { type: 'in' | 'out' }) {
                 { label: 'Type', value: viewing.transaction_type === 'out' ? 'Stock out' : 'Stock in' },
                 { label: 'Invoice', value: viewing.invoice_number },
                 { label: 'Quantity', value: String(viewing.quantity) },
-                { label: 'Price', value: String(viewing.price) },
+                { label: 'Price', value: <PriceText value={viewing.price} /> },
                 { label: 'Date', value: viewing.transaction_date },
                 { label: 'Employee ID', value: viewing.employee_id_number },
                 { label: 'Holder', value: viewing.holder_name },

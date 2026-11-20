@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { privateAppPageMetadata } from '@/lib/seo';
+import ReportWorkspace from '@/components/reports/ReportWorkspace';
 
 export const metadata: Metadata = privateAppPageMetadata(
   'Reports',
@@ -12,5 +13,5 @@ export default function PageSeoLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return <ReportWorkspace>{children}</ReportWorkspace>;
 }

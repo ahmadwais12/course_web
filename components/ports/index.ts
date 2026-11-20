@@ -34,3 +34,4 @@ export { default as RowActions } from './RowActions';
 export type { RowActionItem } from './RowActions';
 export { default as SegmentedControl } from './SegmentedControl';
 export type { SegmentOption } from './SegmentedControl';
+export { PriceText, PhoneText, PriceField, PhoneField } from './DirectionalValue';

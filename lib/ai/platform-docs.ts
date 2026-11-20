@@ -129,7 +129,7 @@ const GUIDES: BuiltinDoc[] = [
       '- Inventory Items (/inventory/items): click "New item" to add an item with bin card number, unit, minimum quantity, and unit price.',
       '- Stock In (/inventory/stock-in): click "New receipt" to record received stock; on-hand quantity increases.',
       '- Stock Out (/inventory/stock-out): click "New issue" to record issued stock; you cannot issue more than is on hand.',
-      '- Inventory Dashboard (/inventory) shows stock health and recent movements; Inventory Reports (/reports/inventory) has detailed reports.',
+      '- Inventory Dashboard (/inventory) shows stock health and recent movements; Inventory Reports (/inventory/reports) combines the stock summary with downloadable reports.',
       'Items at or below their minimum quantity are flagged as low stock.',
     ].join('\n'),
   },

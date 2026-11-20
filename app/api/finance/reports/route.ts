@@ -20,20 +20,31 @@ function monthKey(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const auth = await requireDashboardUser();
     if (!auth.ok) return auth.response;
     const { admin, tenantId } = auth.session;
+    const params = new URL(request.url).searchParams;
+    const from = params.get('from'); const to = params.get('to');
+    const paymentMethod = params.get('paymentMethod');
 
     const [paymentsRes, expensesRes, invoicesRes, studentsRes] = await Promise.all([
       (() => {
-        const query = admin.from('payments').select('amount, payment_date');
-        return tenantId ? query.eq('tenant_id', tenantId) : query;
+        let query = admin.from('payments').select('amount, payment_date');
+        if (tenantId) query = query.eq('tenant_id', tenantId);
+        if (from) query = query.gte('payment_date', from);
+        if (to) query = query.lte('payment_date', to);
+        if (paymentMethod) query = query.eq('payment_method', paymentMethod);
+        return query;
       })(),
       (() => {
-        const query = admin.from('expenses').select('amount, expense_date, category');
-        return tenantId ? query.eq('tenant_id', tenantId) : query;
+        let query = admin.from('expenses').select('amount, expense_date, category');
+        if (tenantId) query = query.eq('tenant_id', tenantId);
+        if (from) query = query.gte('expense_date', from);
+        if (to) query = query.lte('expense_date', to);
+        if (paymentMethod) query = query.eq('payment_method', paymentMethod);
+        return query;
       })(),
       (() => {
         const query = admin

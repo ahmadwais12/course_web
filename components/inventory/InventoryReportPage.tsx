@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { DataTable, ErrorBanner, PageHeader, SectionPanel, StatCard } from '@/components/ports';
+import { reportDataUrl, useReportFilters } from '@/components/reports/ReportWorkspace';
 
 type Report = {
   headlines: {
@@ -16,7 +17,8 @@ type Report = {
   low_items: { id: string; item_name: string; quantity: number; min_quantity: number; unit_label: string }[];
 };
 
-export default function InventoryReportPage() {
+export default function InventoryReportPage({ embedded = false }: { embedded?: boolean }) {
+  const filters = useReportFilters();
   const [report, setReport] = useState<Report | null>(null);
   const [settings, setSettings] = useState<{ organization_name: string; currency: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -26,7 +28,7 @@ export default function InventoryReportPage() {
     (async () => {
       try {
         const [reportRes, settingsRes] = await Promise.all([
-          fetch('/api/inventory/reports'),
+          fetch(reportDataUrl('/api/inventory/reports', filters)),
           fetch('/api/inventory/settings'),
         ]);
         const data = await reportRes.json();
@@ -40,13 +42,13 @@ export default function InventoryReportPage() {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [filters]);
 
   const h = report?.headlines;
 
   return (
     <div className="space-y-4">
-      <PageHeader
+      {!embedded && <PageHeader
         title="Inventory Reports"
         description={
           settings?.organization_name
@@ -55,7 +57,7 @@ export default function InventoryReportPage() {
         }
         pill={loading ? 'LOADING…' : 'LIVE DATA'}
         pillTone={loading ? 'neutral' : 'live'}
-      />
+      />}
       {error && <ErrorBanner message={error} />}
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Inventory items" value={h?.inventory_items ?? '—'} accent="green" />

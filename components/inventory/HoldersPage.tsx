@@ -11,10 +11,13 @@ import {
   FormDialogFooter,
   InputField,
   ListPageShell,
+  PhoneField,
+  PhoneText,
   RowActions,
 } from '@/components/ports';
 import { toast } from '@/components/ui/Toast';
 import { useListQuery } from '@/hooks/useListQuery';
+import { normalizePhone } from '@/lib/format';
 
 type Holder = {
   id: string;
@@ -83,7 +86,7 @@ export default function HoldersPage() {
       const res = await fetch(editing ? `/api/inventory/holders/${editing.id}` : '/api/inventory/holders', {
         method: editing ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, phone_number: normalizePhone(form.phone_number) }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Save failed');
@@ -133,7 +136,7 @@ export default function HoldersPage() {
           { key: 'first_name', header: 'First name' },
           { key: 'last_name', header: 'Last name' },
           { key: 'email', header: 'Email', render: (row) => row.email || '—' },
-          { key: 'phone_number', header: 'Phone', render: (row) => row.phone_number || '—' },
+          { key: 'phone_number', header: 'Phone', render: (row) => <PhoneText value={row.phone_number} link /> },
           { key: 'province', header: 'Province', render: (row) => row.province || '—' },
           { key: 'location', header: 'Location', render: (row) => row.location || '—' },
           {
@@ -206,7 +209,12 @@ export default function HoldersPage() {
           <InputField label="First name" value={form.first_name} onChange={(e) => set('first_name', e.target.value)} required />
           <InputField label="Last name" value={form.last_name} onChange={(e) => set('last_name', e.target.value)} />
           <InputField label="Email" value={form.email} onChange={(e) => set('email', e.target.value)} />
-          <InputField label="Phone" value={form.phone_number} onChange={(e) => set('phone_number', e.target.value)} />
+          <PhoneField
+            label="Phone"
+            value={form.phone_number}
+            onChange={(value) => set('phone_number', value)}
+            placeholder="+93 70 000 0000"
+          />
           <InputField label="Province" value={form.province} onChange={(e) => set('province', e.target.value)} />
           <InputField label="Location" value={form.location} onChange={(e) => set('location', e.target.value)} />
           <div className="sm:col-span-2">
@@ -224,7 +232,7 @@ export default function HoldersPage() {
                 { label: 'First name', value: viewing.first_name },
                 { label: 'Last name', value: viewing.last_name },
                 { label: 'Email', value: viewing.email },
-                { label: 'Phone', value: viewing.phone_number },
+                { label: 'Phone', value: <PhoneText value={viewing.phone_number} link /> },
                 { label: 'Province', value: viewing.province },
                 { label: 'Location', value: viewing.location },
                 { label: 'Address', value: viewing.address },

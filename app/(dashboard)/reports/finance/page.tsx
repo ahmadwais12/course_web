@@ -17,6 +17,7 @@ import {
 } from '@/components/ports';
 import { toast } from '@/components/ui/Toast';
 import { money } from '@/lib/display';
+import { reportDataUrl, useReportFilters } from '@/components/reports/ReportWorkspace';
 
 type ReportData = {
   summary: {
@@ -42,6 +43,7 @@ const MONTHLY_CONFIG = {
 } satisfies ChartConfig;
 
 export default function FinanceReportPage() {
+  const filters = useReportFilters();
   const [data, setData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -51,7 +53,7 @@ export default function FinanceReportPage() {
     (async () => {
       setLoading(true);
       try {
-        const res = await fetch('/api/finance/reports');
+        const res = await fetch(reportDataUrl('/api/finance/reports', filters));
         const body = await res.json();
         if (!res.ok) throw new Error(body.error || 'Failed to load finance report');
         if (!cancelled) {
@@ -71,7 +73,7 @@ export default function FinanceReportPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [filters]);
 
   const monthlyChart = useMemo(
     () =>

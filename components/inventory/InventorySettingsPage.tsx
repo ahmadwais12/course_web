@@ -59,7 +59,7 @@ const QUICK_LINKS = [
   { href: '/inventory/warehouses', label: 'Warehouses', icon: WarehouseIcon },
   { href: '/inventory/stock-in', label: 'Stock in', icon: PackagePlus },
   { href: '/inventory/stock-out', label: 'Stock out', icon: PackageMinus },
-  { href: '/reports/inventory', label: 'Reports', icon: BarChart3 },
+  { href: '/inventory/reports', label: 'Reports', icon: BarChart3 },
 ];
 
 const ITEM_CSV_COLUMNS: CsvColumn<Record<string, unknown>>[] = [

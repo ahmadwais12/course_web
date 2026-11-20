@@ -11,6 +11,8 @@ import {
   FormDialogFooter,
   PasswordField,
   ErrorBanner,
+  PhoneField,
+  PhoneText,
   RowActions,
 } from '@/components/ports';
 import { Eye, KeyRound, Users } from 'lucide-react';
@@ -19,6 +21,7 @@ import type { RoleRow } from '@/lib/rbac';
 import { roleLabel } from '@/lib/rbac';
 import { useListQuery } from '@/hooks/useListQuery';
 import { toast } from '@/components/ui/Toast';
+import { normalizePhone } from '@/lib/format';
 
 type UserRow = {
   id: string;
@@ -240,7 +243,7 @@ export default function UserManagementPage() {
             uuid: authData.user.id,
             email: email.trim(),
             full_name: fullName.trim(),
-            phone: phone.trim(),
+            phone: normalizePhone(phone),
             role: roleId,
             tenant_id: requiresTenant ? tenantId : null,
             status,
@@ -255,7 +258,7 @@ export default function UserManagementPage() {
           body: JSON.stringify({
             email: email.trim(),
             full_name: fullName.trim(),
-            phone: phone.trim(),
+            phone: normalizePhone(phone),
             role: roleId,
             tenant_id: requiresTenant ? tenantId : null,
             status,
@@ -350,7 +353,9 @@ export default function UserManagementPage() {
                 </div>
                 <div>
                   <p className="font-bold text-foreground">{user.full_name || '—'}</p>
-                  <p className="text-xs text-muted-foreground">{user.phone || 'No phone'}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {user.phone ? <PhoneText value={user.phone} /> : 'No phone'}
+                  </p>
                 </div>
               </div>
             ),
@@ -443,7 +448,7 @@ export default function UserManagementPage() {
               onChange={(e) => setEmail(e.target.value)}
               disabled={!isCreate}
             />
-            <InputField label="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+            <PhoneField label="Phone" value={phone} onChange={setPhone} />
             <Dropdown
               label="Role *"
               value={roleId}
@@ -582,7 +587,9 @@ export default function UserManagementPage() {
             <dl className="grid grid-cols-2 gap-3 text-sm">
               <div>
                 <dt className="text-muted-foreground">Phone</dt>
-                <dd className="font-medium">{selectedUser.phone || '—'}</dd>
+                <dd className="font-medium">
+                  <PhoneText value={selectedUser.phone} link />
+                </dd>
               </div>
               <div>
                 <dt className="text-muted-foreground">Role</dt>

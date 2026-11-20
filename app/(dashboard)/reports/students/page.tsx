@@ -6,6 +6,7 @@ import { DashboardAreaChart, DashboardPieChart } from '@/components/dashboards/D
 import { DataTable, ErrorBanner, PageHeader, SectionPanel, StatCard } from '@/components/ports';
 import { toast } from '@/components/ui/Toast';
 import { money } from '@/lib/display';
+import { reportDataUrl, useReportFilters } from '@/components/reports/ReportWorkspace';
 
 type ReportData = {
   summary: {
@@ -32,6 +33,7 @@ const ENROLLMENT_CONFIG = {
 } satisfies ChartConfig;
 
 export default function StudentsReportPage() {
+  const filters = useReportFilters();
   const [data, setData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +43,7 @@ export default function StudentsReportPage() {
     (async () => {
       setLoading(true);
       try {
-        const res = await fetch('/api/reports/students');
+        const res = await fetch(reportDataUrl('/api/reports/students', filters));
         const body = await res.json();
         if (!res.ok) throw new Error(body.error || 'Failed to load student report');
         if (!cancelled) {
@@ -61,7 +63,7 @@ export default function StudentsReportPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [filters]);
 
   const programChart = useMemo(() => {
     const rows = data?.byProgram ?? [];

@@ -6,6 +6,7 @@ type ExamRow = {
   id: string;
   name: string;
   class_id: string | null;
+  program_id: string | null;
   exam_date: string | null;
   status: string | null;
   passing_marks: number | null;
@@ -32,11 +33,11 @@ function monthKey(date: Date) {
 
 function percentage(row: GradeRow) {
   if (row.percentage != null) return num(row.percentage);
-  const max = num(row.max_score, 100);
+  const max = num(row.max_score ?? 100);
   return max > 0 ? (num(row.score) / max) * 100 : 0;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const auth = await requireDashboardUser();
     if (!auth.ok) return auth.response;
@@ -46,7 +47,7 @@ export async function GET() {
       (() => {
         const query = admin
           .from('exams')
-          .select('id, name, class_id, exam_date, status, passing_marks, total_marks');
+          .select('id, name, class_id, program_id, exam_date, status, passing_marks, total_marks');
         return tenantId ? query.eq('tenant_id', tenantId) : query;
       })(),
       (() => {
@@ -69,8 +70,22 @@ export async function GET() {
       })(),
     ]);
 
-    const exams = (examsRes.data ?? []) as ExamRow[];
-    const grades = (gradesRes.data ?? []) as GradeRow[];
+    const params = new URL(request.url).searchParams;
+    const from = params.get('from') ?? '';
+    const to = params.get('to') ?? '';
+    const statusFilter = (params.get('status') ?? '').toLowerCase();
+    const classFilter = params.get('classId') ?? '';
+    const programFilter = params.get('programId') ?? '';
+    const exams = ((examsRes.data ?? []) as ExamRow[]).filter((row) =>
+      (!from || String(row.exam_date ?? '') >= from) && (!to || String(row.exam_date ?? '') <= to) &&
+      (!statusFilter || String(row.status ?? '').toLowerCase() === statusFilter) &&
+      (!classFilter || row.class_id === classFilter) && (!programFilter || row.program_id === programFilter)
+    );
+    const allowedExamIds = new Set(exams.map((row) => row.id));
+    const filtersActive = Boolean(from || to || statusFilter || classFilter || programFilter);
+    const grades = ((gradesRes.data ?? []) as GradeRow[]).filter((row) =>
+      (!filtersActive || (row.exam_id !== null && allowedExamIds.has(row.exam_id))) && (!classFilter || row.class_id === classFilter)
+    );
     const classes = (classesRes.data ?? []) as { id: string; name: string }[];
     const className = new Map(classes.map((row) => [row.id, row.name]));
     const examById = new Map(exams.map((row) => [row.id, row]));
@@ -84,7 +99,7 @@ export async function GET() {
     for (const grade of grades) {
       const exam = grade.exam_id ? examById.get(grade.exam_id) : undefined;
       const passMark = exam
-        ? (num(exam.passing_marks, 50) / Math.max(1, num(exam.total_marks, 100))) * 100
+        ? (num(exam.passing_marks ?? 50) / Math.max(1, num(exam.total_marks ?? 100))) * 100
         : 50;
       if (percentage(grade) >= passMark) passed += 1;
     }
